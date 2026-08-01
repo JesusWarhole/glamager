@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SalonStaff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#4338ca">
+  <link rel="manifest" href="manifest-salonstaff.json">
+  <link rel="apple-touch-icon" href="icon-salonstaff-192.png">
+  <link rel="icon" href="icon-salonstaff-192.png">
+  <title>SalonStaff</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
+    body{background:#f1f5f9;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+    #root{max-width:640px;margin:0 auto;min-height:100vh;}
+    .hdr{background:linear-gradient(135deg,#1e1b4b 0%,#4338ca 100%);}
+    .hero{background:linear-gradient(135deg,#4338ca 0%,#6366f1 100%);}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7);transition:all .15s;}
+    .pin-dot.on{background:white;transform:scale(1.15);}
+    .pin-dot.err{border-color:#fca5a5;background:#fca5a5;}
+    .pin-btn{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.15);border:none;cursor:pointer;font-size:24px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+    .pin-btn:active{background:rgba(255,255,255,.3);transform:scale(.93);}
+    .shake{animation:shake .4s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+    .pop{animation:pop .22s ease-out;}
+    @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fade{animation:fadeIn .2s ease;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
+    .modal{background:white;border-radius:24px 24px 0 0;width:100%;max-width:640px;padding:24px;max-height:90vh;overflow-y:auto;padding-bottom:max(24px,env(safe-area-inset-bottom));}
+    .safe-pb{padding-bottom:max(96px,calc(80px + env(safe-area-inset-bottom)));}
+    .nav-bar{padding-bottom:max(8px,env(safe-area-inset-bottom));}
+    .card{background:white;border-radius:16px;border:1px solid #ede9fe;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+    ::-webkit-scrollbar{width:3px;}
+    ::-webkit-scrollbar-thumb{background:#c7d2fe;border-radius:2px;}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    input[type=number]{-moz-appearance:textfield;}
+    .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    .sync-dot.ok{background:#22c55e;}.sync-dot.err{background:#ef4444;}.sync-dot.spin{background:#f59e0b;animation:blink 1s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+    .day-cell{border-radius:10px;cursor:pointer;transition:all .12s;user-select:none;}
+    .day-cell:active{transform:scale(.94);}
+    .status-btn{border-radius:12px;border:2px solid transparent;cursor:pointer;transition:all .12s;padding:10px 8px;display:flex;flex-direction:column;align-items:center;gap:4px;}
+    .status-btn.sel{border-color:currentColor;transform:scale(1.04);}
+    .toggle-t{transition:transform .2s;}
+    .progress-bar{height:6px;border-radius:3px;background:#e0e7ff;overflow:hidden;}
+    .progress-fill{height:100%;border-radius:3px;transition:width .4s ease;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+/* ── FIREBASE ── */
+const FB_CFG = {
+  apiKey:"AIzaSyDvs3RD386Spxx85n42SkIoDtMpsS0Ywok",
+  authDomain:"salon-info-a23ac.firebaseapp.com",
+  databaseURL:"https://salon-info-a23ac-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"salon-info-a23ac",
+  storageBucket:"salon-info-a23ac.firebasestorage.app",
+  messagingSenderId:"389409583539",
+  appId:"1:389409583539:web:ab65053284fe601a1fdbc6"
+};
+if(!firebase.apps.find(a=>a.name==='salonstaff'))
+  firebase.initializeApp(FB_CFG,'salonstaff');
+const db = firebase.app('salonstaff').database();
+
+const SS_SCHED = 'ss_sched_v1';
+const SS_CFG   = 'ss_cfg_v1';
+
+/* ── GREEK PUBLIC HOLIDAYS ── */
+const HOLIDAYS = {
+  '2025-01-01':'Πρωτοχρονιά','2025-01-06':'Θεοφάνεια','2025-03-03':'Καθαρά Δευτέρα',
+  '2025-03-25':'Εθνική Εορτή','2025-04-18':'Μεγάλη Παρασκευή','2025-04-20':'Κυριακή του Πάσχα',
+  '2025-04-21':'Δευτέρα Πάσχα','2025-05-01':'Εργατική Πρωτομαγιά','2025-06-09':'Αγίου Πνεύματος',
+  '2025-08-15':'Κοίμηση Θεοτόκου','2025-10-28':'Εθνική Εορτή','2025-12-25':'Χριστούγεννα',
+  '2025-12-26':'Σύναξη Θεοτόκου',
+  '2026-01-01':'Πρωτοχρονιά','2026-01-06':'Θεοφάνεια','2026-02-16':'Καθαρά Δευτέρα',
+  '2026-03-25':'Εθνική Εορτή','2026-04-03':'Μεγάλη Παρασκευή','2026-04-05':'Κυριακή του Πάσχα',
+  '2026-04-06':'Δευτέρα Πάσχα','2026-05-01':'Εργατική Πρωτομαγιά','2026-05-25':'Αγίου Πνεύματος',
+  '2026-08-15':'Κοίμηση Θεοτόκου','2026-10-28':'Εθνική Εορτή','2026-12-25':'Χριστούγεννα',
+  '2026-12-26':'Σύναξη Θεοτόκου',
+};
+
+/* ── DEFAULT SCHEDULE ── */
+// dow: 0=Sun,1=Mon,2=Tue,3=Wed,4=Thu,5=Fri,6=Sat
+const DEF_SCHEDULE = { 0:null, 1:null, 2:{s:'10:00',e:'19:00'}, 3:{s:'09:00',e:'16:00'}, 4:{s:'10:00',e:'19:00'}, 5:{s:'10:00',e:'19:00'}, 6:{s:'09:00',e:'16:00'} };
+
+const DEF_STAFF = [
+  { id:'s1', name:'Υπάλληλος 1', leaveTotal:20, schedule: DEF_SCHEDULE },
+  { id:'s2', name:'Υπάλληλος 2', leaveTotal:20, schedule: DEF_SCHEDULE },
+];
+const DEF_CFG = { pin:'1234', salonName:'Κομμωτήριο', staff: DEF_STAFF };
+
+/* ── STATUS CONFIG ── */
+const STATUSES = [
+  { id:'work',    label:'Εργάστηκε',      emoji:'✅', color:'#059669', bg:'#d1fae5', border:'#6ee7b7' },
+  { id:'overtime',label:'Υπερωρία',        emoji:'⏰', color:'#2563eb', bg:'#dbeafe', border:'#93c5fd' },
+  { id:'early',   label:'Πρόωρη αποχ.',   emoji:'↩️', color:'#d97706', bg:'#fef3c7', border:'#fcd34d' },
+  { id:'festive', label:'Εορταστικό',      emoji:'🎄', color:'#7c3aed', bg:'#ede9fe', border:'#c4b5fd' },
+  { id:'sick',    label:'Αναρρωτική',      emoji:'🤒', color:'#dc2626', bg:'#fee2e2', border:'#fca5a5' },
+  { id:'leave',   label:'Άδεια',           emoji:'🏖️', color:'#0891b2', bg:'#cffafe', border:'#67e8f9' },
+  { id:'holiday', label:'Αργία',           emoji:'🎉', color:'#ca8a04', bg:'#fef9c3', border:'#fde047' },
+  { id:'off',     label:'Ρεπό',            emoji:'💤', color:'#9ca3af', bg:'#f3f4f6', border:'#d1d5db' },
+  { id:'absent',  label:'Απουσία',         emoji:'❌', color:'#be123c', bg:'#ffe4e6', border:'#fda4af' },
+];
+const stMap = Object.fromEntries(STATUSES.map(s=>[s.id,s]));
+
+/* ── UTILITIES ── */
+const today    = () => new Date().toISOString().slice(0,10);
+const pad2     = n => String(n).padStart(2,'0');
+const dateKey  = (y,m,d) => `${y}-${pad2(m)}-${pad2(d)}`;
+const dow      = dateStr => new Date(dateStr+'T12:00:00').getDay();
+const DOW_EL   = ['Κυρ','Δευ','Τρί','Τετ','Πέμ','Παρ','Σάβ'];
+const DOW_FULL = ['Κυριακή','Δευτέρα','Τρίτη','Τετάρτη','Πέμπτη','Παρασκευή','Σάββατο'];
+const MON_EL   = ['','Ιανουάριος','Φεβρουάριος','Μάρτιος','Απρίλιος','Μάιος','Ιούνιος','Ιούλιος','Αύγουστος','Σεπτέμβριος','Οκτώβριος','Νοέμβριος','Δεκέμβριος'];
+
+const daysInMonth=(y,m)=>new Date(y,m,0).getDate();
+
+const timeDiff=(s,e)=>{
+  if(!s||!e) return 0;
+  const [sh,sm]=s.split(':').map(Number),[eh,em]=e.split(':').map(Number);
+  return ((eh*60+em)-(sh*60+sm))/60;
+};
+
+// Get default status for a date based on employee schedule
+const getDefaultStatus=(dateStr,emp)=>{
+  if(HOLIDAYS[dateStr]) return {status:'holiday',note:HOLIDAYS[dateStr],start:'',end:''};
+  const d=dow(dateStr); const sched=emp.schedule||DEF_SCHEDULE;
+  if(!sched[d]) return {status:'off',note:'',start:'',end:''};
+  return {status:'work',note:'',start:sched[d].s,end:sched[d].e};
+};
+
+const hoursForEntry=(entry,emp,dateStr)=>{
+  if(!entry||entry.status==='off'||entry.status==='sick'||entry.status==='leave'||entry.status==='absent'||entry.status==='holiday') return 0;
+  if(entry.status==='work'){
+    const d=dow(dateStr); const sc=(emp.schedule||DEF_SCHEDULE)[d];
+    if(!sc) return 0;
+    return timeDiff(sc.s,sc.e);
+  }
+  return timeDiff(entry.start,entry.end)||0;
+};
+
+const snapToArr=snap=>{ const o=[]; snap.forEach(c=>{o.push({...c.val(),_key:c.key});}); return o; };
+
+/* ── ICONS ── */
+const Ic=({n,s=20,c='currentColor',cls=''})=>{
+  const p={
+    back:'M19 12H5 M12 19l-7-7 7-7',next:'M5 12h14 M12 5l7 7-7 7',
+    gear:'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
+    user:'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z',
+    x:'M18 6L6 18 M6 6l12 12',check:'M20 6L9 17l-5-5',
+    download:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3',
+    scissors:'M6 9a3 3 0 100-6 3 3 0 000 6z M6 21a3 3 0 100-6 3 3 0 000 6z M20 4L8.12 15.88 M14.47 14.48L20 20 M8.12 8.12L12 12',
+    calendar:'M3 4h18v18H3z M16 2v4 M8 2v4 M3 10h18',
+    lock:'M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4',
+    plus:'M12 5v14 M5 12h14',trash:'M3 6h18 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6 M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
+    info:'M12 22a10 10 0 100-20 10 10 0 000 20z M12 16v-4 M12 8h.01',
+  };
+  return <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}>{(p[n]||'').split(' M').map((d,i)=><path key={i} d={i===0?d:'M'+d}/>)}</svg>;
+};
+
+/* ── PIN ── */
+const PinScreen=({cfg,onOk})=>{
+  const [pin,setPin]=useState('');const [err,setErr]=useState(false);const [shk,setShk]=useState(false);
+  const press=d=>{ if(pin.length>=4)return; const n=pin+d; setPin(n); if(n.length===4) setTimeout(()=>{ if(n===cfg.pin)onOk(); else{setErr(true);setShk(true);setTimeout(()=>{setPin('');setErr(false);setShk(false);},750);} },150); };
+  return (
+    <div className="min-h-screen hero flex flex-col items-center justify-center px-6">
+      <div className="text-center mb-10">
+        <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-5"><Ic n="calendar" s={36} c="white"/></div>
+        <h1 className="text-3xl font-black text-white">{cfg.salonName}</h1>
+        <p className="text-indigo-200 text-sm mt-1">SalonStaff · Πρόγραμμα Υπαλλήλων</p>
+      </div>
+      <div className={`flex gap-5 mb-10 ${shk?'shake':''}`}>{[0,1,2,3].map(i=><div key={i} className={`pin-dot ${pin.length>i?(err?'err':'on'):''}`}/>)}</div>
+      <div className="grid grid-cols-3 gap-4">
+        {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((b,i)=>(
+          b===''?<div key={i}/>:b==='⌫'
+            ?<button key={i} className="pin-btn" onClick={()=>setPin(p=>p.slice(0,-1))}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg></button>
+            :<button key={i} className="pin-btn" onClick={()=>press(b)}>{b}</button>
+        ))}
+      </div>
+      {err&&<p className="text-red-300 text-sm mt-6 fade">Λάθος κωδικός</p>}
+    </div>
+  );
+};
+
+/* ── HEADER ── */
+const Header=({title,sub,st,onBack,onSettings})=>(
+  <div className="hdr px-4 pt-11 pb-4 flex items-center gap-3 sticky top-0 z-40">
+    {onBack?<button onClick={onBack} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={18} c="white"/></button>
+           :<div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="calendar" s={18} c="white"/></div>}
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2"><h1 className="text-base font-black text-white truncate">{title}</h1><span className="text-xs font-black bg-white/20 text-white px-2 py-0.5 rounded-md">STAFF</span></div>
+      {sub&&<p className="text-indigo-200 text-xs mt-0.5 truncate">{sub}</p>}
+    </div>
+    {st&&<div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1"><span className={`sync-dot ${st}`}/><span className="text-white text-xs font-bold">{st==='ok'?'Συγχρ.':st==='err'?'Offline':'...'}</span></div>}
+    {onSettings&&<button onClick={onSettings} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 ml-1"><Ic n="gear" s={18} c="white"/></button>}
+  </div>
+);
+
+/* ── DAY EDIT MODAL ── */
+const DayModal=({dateStr,emp,entry,onSave,onClose})=>{
+  const def=getDefaultStatus(dateStr,emp);
+  const init=entry||def;
+  const [status,setStatus]=useState(init.status);
+  const [start,setStart]=useState(init.start||'');
+  const [end,setEnd]=useState(init.end||'');
+  const [note,setNote]=useState(init.note||'');
+  const needsTime=['overtime','early','festive'].includes(status);
+  const needsNote=['sick','absent','holiday','festive'].includes(status);
+
+  // When switching status, prefill times from schedule
+  const pickStatus=s=>{
+    setStatus(s);
+    if(['overtime','early','festive'].includes(s)){
+      const d=dow(dateStr); const sc=(emp.schedule||DEF_SCHEDULE)[d];
+      if(sc&&!start){setStart(sc.s);setEnd(sc.e);}
+    }
+    if(s==='holiday'&&!note) setNote(HOLIDAYS[dateStr]||'');
+  };
+
+  const hours=needsTime?timeDiff(start,end):hoursForEntry({status,start,end},emp,dateStr);
+
+  const save=()=>{
+    onSave({status,start:needsTime?start:'',end:needsTime?end:'',note});
+    onClose();
+  };
+
+  const reset=()=>{ onSave(null); onClose(); };
+
+  const d=new Date(dateStr+'T12:00:00');
+  const title=`${DOW_FULL[d.getDay()]} ${d.getDate()} ${MON_EL[d.getMonth()+1]}`;
+  const isHoliday=!!HOLIDAYS[dateStr];
+
+  return (
+    <div className="modal-bg fade" onClick={onClose}>
+      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <p className="font-black text-gray-800 text-lg">{title}</p>
+            <p className="text-indigo-600 font-bold text-sm">{emp.name}</p>
+            {isHoliday&&<p className="text-xs text-amber-600 font-semibold mt-0.5">🎉 {HOLIDAYS[dateStr]}</p>}
+          </div>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"><Ic n="x" s={16} c="#6b7280"/></button>
+        </div>
+
+        {/* Status grid */}
+        <div className="grid grid-cols-3 gap-2 mb-4">
+          {STATUSES.map(s=>(
+            <button key={s.id} onClick={()=>pickStatus(s.id)}
+              className={`status-btn text-center ${status===s.id?'sel':''}`}
+              style={{background:status===s.id?s.bg:'#f9fafb',color:s.color}}>
+              <span className="text-xl">{s.emoji}</span>
+              <span className="text-xs font-bold leading-tight">{s.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Custom times */}
+        {needsTime&&(
+          <div className="bg-indigo-50 rounded-2xl p-4 mb-3">
+            <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-3">
+              {status==='overtime'?'Ώρες εργασίας (με υπερωρία)':status==='early'?'Ώρες εργασίας (πρόωρη αποχώρηση)':'Εορταστικό ωράριο'}
+            </p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1"><p className="text-xs text-gray-400 mb-1">Από</p><input type="time" value={start} onChange={e=>setStart(e.target.value)} className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 border border-indigo-200 outline-none"/></div>
+              <div className="text-gray-400 mt-4 font-bold">→</div>
+              <div className="flex-1"><p className="text-xs text-gray-400 mb-1">Έως</p><input type="time" value={end} onChange={e=>setEnd(e.target.value)} className="w-full bg-white rounded-xl px-3 py-2.5 text-sm font-bold text-gray-800 border border-indigo-200 outline-none"/></div>
+            </div>
+            {hours>0&&<p className="text-xs text-indigo-600 font-bold mt-2 text-center">{hours.toFixed(1)} ώρες εργασίας</p>}
+          </div>
+        )}
+
+        {/* Note */}
+        <div className="mb-4">
+          <p className="text-xs font-bold text-gray-400 mb-1">{status==='sick'?'Σημείωση (αριθμός βεβαίωσης κλπ)':status==='absent'?'Αιτία απουσίας':'Σημείωση'}</p>
+          <input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={status==='sick'?'π.χ. Βεβαίωση #123, Γιατρός Παπαδόπουλος...':'Προαιρετική σημείωση...'} className="w-full bg-gray-50 rounded-xl px-4 py-3 text-sm text-gray-700 border border-gray-200 outline-none"/>
+        </div>
+
+        <div className="flex gap-2">
+          {entry&&<button onClick={reset} className="flex-1 py-3.5 rounded-2xl font-bold text-gray-500 bg-gray-100 text-sm">↺ Επαναφορά</button>}
+          <button onClick={save} className="flex-1 py-3.5 rounded-2xl font-black text-white text-sm bg-indigo-600 shadow-lg shadow-indigo-200">Αποθήκευση</button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+/* ── MONTHLY VIEW ── */
+const MonthView=({year,month,empId,cfg,schedData,onEdit})=>{
+  const emp=cfg.staff.find(s=>s.id===empId)||cfg.staff[0];
+  const days=daysInMonth(year,month);
+  const empData=schedData[year]?.[pad2(month)]?.[empId]||{};
+
+  // Summary
+  let totalWork=0,totalHours=0,sickDays=0,leaveDays=0,overtimeH=0,festDays=0,absentDays=0;
+  for(let d=1;d<=days;d++){
+    const dk=dateKey(year,month,d);
+    const raw=empData[pad2(d)];
+    const entry=raw||getDefaultStatus(dk,emp);
+    if(entry.status==='work') { totalWork++; totalHours+=hoursForEntry(entry,emp,dk); }
+    if(entry.status==='overtime'){ totalWork++; const h=hoursForEntry(entry,emp,dk); totalHours+=h; overtimeH+=Math.max(0,h-hoursForEntry({status:'work'},emp,dk)); }
+    if(entry.status==='early'){ totalWork++; totalHours+=hoursForEntry(entry,emp,dk); }
+    if(entry.status==='festive'){ festDays++; totalWork++; totalHours+=hoursForEntry(entry,emp,dk); }
+    if(entry.status==='sick') sickDays++;
+    if(entry.status==='leave') leaveDays++;
+    if(entry.status==='absent') absentDays++;
+  }
+  // Μέτρηση αδειών μόνο για το τρέχον ημερολογιακό έτος
+  const leaveUsedYear=Object.entries(schedData[year]||{}).reduce((tot,[m,emps])=>{
+    const ed=emps?.[empId]||{};
+    return tot+Object.values(ed).filter(e=>e&&e.status==='leave').length;
+  },0);
+  const leaveLeft=Math.max(0,(emp.leaveTotal||20)-leaveUsedYear);
+
+  return (
+    <div>
+      {/* Stats strip */}
+      <div className="mx-4 mt-3 mb-3 card overflow-hidden">
+        <div className="px-4 py-2 bg-indigo-600"><p className="text-xs font-black text-white uppercase tracking-wider">{MON_EL[month]} {year} — {emp.name}</p></div>
+        <div className="grid grid-cols-4 divide-x divide-gray-100 text-center">
+          {[['✅',totalWork,'Εργ. Ημέρες','text-emerald-600'],['⏱️',totalHours.toFixed(1),'Ώρες','text-indigo-600'],['🤒',sickDays,'Αναρρ.','text-red-500'],['🏖️',leaveDays,'Άδεια','text-cyan-600']].map(([e,v,l,c])=>(
+            <div key={l} className="py-3"><div className="text-base mb-0.5">{e}</div><div className={`font-black text-base ${c}`}>{v}</div><div className="text-xs text-gray-400">{l}</div></div>
+          ))}
+        </div>
+        <div className="px-4 py-3 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <p className="text-xs font-bold text-cyan-700">Υπόλοιπο Αδειών {year} — {emp.name}</p>
+            <p className="text-xs font-black text-cyan-700">{leaveLeft} / {emp.leaveTotal||20} μέρες</p>
+          </div>
+          <div className="progress-bar"><div className="progress-fill bg-cyan-500" style={{width:`${Math.min(100,(leaveUsedYear/(emp.leaveTotal||20))*100)}%`}}/></div>
+          <p className="text-xs text-gray-400 mt-1">{leaveUsedYear} χρησιμοποιημένες το {year}</p>
+        </div>
+        {(festDays>0||absentDays>0)&&<div className="px-4 py-2.5 bg-purple-50 border-t border-purple-100 flex gap-4 text-xs">
+          {festDays>0&&<span className="text-purple-700 font-bold">🎄 Εορταστικό: {festDays} μέρες</span>}
+          {absentDays>0&&<span className="text-red-700 font-bold">❌ Απουσίες: {absentDays}</span>}
+        </div>}
+      </div>
+
+      {/* Day list */}
+      <div className="px-4 space-y-1.5 pb-4">
+        {Array.from({length:days},(_,i)=>{
+          const d=i+1;
+          const dk=dateKey(year,month,d);
+          const raw=empData[pad2(d)];
+          const entry=raw||getDefaultStatus(dk,emp);
+          const st=stMap[entry.status]||stMap.work;
+          const isToday=dk===today();
+          const isHol=!!HOLIDAYS[dk];
+          const hasNote=entry.note&&entry.note.trim();
+          const needsTime=['overtime','early','festive'].includes(entry.status);
+          const hrs=needsTime?timeDiff(entry.start,entry.end):0;
+          return (
+            <div key={d} onClick={()=>onEdit(dk,emp,raw)} className={`day-cell flex items-center gap-3 px-4 py-3 ${isToday?'ring-2 ring-indigo-400':''}`} style={{background:st.bg,border:`1.5px solid ${st.border}`}}>
+              <div className="w-10 text-center flex-shrink-0">
+                <p className="text-xs font-bold text-gray-400">{DOW_EL[dow(dk)]}</p>
+                <p className={`text-xl font-black ${isToday?'text-indigo-600':'text-gray-700'}`}>{d}</p>
+              </div>
+              <div className="text-xl flex-shrink-0">{st.emoji}</div>
+              <div className="flex-1 min-w-0">
+                <p className="font-bold text-sm" style={{color:st.color}}>{st.label}{isHol&&!raw?` — ${HOLIDAYS[dk]}`:''}{raw?.status==='festive'?' ✨':''}</p>
+                {hasNote&&<p className="text-xs text-gray-500 truncate mt-0.5">📝 {entry.note}</p>}
+                {needsTime&&entry.start&&entry.end&&<p className="text-xs text-gray-500 mt-0.5">🕐 {entry.start} – {entry.end}{hrs>0?` (${hrs.toFixed(1)}ω)`:''}</p>}
+                {entry.status==='work'&&(()=>{ const d2=dow(dk); const sc=(emp.schedule||DEF_SCHEDULE)[d2]; return sc?<p className="text-xs text-gray-400 mt-0.5">{sc.s} – {sc.e} ({timeDiff(sc.s,sc.e)}ω)</p>:null; })()}
+              </div>
+              <div className="w-6 h-6 rounded-lg bg-white/60 flex items-center justify-center flex-shrink-0"><Ic n="next" s={13} c={st.color}/></div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+/* ── SUMMARY / OVERVIEW ── */
+const Overview=({year,month,cfg,schedData})=>{
+  return (
+    <div className="px-4 py-4 space-y-3">
+      {cfg.staff.map(emp=>{
+        const empData=schedData[year]?.[pad2(month)]?.[emp.id]||{};
+        const days=daysInMonth(year,month);
+        let work=0,sick=0,leave=0,hours=0;
+        for(let d=1;d<=days;d++){
+          const dk=dateKey(year,month,d);
+          const raw=empData[pad2(d)];
+          const entry=raw||getDefaultStatus(dk,emp);
+          if(['work','overtime','early','festive'].includes(entry.status)){work++;hours+=hoursForEntry(entry,emp,dk);}
+          if(entry.status==='sick') sick++;
+          if(entry.status==='leave') leave++;
+        }
+        const leaveUsedYear=Object.entries(schedData[year]||{}).reduce((tot,[m,emps])=>tot+Object.values(emps?.[emp.id]||{}).filter(e=>e&&e.status==='leave').length,0);
+        const leaveLeft=Math.max(0,(emp.leaveTotal||20)-leaveUsedYear);
+        return (
+          <div key={emp.id} className="card overflow-hidden">
+            <div className="px-4 py-3 bg-indigo-50 border-b border-indigo-100 flex items-center gap-3">
+              <div className="w-9 h-9 bg-indigo-600 rounded-xl flex items-center justify-center"><Ic n="user" s={16} c="white"/></div>
+              <div><p className="font-black text-gray-800">{emp.name}</p><p className="text-xs text-indigo-600">{MON_EL[month]} {year}</p></div>
+            </div>
+            <div className="grid grid-cols-4 divide-x divide-gray-100 text-center py-3">
+              {[['✅',work,'Εργ.'],['⏱️',hours.toFixed(0)+'ω','Ώρες'],['🤒',sick,'Αναρρ.'],['🏖️',leave,'Άδεια']].map(([e,v,l])=>(
+                <div key={l}><div className="text-base">{e}</div><div className="font-black text-gray-700 text-sm">{v}</div><div className="text-xs text-gray-400">{l}</div></div>
+              ))}
+            </div>
+            <div className="px-4 py-3 border-t border-gray-100">
+              <div className="flex justify-between mb-1"><span className="text-xs text-gray-500">Υπόλοιπο αδειών</span><span className="text-xs font-black text-cyan-700">{leaveLeft}/{emp.leaveTotal||20}</span></div>
+              <div className="progress-bar"><div className="progress-fill bg-cyan-500" style={{width:`${Math.min(100,(leaveUsedYear/(emp.leaveTotal||20))*100)}%`}}/></div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
+/* ── SETTINGS ── */
+const Settings=({cfg,onSave,onLock,schedData})=>{
+  const [pin,setPin]=useState(cfg.pin);
+  const [name,setName]=useState(cfg.salonName);
+  const [staff,setStaff]=useState(JSON.parse(JSON.stringify(cfg.staff)));
+  const [done,setDone]=useState(false);
+  const [newName,setNewName]=useState('');
+
+  const updateStaff=(id,field,val)=>setStaff(prev=>prev.map(s=>s.id===id?{...s,[field]:val}:s));
+
+  const addStaff=()=>{
+    const n=newName.trim(); if(!n) return;
+    const id='s'+Date.now();
+    setStaff(prev=>[...prev,{id,name:n,leaveTotal:20,schedule:DEF_SCHEDULE}]);
+    setNewName('');
+  };
+  const removeStaff=id=>{ if(staff.length<=1){alert('Πρέπει να υπάρχει τουλάχιστον ένας υπάλληλος.');return;} setStaff(prev=>prev.filter(s=>s.id!==id)); };
+
+  const save=()=>{ if(!/^\d{4}$/.test(pin)){alert('PIN: 4 ψηφία');return;} onSave({pin,salonName:name,staff}); setDone(true); setTimeout(()=>setDone(false),2000); };
+
+  const exportCSV=()=>{
+    const rows=[['Υπάλληλος','Έτος','Μήνας','Ημέρα','Ημερομηνία','Ημέρα Εβδ.','Κατάσταση','Ώρα Έναρξης','Ώρα Λήξης','Σημείωση']];
+    Object.entries(schedData).forEach(([y,months])=>Object.entries(months||{}).forEach(([m,emps])=>Object.entries(emps||{}).forEach(([empId,days])=>{
+      const emp=cfg.staff.find(s=>s.id===empId);
+      if(!emp) return;
+      Object.entries(days||{}).forEach(([d,entry])=>{
+        if(!entry) return;
+        const dk=`${y}-${m}-${d}`;
+        const st=stMap[entry.status];
+        rows.push([emp.name,y,m,d,dk,DOW_FULL[dow(dk)],st?.label||entry.status,entry.start||'',entry.end||'',entry.note||'']);
+      });
+    })));
+    const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SalonStaff_export_${today()}.csv`;a.click();
+  };
+
+  return (
+    <div className="px-4 safe-pb">
+      <div className="space-y-3 mt-4">
+        <div className="card p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Επωνυμία</p>
+          <input type="text" value={name} onChange={e=>setName(e.target.value)} className="w-full text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2.5"/>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">PIN (4 ψηφία)</p>
+          <input type="password" value={pin} onChange={e=>setPin(e.target.value)} maxLength={4} inputMode="numeric" className="w-full text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2.5"/>
+        </div>
+
+        {/* Staff */}
+        <div className="card p-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Υπάλληλοι & Άδειες</p>
+          <div className="space-y-3 mb-3">
+            {staff.map(s=>(
+              <div key={s.id} className="bg-indigo-50 rounded-2xl p-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <input type="text" value={s.name} onChange={e=>updateStaff(s.id,'name',e.target.value)} className="flex-1 text-sm font-black text-gray-800 bg-white rounded-xl px-3 py-2 outline-none border border-indigo-200"/>
+                  {staff.length>1&&<button onClick={()=>removeStaff(s.id)} className="w-8 h-8 rounded-xl bg-red-50 flex items-center justify-center flex-shrink-0"><Ic n="trash" s={13} c="#ef4444"/></button>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-gray-500 flex-shrink-0">🏖️ Δικαιούται άδεια:</span>
+                  <input type="number" value={s.leaveTotal||20} onChange={e=>updateStaff(s.id,'leaveTotal',parseInt(e.target.value)||20)} min={1} max={60} className="w-16 text-sm font-bold text-indigo-700 bg-white rounded-lg px-2 py-1 outline-none border border-indigo-200 text-center"/>
+                  <span className="text-xs text-gray-400">μέρες/έτος</span>
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input type="text" value={newName} onChange={e=>setNewName(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addStaff()} placeholder="Όνομα νέου/ας υπαλλήλου..." className="flex-1 text-sm font-bold text-gray-700 bg-gray-50 rounded-xl px-3 py-2.5 outline-none border border-gray-200"/>
+            <button onClick={addStaff} disabled={!newName.trim()} className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-bold disabled:opacity-40">+</button>
+          </div>
+        </div>
+
+        <button onClick={save} className="w-full py-4 rounded-2xl font-black text-white bg-indigo-600 shadow-lg shadow-indigo-200">{done?'✓ Αποθηκεύτηκε':'💾 Αποθήκευση'}</button>
+        <button onClick={exportCSV} className="w-full py-3.5 rounded-2xl font-bold text-indigo-700 bg-indigo-50 border-2 border-indigo-200 flex items-center justify-center gap-2"><Ic n="download" s={17} c="#4338ca"/>Εξαγωγή CSV (πλήρες ιστορικό)</button>
+        <button onClick={onLock} className="w-full py-3.5 rounded-2xl font-bold text-gray-500 bg-gray-100 flex items-center justify-center gap-2"><Ic n="lock" s={17} c="#9ca3af"/>Κλείδωμα</button>
+      </div>
+    </div>
+  );
+};
+
+/* ── APP ROOT ── */
+const App=()=>{
+  const [ok,setOk]=useState(false);
+  const [cfg,setCfg]=useState(DEF_CFG);
+  const [schedData,setSchedData]=useState({});
+  const [st,setSt]=useState('spin');
+  const [ready,setReady]=useState(false);
+  const [page,setPage]=useState('schedule'); // schedule | overview | settings
+  const [year,setYear]=useState(new Date().getFullYear());
+  const [month,setMonth]=useState(new Date().getMonth()+1);
+  const [activeEmp,setActiveEmp]=useState(null);
+  const [modal,setModal]=useState(null); // {dateStr, emp, entry}
+  const cfgFired=useRef(false),schedFired=useRef(false),tryReady=useRef(()=>{});
+
+  useEffect(()=>{
+    tryReady.current=()=>{ if(cfgFired.current&&schedFired.current) setReady(true); };
+    const conn=db.ref('.info/connected'); conn.on('value',s=>setSt(s.val()?'ok':'err'));
+    const cRef=db.ref(SS_CFG); cRef.on('value',s=>{ const v=s.val(); if(v) setCfg({...DEF_CFG,...v,staff:v.staff||DEF_CFG.staff}); cfgFired.current=true; tryReady.current(); },()=>{cfgFired.current=true;tryReady.current();});
+    const sRef=db.ref(SS_SCHED); sRef.on('value',s=>{ setSchedData(s.val()||{}); schedFired.current=true; tryReady.current(); });
+    return()=>{ conn.off(); cRef.off(); sRef.off(); };
+  },[]);
+
+  useEffect(()=>{ if(ready&&cfg.staff.length>0&&!activeEmp) setActiveEmp(cfg.staff[0].id); },[ready,cfg.staff]);
+
+  const prevMonth=()=>{ if(month===1){setMonth(12);setYear(y=>y-1);}else setMonth(m=>m-1); };
+  const nextMonth=()=>{ if(month===12){setMonth(1);setYear(y=>y+1);}else setMonth(m=>m+1); };
+
+  const saveEntry=(dateStr,empId,entry)=>{
+    const [y,m,d]=dateStr.split('-');
+    const ref=db.ref(`${SS_SCHED}/${y}/${m}/${empId}/${d}`);
+    if(entry===null) ref.remove();
+    else ref.set(entry);
+  };
+
+  const saveCfg=data=>{ const nc={...cfg,...data}; setCfg(nc); db.ref(SS_CFG).set(nc); };
+
+  const exportMonthCSV=()=>{
+    const days=daysInMonth(year,month);
+    const rows=[['Ημέρα','Ημερομηνία','Υπάλληλος','Κατάσταση','Ώρα Έναρξης','Ώρα Λήξης','Ώρες','Σημείωση']];
+    for(let d=1;d<=days;d++){
+      const dk=dateKey(year,month,d);
+      cfg.staff.forEach(emp=>{
+        const raw=schedData[year]?.[pad2(month)]?.[emp.id]?.[pad2(d)];
+        const entry=raw||getDefaultStatus(dk,emp);
+        const st=stMap[entry.status];
+        const hrs=hoursForEntry(entry,emp,dk);
+        rows.push([DOW_FULL[dow(dk)],dk,emp.name,st?.label||entry.status,entry.start||'',entry.end||'',hrs>0?hrs.toFixed(1):'',entry.note||'']);
+      });
+    }
+    const csv=rows.map(r=>r.map(v=>'"'+String(v||'').replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`SalonStaff_${MON_EL[month]}_${year}.csv`;a.click();
+  };
+
+  if(!ready) return (
+    <div className="min-h-screen hero flex flex-col items-center justify-center">
+      <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-6"/>
+      <p className="text-white font-black text-lg">SalonStaff</p>
+      <p className="text-indigo-200 text-sm mt-1">Σύνδεση Firebase...</p>
+    </div>
+  );
+
+  if(!ok) return <PinScreen cfg={cfg} onOk={()=>setOk(true)}/>;
+  if(page==='settings') return (
+    <div className="bg-gray-50 min-h-screen">
+      <Header title={cfg.salonName} sub="Ρυθμίσεις" st={st} onBack={()=>setPage('schedule')}/>
+      <Settings cfg={cfg} onSave={saveCfg} onLock={()=>setOk(false)} schedData={schedData}/>
+    </div>
+  );
+
+  const empTabs=cfg.staff;
+  const emp=empTabs.find(s=>s.id===activeEmp)||empTabs[0];
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <Header title={cfg.salonName} sub="Πρόγραμμα Υπαλλήλων" st={st} onSettings={()=>setPage('settings')}/>
+
+      {/* Month nav + view toggle */}
+      <div className="bg-white border-b border-gray-100 px-4 py-3 sticky top-[73px] z-30">
+        <div className="flex items-center gap-2 mb-2">
+          <button onClick={prevMonth} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Ic n="back" s={16} c="#374151"/></button>
+          <div className="flex-1 text-center"><p className="font-black text-gray-800">{MON_EL[month]} {year}</p></div>
+          <button onClick={nextMonth} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center flex-shrink-0"><Ic n="next" s={16} c="#374151"/></button>
+          <button onClick={exportMonthCSV} className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0 ml-1"><Ic n="download" s={16} c="#4338ca"/></button>
+        </div>
+
+        {/* View tabs */}
+        <div className="bg-gray-100 rounded-xl p-1 flex gap-1">
+          <button onClick={()=>setPage('overview')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${page==='overview'?'bg-white shadow text-indigo-700':'text-gray-500'}`}>📊 Σύνοψη</button>
+          {empTabs.map(e=>(
+            <button key={e.id} onClick={()=>{setActiveEmp(e.id);setPage('schedule');}} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all truncate px-1 ${page==='schedule'&&activeEmp===e.id?'bg-white shadow text-indigo-700':'text-gray-500'}`}>{e.name.split(' ')[0]}</button>
+          ))}
+        </div>
+      </div>
+
+      <div className="safe-pb pop" key={`${page}-${activeEmp}-${year}-${month}`}>
+        {page==='overview'&&<Overview year={year} month={month} cfg={cfg} schedData={schedData}/>}
+        {page==='schedule'&&emp&&<MonthView year={year} month={month} empId={emp.id} cfg={cfg} schedData={schedData} onEdit={(dk,e,raw)=>setModal({dateStr:dk,emp:e,entry:raw||null})}/>}
+      </div>
+
+      {modal&&<DayModal dateStr={modal.dateStr} emp={modal.emp} entry={modal.entry} onSave={(entry)=>saveEntry(modal.dateStr,modal.emp.id,entry)} onClose={()=>setModal(null)}/>}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

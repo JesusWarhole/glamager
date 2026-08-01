@@ -1,0 +1,10 @@
+# Ποτέ στο git — service account credential (πλήρης πρόσβαση στο Firebase project)
+firebase-key.json
+
+# Firebase CLI local cache/state — δεν χρειάζεται στο repo
+.firebase/
+
+# Λοιπά τυπικά
+.DS_Store
+*.log
+node_modules/

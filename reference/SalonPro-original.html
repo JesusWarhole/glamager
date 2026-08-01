@@ -1,0 +1,976 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="SalonPro">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#059669">
+  <link rel="manifest" href="manifest-salonpro.json">
+  <link rel="apple-touch-icon" href="icon-salonpro-192.png">
+  <link rel="icon" href="icon-salonpro-192.png">
+  <title>SalonPro</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.2/babel.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <style>
+    *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
+    body{background:#f1f5f9;-webkit-tap-highlight-color:transparent;overscroll-behavior:none;}
+    #root{max-width:640px;margin:0 auto;min-height:100vh;}
+    .hdr{background:linear-gradient(135deg,#064e3b 0%,#059669 100%);}
+    .hero{background:linear-gradient(135deg,#059669 0%,#10b981 100%);}
+    .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7);transition:all .15s;}
+    .pin-dot.on{background:white;transform:scale(1.15);}
+    .pin-dot.err{border-color:#fca5a5;background:#fca5a5;}
+    .pin-btn{width:72px;height:72px;border-radius:50%;background:rgba(255,255,255,.15);border:none;cursor:pointer;font-size:24px;font-weight:700;color:white;display:flex;align-items:center;justify-content:center;transition:all .1s;}
+    .pin-btn:active{background:rgba(255,255,255,.3);transform:scale(.93);}
+    .shake{animation:shake .4s ease;}
+    @keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-8px)}40%,80%{transform:translateX(8px)}}
+    .pop{animation:pop .22s ease-out;}
+    @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+    .fade{animation:fadeIn .2s ease;}
+    @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    ::-webkit-scrollbar{width:3px;}
+    ::-webkit-scrollbar-thumb{background:#d1fae5;border-radius:2px;}
+    input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
+    input[type=number]{-moz-appearance:textfield;}
+    .safe-pb{padding-bottom:max(96px,calc(80px + env(safe-area-inset-bottom)));}
+    .nav-bar{padding-bottom:max(8px,env(safe-area-inset-bottom));}
+    .card{background:white;border-radius:16px;border:1px solid #f0fdf4;box-shadow:0 1px 3px rgba(0,0,0,.06);}
+    .amt{font-variant-numeric:tabular-nums;}
+    .hero-shadow{box-shadow:0 8px 32px rgba(5,150,105,.28);}
+    .vat-glow{box-shadow:0 4px 16px rgba(245,158,11,.2);}
+    .big-input{font-size:2.4rem;font-weight:900;color:#064e3b;background:transparent;border:none;outline:none;width:100%;}
+    .big-input::placeholder{color:#d1fae5;}
+    .sync-dot{width:8px;height:8px;border-radius:50%;display:inline-block;}
+    .sync-dot.ok{background:#22c55e;}
+    .sync-dot.err{background:#ef4444;}
+    .sync-dot.spin{background:#f59e0b;animation:blink 1s infinite;}
+    @keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
+    .badge{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);color:white;border-radius:6px;padding:2px 6px;letter-spacing:.5px;}
+    .toggle-t{transition:transform .2s;}
+    select{appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect, useRef, useMemo, useCallback } = React;
+
+/* ── FIREBASE ── */
+const FB_CFG_DATA = {
+  apiKey:"AIzaSyDvs3RD386Spxx85n42SkIoDtMpsS0Ywok",
+  authDomain:"salon-info-a23ac.firebaseapp.com",
+  databaseURL:"https://salon-info-a23ac-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"salon-info-a23ac",
+  storageBucket:"salon-info-a23ac.firebasestorage.app",
+  messagingSenderId:"389409583539",
+  appId:"1:389409583539:web:ab65053284fe601a1fdbc6"
+};
+if(!firebase.apps.length||!firebase.apps.find(a=>a.name==='salonpro'))
+  firebase.initializeApp(FB_CFG_DATA,'salonpro');
+const db = firebase.app('salonpro').database();
+
+const SP_TX  = 'sp_tx_v1';
+const SP_Z   = 'sp_z_v1';
+const SP_CFG = 'sp_cfg_v1';
+
+/* ── CONSTANTS ── */
+const VAT = 0.24;
+const DEF_CFG = { pin:'1234', name:'Κομμωτήριο', staff:['Υπεύθυνος'] };
+const CAT_INC = ['Κούρεμα','Βαφή','Χτένισμα','Θεραπεία','Περμανάντ/Ισίωμα','Ισίωμα/Μπούκλες','Πακέτο Υπηρεσιών','Πώληση Προϊόντος','Άλλο'];
+const CAT_EXP = ['Προμήθειες/Υλικά','Μισθοδοσία','Ενοίκιο','ΔΕΗ/Νερό','Τηλέφωνο/Internet','Φόροι/Τέλη','Ασφάλιση','Διαφήμιση','Λογιστικά','Συντήρηση','Γενικά/Άλλα'];
+const COLORS  = ['#059669','#10b981','#34d399','#6ee7b7','#0d9488','#0891b2','#7c3aed','#db2777','#d97706','#dc2626','#65a30d'];
+
+/* ── UTILITIES ── */
+const snapToArr = snap => { const o=[]; snap.forEach(c=>{ o.push({...c.val(),_key:c.key}); }); return o; };
+const today    = () => new Date().toISOString().slice(0,10);
+const nowTime  = () => new Date().toTimeString().slice(0,5);
+const VAT_of   = g => g * VAT / (1+VAT);
+const net_of   = g => g / (1+VAT);
+const fmt      = v => `€${Number(v||0).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+const fmtD     = s => new Date(s+'T12:00:00').toLocaleDateString('el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
+const fmtDLong = s => new Date(s+'T12:00:00').toLocaleDateString('el-GR',{weekday:'long',day:'numeric',month:'long'});
+const fmtMon   = (y,m) => new Date(y,m-1,1).toLocaleDateString('el-GR',{month:'long',year:'numeric'});
+const addDays  = (s,n) => { const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
+const weekOf   = s => { const d=new Date(s+'T12:00:00'),dow=d.getDay()||7,mon=new Date(d); mon.setDate(d.getDate()-dow+1); return Array.from({length:7},(_,i)=>{ const x=new Date(mon); x.setDate(mon.getDate()+i); return x.toISOString().slice(0,10); }); };
+const monthRange  = (y,m) => { const s=`${y}-${String(m).padStart(2,'0')}-01`,e=new Date(y,m,0); return {s,e:`${y}-${String(m).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`}; };
+const quarterRange = (y,q) => { const sm=(q-1)*3+1; return {s:monthRange(y,sm).s,e:monthRange(y,sm+2).e}; };
+const inRange  = (arr,s,e) => arr.filter(t=>t.date>=s&&t.date<=e);
+
+const summarize = tx => {
+  const inc=tx.filter(t=>t.type==='income'), exp=tx.filter(t=>t.type==='expense');
+  const cash=inc.filter(t=>t.pm==='cash').reduce((s,t)=>s+t.amt,0);
+  const pos =inc.filter(t=>t.pm==='pos').reduce((s,t)=>s+t.amt,0);
+  const other=inc.filter(t=>t.pm==='other').reduce((s,t)=>s+t.amt,0);
+  const gross=cash+pos+other;
+  const tips=inc.reduce((s,t)=>s+(t.tip||0),0);
+  const posTips=inc.reduce((s,t)=>s+(t.tipPm==='pos'?(t.tip||0):0),0);
+  const vatOut=VAT_of(gross), vatIn=exp.filter(t=>t.vatDeduct).reduce((s,t)=>s+VAT_of(t.amt),0);
+  const expTotal=exp.reduce((s,t)=>s+t.amt,0);
+  return { cash,pos,other,gross,tips,posTips,net:net_of(gross),vatOut,vatIn,netVat:vatOut-vatIn,expTotal,netBalance:gross-expTotal };
+};
+
+const staffSummary = (tx, staffList) => staffList.map(name => {
+  const stx=tx.filter(t=>t.type==='income'&&t.staff===name);
+  const tips=stx.reduce((s,t)=>s+(t.tip||0),0);
+  const rev=stx.reduce((s,t)=>s+t.amt,0);
+  return { name, rev, tips, count:stx.length };
+});
+
+/* ── ICONS ── */
+const paths = {
+  home:   'M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z M9 22V12h6v10',
+  plus:   'M12 5v14 M5 12h14',
+  list:   'M3 6h18 M3 12h18 M3 18h18',
+  bar:    'M18 20V10 M12 20V4 M6 20v-6',
+  gear:   'M12 15a3 3 0 100-6 3 3 0 000 6z M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83 0 2 2 0 010-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 010-2.83 2 2 0 012.83 0l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 0 2 2 0 010 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z',
+  trash:  'M3 6h18 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6 M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
+  back:   'M19 12H5 M12 19l-7-7 7-7',
+  next:   'M5 12h14 M12 5l7 7-7 7',
+  lock:   'M19 11H5a2 2 0 00-2 2v7a2 2 0 002 2h14a2 2 0 002-2v-7a2 2 0 00-2-2z M7 11V7a5 5 0 0110 0v4',
+  check:  'M20 6L9 17l-5-5',
+  cash:   'M12 2a10 10 0 100 20A10 10 0 0012 2z M12 8v4 M12 16h.01',
+  card:   'M1 4h22v16H1z M1 10h22',
+  tag:    'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
+  note:   'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
+  user:   'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z',
+  users:  'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2 M23 21v-2a4 4 0 00-3-3.87 M16 3.13a4 4 0 010 7.75',
+  star:   'M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z',
+  zap:    'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
+  x:      'M18 6L6 18 M6 6l12 12',
+  warn:   'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9v4 M12 17h.01',
+  scissors:'M6 9a3 3 0 100-6 3 3 0 000 6z M6 21a3 3 0 100-6 3 3 0 000 6z M20 4L8.12 15.88 M14.47 14.48L20 20 M8.12 8.12L12 12',
+  download:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3',
+  cloud:  'M18 10h-1.26A8 8 0 109 20h9a5 5 0 000-10z',
+};
+const Ic = ({n,s=20,c='currentColor',cls=''}) => (
+  <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}>
+    {(paths[n]||'').split(' M').map((d,i)=><path key={i} d={i===0?d:'M'+d}/>)}
+  </svg>
+);
+
+/* ── SYNC BADGE ── */
+const SyncBadge = ({st}) => {
+  const map={ok:['ok','☁️ Συγχρ.'],err:['err','⚠️ Offline'],spin:['spin','⏳...']};
+  const [cls,lbl]=map[st]||map.spin;
+  return <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1"><span className={`sync-dot ${cls}`}/><span className="text-white text-xs font-bold">{lbl}</span></div>;
+};
+
+/* ── PIN SCREEN ── */
+const PinScreen = ({cfg,onOk}) => {
+  const [pin,setPin]=useState(''); const [err,setErr]=useState(false); const [shk,setShk]=useState(false);
+  const press=d=>{ if(pin.length>=4) return; const n=pin+d; setPin(n); if(n.length===4) setTimeout(()=>{ if(n===cfg.pin) onOk(); else{setErr(true);setShk(true);setTimeout(()=>{setPin('');setErr(false);setShk(false);},750);} },150); };
+  return (
+    <div className="min-h-screen hero flex flex-col items-center justify-center px-6">
+      <div className="text-center mb-10">
+        <div className="w-20 h-20 bg-white/20 rounded-3xl flex items-center justify-center mx-auto mb-5"><Ic n="scissors" s={36} c="white"/></div>
+        <h1 className="text-3xl font-black text-white">{cfg.name}</h1>
+        <p className="text-emerald-200 text-sm mt-1">SalonPro · Cloud Sync</p>
+      </div>
+      <div className={`flex gap-5 mb-10 ${shk?'shake':''}`}>{[0,1,2,3].map(i=><div key={i} className={`pin-dot ${pin.length>i?(err?'err':'on'):''}`}/>)}</div>
+      <div className="grid grid-cols-3 gap-4">
+        {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((b,i)=>(
+          b===''?<div key={i}/>:b==='⌫'
+            ?<button key={i} className="pin-btn" onClick={()=>setPin(p=>p.slice(0,-1))}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg></button>
+            :<button key={i} className="pin-btn" onClick={()=>press(b)}>{b}</button>
+        ))}
+      </div>
+      {err&&<p className="text-red-300 text-sm mt-6 fade">Λάθος κωδικός</p>}
+    </div>
+  );
+};
+
+/* ── HEADER ── */
+const Header = ({title,sub,st,onBack,onSettings}) => (
+  <div className="hdr px-4 pt-11 pb-4 flex items-center gap-3 sticky top-0 z-40">
+    {onBack?<button onClick={onBack} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={18} c="white"/></button>
+           :<div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="scissors" s={18} c="white"/></div>}
+    <div className="flex-1 min-w-0">
+      <div className="flex items-center gap-2"><h1 className="text-base font-black text-white truncate">{title}</h1><span className="badge">PRO</span></div>
+      {sub&&<p className="text-emerald-200 text-xs mt-0.5 truncate capitalize">{sub}</p>}
+    </div>
+    {st&&<SyncBadge st={st}/>}
+    {onSettings&&<button onClick={onSettings} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0 ml-1"><Ic n="gear" s={18} c="white"/></button>}
+  </div>
+);
+
+/* ── NAV ── */
+const Nav = ({active,go}) => {
+  const tabs=[{id:'dash',icon:'home',label:'Αρχική'},{id:'add',icon:'plus',label:'Νέα'},{id:'reg',icon:'list',label:'Ταμείο'},{id:'z',icon:'zap',label:'Z'},{id:'rep',icon:'bar',label:'Αναφορές'}];
+  return (
+    <div className="nav-bar fixed bottom-0 bg-white border-t border-gray-100 flex z-50" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
+      {tabs.map(t=>(
+        <button key={t.id} onClick={()=>go(t.id)} className={`flex-1 flex flex-col items-center pt-3 pb-1 gap-0.5 ${active===t.id?'text-emerald-600':'text-gray-400'}`}>
+          {t.id==='add'
+            ?<div className="w-12 h-12 rounded-full bg-emerald-600 flex items-center justify-center -mt-5 shadow-lg shadow-emerald-300/60 mb-0.5"><Ic n="plus" s={22} c="white"/></div>
+            :<Ic n={t.icon} s={20} c={active===t.id?'#059669':'#9ca3af'}/>}
+          <span className="text-xs">{t.label}</span>
+        </button>
+      ))}
+    </div>
+  );
+};
+
+/* ── TX ROW ── */
+const TxRow = ({t,onDel,onOpen}) => {
+  const inc=t.type==='income';
+  const pmC={cash:'bg-emerald-100',pos:'bg-blue-100',other:'bg-gray-100','n/a':'bg-red-100'};
+  const pmI={cash:'cash',pos:'card',other:'tag','n/a':'trash'};
+  const pmCol={cash:'#059669',pos:'#3b82f6',other:'#9ca3af','n/a':'#dc2626'};
+  const pmL={cash:'Μετρητά',pos:'POS',other:'Άλλο','n/a':''};
+  return (
+    <div className="card px-4 py-3 flex items-center gap-3" onClick={()=>onOpen&&onOpen(t)} style={onOpen?{cursor:'pointer'}:null}>
+      <div className={`w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center ${pmC[t.pm]||'bg-gray-100'}`}><Ic n={pmI[t.pm]||'tag'} s={17} c={pmCol[t.pm]||'#9ca3af'}/></div>
+      <div className="flex-1 min-w-0">
+        <p className="text-sm font-bold text-gray-800 truncate flex items-center gap-1">{t.cat}{t.desc&&<Ic n="note" s={13} c="#f59e0b" cls="flex-shrink-0"/>}</p>
+        <p className="text-xs text-gray-400 mt-0.5 truncate">
+          {t.staff&&<span className="text-emerald-600 font-semibold">{t.staff}</span>}
+          {t.staff&&' · '}{inc?pmL[t.pm]:''}{t.desc?' · '+t.desc:''} · {t.time}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className={`font-black text-base amt ${inc?'text-emerald-600':'text-red-500'}`}>{inc?'+':'-'}{fmt(t.amt)}</p>
+        {inc&&t.tip>0&&<p className="text-xs text-yellow-500 amt">+tip {fmt(t.tip)}</p>}
+        {inc&&<p className="text-xs text-amber-500 amt">ΦΠΑ {fmt(VAT_of(t.amt))}</p>}
+      </div>
+      {onDel&&<button onClick={e=>{e.stopPropagation();onDel(t._key);}} className="w-7 h-7 rounded-lg bg-gray-100 flex items-center justify-center ml-1 flex-shrink-0"><Ic n="x" s={13} c="#ef4444"/></button>}
+    </div>
+  );
+};
+
+
+/* ── TX DETAIL (full entry + full note) ── */
+const TxDetail = ({t,onClose}) => {
+  if(!t) return null;
+  const inc=t.type==='income';
+  const pmL={cash:'Μετρητά',pos:'POS / Κάρτα',other:'Άλλο','n/a':'—'};
+  const Row=({l,v,cls})=>(v||v===0)?<div className="flex justify-between items-start py-2 border-b border-gray-50"><span className="text-xs text-gray-400 font-semibold uppercase tracking-wide flex-shrink-0 mr-3">{l}</span><span className={`text-sm font-bold text-right ${cls||'text-gray-800'}`}>{v}</span></div>:null;
+  return (
+    <div className="fixed inset-0 flex items-end justify-center bg-black/50" style={{zIndex:70}} onClick={onClose}>
+      <div className="bg-white rounded-t-3xl w-full max-w-md p-5" style={{maxHeight:'80vh',overflowY:'auto',WebkitOverflowScrolling:'touch',overscrollBehavior:'contain',paddingBottom:'calc(2.5rem + env(safe-area-inset-bottom))'}} onClick={e=>e.stopPropagation()}>
+        <div className="w-10 h-1 bg-gray-200 rounded-full mx-auto mb-4"/>
+        <div className="flex items-center justify-between mb-1">
+          <p className={`text-xs font-black uppercase tracking-wider ${inc?'text-emerald-600':'text-red-500'}`}>{inc?'Έσοδο':'Έξοδο'}</p>
+          <button onClick={onClose} className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center"><Ic n="x" s={14} c="#6b7280"/></button>
+        </div>
+        <p className="text-lg font-black text-gray-800 mb-1">{t.cat}</p>
+        <p className={`text-3xl font-black amt mb-4 ${inc?'text-emerald-600':'text-red-500'}`}>{inc?'+':'-'}{fmt(t.amt)}</p>
+        <Row l="Ημερομηνία" v={fmtDLong(t.date)}/>
+        <Row l="Ώρα" v={t.time}/>
+        <Row l="Υπάλληλος" v={t.staff}/>
+        {inc&&<Row l="Πληρωμή" v={pmL[t.pm]||t.pm}/>}
+        {inc&&t.tip>0&&<Row l="Tip" v={fmt(t.tip)} cls="text-yellow-600 amt"/>}
+        {inc&&<Row l="ΦΠΑ 24%" v={fmt(VAT_of(t.amt))} cls="text-amber-600 amt"/>}
+        {t.desc&&(
+          <div className="mt-4">
+            <p className="text-xs text-gray-400 font-semibold uppercase tracking-wide mb-2 flex items-center gap-1"><Ic n="note" s={13} c="#f59e0b"/> Σημείωση</p>
+            <p className="text-sm text-gray-800 bg-amber-50 border border-amber-100 rounded-xl p-3 whitespace-pre-wrap break-words">{t.desc}</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+/* ── DASHBOARD ── */
+const Dashboard = ({tx,go,cfg}) => {
+  const [selTx,setSelTx]=useState(null);
+  const t=today(), now=new Date();
+  const dTx=tx.filter(x=>x.date===t);
+  const sum=summarize(dTx);
+  const recent=[...dTx].sort((a,b)=>b.time.localeCompare(a.time)).slice(0,5);
+  const wDates=weekOf(t), wSum=summarize(tx.filter(x=>wDates.includes(x.date)));
+  const {s:mS,e:mE}=monthRange(now.getFullYear(),now.getMonth()+1);
+  const mSum=summarize(inRange(tx,mS,mE));
+  const q=Math.ceil((now.getMonth()+1)/3);
+  const {s:qS,e:qE}=quarterRange(now.getFullYear(),q);
+  const qSum=summarize(inRange(tx,qS,qE));
+  const staff=staffSummary(dTx,cfg.staff||[]);
+  return (
+    <div className="safe-pb">
+      {/* Hero today */}
+      <div className="hero rounded-2xl p-5 mx-4 mt-4 hero-shadow mb-3 text-white">
+        <div className="flex items-start justify-between mb-3">
+          <div><p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider">Σήμερα — {fmtDLong(t)}</p><p className="text-4xl font-black mt-1 amt">{fmt(sum.gross)}</p></div>
+          <div className="bg-amber-400/90 rounded-xl px-3 py-2 text-center"><p className="text-amber-900 text-xs font-semibold">ΦΠΑ 24%</p><p className="text-amber-900 text-lg font-black amt">{fmt(sum.netVat)}</p></div>
+        </div>
+        <div className="grid grid-cols-4 gap-1 pt-3 border-t border-white/20 text-center text-xs">
+          {[['Μετρητά',sum.cash,'text-white'],['POS',sum.pos,'text-white'],['Tips',sum.tips,'text-yellow-300'],['Έξοδα',-sum.expTotal,'text-red-300']].map(([l,v,c])=>(
+            <div key={l}><p className="text-emerald-200">{l}</p><p className={`font-bold amt ${c}`}>{v<0?'-':''}{fmt(Math.abs(v))}</p></div>
+          ))}
+        </div>
+      </div>
+
+      {/* VAT strip */}
+      <div className="px-4 mb-3">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">ΦΠΑ για αφαίρεση</p>
+        <div className="grid grid-cols-4 gap-2">
+          {[['Σήμερα',sum.netVat,'emerald'],['Εβδ.',wSum.netVat,'teal'],['Μήνας',mSum.netVat,'violet'],['Τ'+q,qSum.netVat,'purple']].map(([l,v,c])=>(
+            <div key={l} className={`bg-${c}-50 border border-${c}-200 rounded-xl p-3 text-center`}><p className={`text-xs text-${c}-600 font-semibold`}>{l}</p><p className={`font-black text-${c}-800 amt text-sm`}>{fmt(v)}</p></div>
+          ))}
+        </div>
+      </div>
+
+      {/* Net balance */}
+      <div className="px-4 mb-3">
+        <div className={`rounded-xl p-4 flex items-center justify-between border ${sum.netBalance>=0?'bg-emerald-50 border-emerald-200':'bg-red-50 border-red-200'}`}>
+          <div><p className={`text-xs font-bold ${sum.netBalance>=0?'text-emerald-600':'text-red-500'}`}>Καθαρό Υπόλοιπο Ημέρας</p><p className={`text-2xl font-black amt mt-0.5 ${sum.netBalance>=0?'text-emerald-700':'text-red-600'}`}>{fmt(sum.netBalance)}</p></div>
+          <div className="text-right text-xs text-gray-400"><p>Χωρίς ΦΠΑ</p><p className="font-bold amt text-gray-600">{fmt(sum.net-sum.expTotal)}</p></div>
+        </div>
+      </div>
+
+      {/* Staff today */}
+      {staff.some(s=>s.count>0)&&(
+        <div className="px-4 mb-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Υπάλληλοι σήμερα</p>
+          <div className="card overflow-hidden">
+            {staff.filter(s=>s.count>0).map((s,i)=>(
+              <div key={s.name} className={`flex items-center justify-between px-4 py-3 ${i>0?'border-t border-gray-50':''}`}>
+                <div className="flex items-center gap-3"><div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center"><Ic n="user" s={15} c="#059669"/></div><div><p className="text-sm font-bold text-gray-800">{s.name}</p><p className="text-xs text-gray-400">{s.count} εγγραφές</p></div></div>
+                <div className="text-right"><p className="font-black text-emerald-600 amt">{fmt(s.rev)}</p>{s.tips>0&&<p className="text-xs text-yellow-500 amt">tip {fmt(s.tips)}</p>}</div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent */}
+      {recent.length>0?(
+        <div className="px-4">
+          <div className="flex items-center justify-between mb-2"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Πρόσφατες Εγγραφές</p><button onClick={()=>go('reg')} className="text-emerald-600 text-xs font-bold">Όλες →</button></div>
+          <div className="space-y-2">{recent.map(t=><TxRow key={t._key} t={t} onOpen={setSelTx}/>)}</div>
+        </div>
+      ):(
+        <div className="mx-4 py-14 text-center card"><Ic n="scissors" s={44} c="#d1fae5" cls="mx-auto mb-3"/><p className="text-gray-400 font-bold">Καμία εγγραφή σήμερα</p><p className="text-gray-300 text-sm mt-1">Πατήστε + για να αρχίσετε</p></div>
+      )}
+      {selTx&&<TxDetail t={selTx} onClose={()=>setSelTx(null)}/>}
+    </div>
+  );
+};
+
+/* ── ADD TRANSACTION ── */
+const AddTx = ({onAdd,go,cfg,tx}) => {
+  const [type,setType]=useState('income');
+  const [amt,setAmt]=useState('');
+  const [pm,setPm]=useState('cash');
+  const [cat,setCat]=useState('');
+  const [staff,setStaff]=useState((cfg.staff||[])[0]||'');
+  const [tip,setTip]=useState('');
+  const [tipPm,setTipPm]=useState('pos');
+  const [desc,setDesc]=useState('');
+  const [showSug,setShowSug]=useState(false);
+  const norm=s=>s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');
+  const sugList=useMemo(()=>{
+    if(!showSug||desc.trim().length<2) return [];
+    const q=norm(desc.trim());
+    const seen=new Set(), out=[];
+    const sorted=[...(tx||[])].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+    for(const t of sorted){
+      const d=(t.desc||'').trim();
+      if(!d) continue;
+      const name=d.split(/\s+/).slice(0,2).join(' ');
+      const k=norm(name);
+      if(k===q||seen.has(k)||!k.includes(q)) continue;
+      seen.add(k); out.push(name);
+      if(out.length>=5) break;
+    }
+    return out;
+  },[desc,showSug,tx]);
+  const [vd,setVd]=useState(false);
+  const [date,setDate]=useState(today());
+  const [done,setDone]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [err,setErr]=useState('');
+  const a=parseFloat(amt)||0, tp=parseFloat(tip)||0;
+  const cats=type==='income'?CAT_INC:CAT_EXP;
+  const staffList=cfg.staff||[];
+  const canSubmit=a>0&&cat&&(type==='expense'||staff);
+
+  const submit=async()=>{
+    if(!canSubmit||saving) return;
+    setSaving(true); setErr('');
+    try {
+      const data={date,time:nowTime(),type,amt:a,pm:type==='income'?pm:'n/a',cat,desc,vatDeduct:type==='expense'?vd:false};
+      if(type==='income'){ data.staff=staff; if(tp>0){data.tip=tp;data.tipPm=tipPm;} }
+      await onAdd(data);
+      setDone(true);
+      setAmt('');setCat('');setDesc('');setVd(false);setTip('');
+      setTimeout(()=>go('reg'),900);
+    } catch(e){ setErr('Σφάλμα: '+e.message); }
+    finally{ setSaving(false); }
+  };
+
+  if(done) return (
+    <div className="flex flex-col items-center justify-center py-36 fade">
+      <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center mb-4"><Ic n="check" s={40} c="#059669"/></div>
+      <p className="text-xl font-black text-gray-800">Αποθηκεύτηκε!</p>
+      <p className="text-gray-400 mt-1 text-sm">{type==='income'?'Έσοδο':'Έξοδο'} {fmt(a)}</p>
+    </div>
+  );
+
+  return (
+    <div className="px-4 safe-pb">
+      {/* Type toggle */}
+      <div className="bg-gray-100 rounded-2xl p-1 flex mt-4 mb-4">
+        <button onClick={()=>{setType('income');setCat('');}} className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${type==='income'?'bg-emerald-500 text-white shadow':'text-gray-500'}`}>↑ Έσοδο</button>
+        <button onClick={()=>{setType('expense');setCat('');}} className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${type==='expense'?'bg-red-500 text-white shadow':'text-gray-500'}`}>↓ Έξοδο</button>
+      </div>
+
+      {/* Amount */}
+      <div className="card p-5 mb-3">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Ποσό (€)</p>
+        <div className="flex items-baseline gap-2"><span className="text-3xl font-black text-gray-300">€</span><input type="number" value={amt} onChange={e=>setAmt(e.target.value)} placeholder="0,00" step="0.01" min="0" inputMode="decimal" className="big-input"/></div>
+        {a>0&&<div className="mt-3 pt-3 border-t border-gray-100 flex gap-4 text-xs"><span className="text-gray-400">ΦΠΑ: <b className="text-amber-600 amt">{fmt(VAT_of(a))}</b></span><span className="text-gray-400">Χωρίς ΦΠΑ: <b className="text-gray-600 amt">{fmt(net_of(a))}</b></span></div>}
+      </div>
+
+      {/* Date */}
+      <div className="card px-4 py-3 flex items-center gap-3 mb-3">
+        <Ic n="back" s={15} c="#9ca3af"/>
+        <input type="date" value={date} onChange={e=>setDate(e.target.value)} max={today()} className="flex-1 text-sm font-bold text-gray-700 outline-none bg-transparent"/>
+      </div>
+
+      {/* Staff (income only) */}
+      {type==='income'&&staffList.length>0&&(
+        <div className="card px-4 py-3 mb-3 flex items-center gap-3">
+          <Ic n="user" s={17} c="#059669"/>
+          <select value={staff} onChange={e=>setStaff(e.target.value)} className="flex-1 text-sm font-bold text-gray-700 outline-none bg-transparent pr-6">
+            {staffList.map(s=><option key={s} value={s}>{s}</option>)}
+          </select>
+        </div>
+      )}
+
+      {/* Payment method (income only) */}
+      {type==='income'&&(
+        <div className="card p-4 mb-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Τρόπος Πληρωμής</p>
+          <div className="flex gap-2">
+            {[['cash','Μετρητά','cash'],['pos','POS / Κάρτα','card'],['other','Άλλο','tag']].map(([v,l,ic])=>(
+              <button key={v} onClick={()=>setPm(v)} className={`flex-1 flex flex-col items-center gap-1.5 py-3 rounded-xl border-2 ${pm===v?'border-emerald-500 bg-emerald-50':'border-gray-200 bg-gray-50'}`}>
+                <Ic n={ic} s={17} c={pm===v?'#059669':'#9ca3af'}/><span className={`text-xs font-bold ${pm===v?'text-emerald-700':'text-gray-500'}`}>{l}</span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Tip (income only) */}
+      {type==='income'&&(
+        <div className="card p-4 mb-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Φιλοδώρημα (προαιρετικό)</p>
+          <div className="flex gap-3 items-center">
+            <div className="flex-1 flex items-baseline gap-1"><span className="text-lg font-black text-gray-300">€</span><input type="number" value={tip} onChange={e=>setTip(e.target.value)} placeholder="0,00" step="0.01" min="0" inputMode="decimal" className="text-xl font-black text-yellow-600 bg-transparent border-none outline-none w-full"/></div>
+            {tp>0&&<div className="flex gap-1">
+              {[['cash','Μετρ.'],['pos','POS']].map(([v,l])=>(
+                <button key={v} onClick={()=>setTipPm(v)} className={`px-3 py-1.5 rounded-lg text-xs font-bold border ${tipPm===v?'bg-yellow-500 text-white border-yellow-500':'bg-gray-50 text-gray-500 border-gray-200'}`}>{l}</button>
+              ))}
+            </div>}
+          </div>
+        </div>
+      )}
+
+      {/* Category */}
+      <div className="card p-4 mb-3">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Κατηγορία</p>
+        <div className="flex flex-wrap gap-2">
+          {cats.map(c=><button key={c} onClick={()=>setCat(c)} className={`px-3 py-1.5 rounded-xl text-xs font-bold border ${cat===c?'bg-emerald-600 text-white border-emerald-600':'bg-gray-50 text-gray-600 border-gray-200'}`}>{c}</button>)}
+        </div>
+      </div>
+
+      {/* VAT deductible (expense only) */}
+      {type==='expense'&&(
+        <div className="card px-4 py-3.5 flex items-center justify-between mb-3">
+          <div><p className="text-sm font-bold text-gray-700">Εκπεστέο ΦΠΑ</p><p className="text-xs text-gray-400">Έχω τιμολόγιο με ΦΠΑ 24%</p></div>
+          <button onClick={()=>setVd(!vd)} className={`w-12 h-6 rounded-full flex items-center ${vd?'bg-emerald-600':'bg-gray-300'}`}><div className="toggle-t w-5 h-5 bg-white rounded-full shadow mx-0.5" style={{transform:vd?'translateX(24px)':''}}/></button>
+        </div>
+      )}
+
+      {/* Note */}
+      <div className="mb-5">
+        <div className="card px-4 py-3"><input type="text" value={desc} onChange={e=>{setDesc(e.target.value);setShowSug(true);}} placeholder="Σημείωση (προαιρετικό)..." className="w-full text-sm text-gray-700 outline-none bg-transparent"/></div>
+        {sugList.length>0&&(
+          <div className="mt-2 flex flex-wrap gap-2">
+            {sugList.map(s=>(
+              <button key={s} type="button" onClick={()=>{setDesc(s);setShowSug(false);}} className="px-3 py-2 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-sm font-semibold max-w-full truncate">{s}</button>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {err&&<div className="mb-3 px-4 py-3 bg-red-50 border border-red-200 rounded-2xl text-red-600 text-sm font-bold">{err}</div>}
+
+      <button onClick={submit} disabled={!canSubmit||saving} className={`w-full py-4 rounded-2xl font-black text-white text-base ${canSubmit&&!saving?(type==='income'?'bg-emerald-600 shadow-lg shadow-emerald-200':'bg-red-500 shadow-lg shadow-red-200'):'bg-gray-300'}`}>
+        {saving?'⏳ Αποθήκευση...':(type==='income'?'↑ Καταχώρηση Εσόδου':'↓ Καταχώρηση Εξόδου')}
+      </button>
+    </div>
+  );
+};
+
+/* ── REGISTER ── */
+const Register = ({tx,onDel,cfg}) => {
+  const [date,setDate]=useState(today());
+  const [filterStaff,setFilterStaff]=useState('all');
+  const [selTx,setSelTx]=useState(null);
+  const prev=()=>setDate(addDays(date,-1));
+  const next=()=>{ const n=addDays(date,1); if(n<=today()) setDate(n); };
+  const dTx=tx.filter(t=>t.date===date).sort((a,b)=>b.time.localeCompare(a.time));
+  const fTx=filterStaff==='all'?dTx:dTx.filter(t=>t.staff===filterStaff);
+  const sum=summarize(dTx);
+  const incTx=fTx.filter(t=>t.type==='income'), expTx=fTx.filter(t=>t.type==='expense');
+  const staffList=cfg.staff||[];
+  return (
+    <div className="safe-pb">
+      {/* Date nav */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-100 sticky top-[73px] z-30">
+        <button onClick={prev} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"><Ic n="back" s={16} c="#374151"/></button>
+        <div className="flex-1 text-center"><input type="date" value={date} onChange={e=>e.target.value<=today()&&setDate(e.target.value)} max={today()} id="regDate" className="sr-only"/><label htmlFor="regDate" className="text-sm font-black text-gray-700 cursor-pointer">{date===today()?'📅 Σήμερα':fmtDLong(date).split(',')[0]+', '+fmtD(date)}</label></div>
+        <button onClick={next} disabled={date>=today()} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center disabled:opacity-30"><Ic n="next" s={16} c="#374151"/></button>
+      </div>
+
+      {/* Staff filter */}
+      {staffList.length>1&&(
+        <div className="px-4 pt-3 flex gap-2 overflow-x-auto pb-1">
+          <button onClick={()=>setFilterStaff('all')} className={`px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0 ${filterStaff==='all'?'bg-emerald-600 text-white':'bg-white text-gray-500 border border-gray-200'}`}>Όλοι</button>
+          {staffList.map(s=><button key={s} onClick={()=>setFilterStaff(s)} className={`px-3 py-1.5 rounded-full text-xs font-bold flex-shrink-0 ${filterStaff===s?'bg-emerald-600 text-white':'bg-white text-gray-500 border border-gray-200'}`}>{s}</button>)}
+        </div>
+      )}
+
+      {/* Summary */}
+      <div className="mx-4 mt-3 mb-3 card overflow-hidden">
+        <div className="px-4 py-2 bg-gray-50 border-b border-gray-100"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Σύνοψη {fmtD(date)}</p></div>
+        <div className="grid grid-cols-3 divide-x divide-gray-100">
+          {[['Μετρητά',sum.cash,'emerald'],['POS',sum.pos,'blue'],['Σύνολο',sum.gross,'emerald']].map(([l,v,c])=>(
+            <div key={l} className="p-3 text-center"><p className="text-xs text-gray-400 mb-1">{l}</p><p className={`font-black text-${c}-600 amt`}>{fmt(v)}</p></div>
+          ))}
+        </div>
+        <div className="grid grid-cols-3 divide-x divide-gray-100 border-t border-gray-100">
+          <div className="p-3 text-center"><p className="text-xs text-gray-400 mb-1">Έξοδα</p><p className="font-bold text-red-500 amt">-{fmt(sum.expTotal)}</p></div>
+          <div className="p-3 text-center"><p className="text-xs text-amber-500 mb-1">ΦΠΑ αφαίρεση</p><p className="font-bold text-amber-700 amt">{fmt(sum.netVat)}</p></div>
+          <div className="p-3 text-center"><p className="text-xs text-yellow-500 mb-1">Tips</p><p className="font-bold text-yellow-600 amt">{fmt(sum.tips)}</p></div>
+        </div>
+        <div className="px-4 py-3 bg-emerald-50 border-t border-emerald-100 flex justify-between items-center">
+          <span className="text-sm font-black text-emerald-700">Καθαρό Υπόλοιπο</span>
+          <span className={`text-lg font-black amt ${sum.netBalance>=0?'text-emerald-600':'text-red-600'}`}>{fmt(sum.netBalance)}</span>
+        </div>
+      </div>
+
+      {/* Lists */}
+      <div className="px-4 mb-3">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Έσοδα ({incTx.length})</p>
+        {incTx.length===0?<div className="py-6 text-center text-gray-300 text-sm card">Δεν υπάρχουν έσοδα</div>:<div className="space-y-2">{incTx.map(t=><TxRow key={t._key} t={t} onDel={onDel} onOpen={setSelTx}/>)}</div>}
+      </div>
+      {expTx.length>0&&<div className="px-4 mb-3"><p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-2">Έξοδα ({expTx.length})</p><div className="space-y-2">{expTx.map(t=><TxRow key={t._key} t={t} onDel={onDel} onOpen={setSelTx}/>)}</div></div>}
+      {dTx.length===0&&<div className="mx-4 py-12 text-center card"><Ic n="list" s={40} c="#d1fae5" cls="mx-auto mb-3"/><p className="text-gray-400 font-bold">Καμία εγγραφή για αυτή την ημέρα</p></div>}
+      {selTx&&<TxDetail t={selTx} onClose={()=>setSelTx(null)}/>}
+    </div>
+  );
+};
+
+/* ── Z RECONCILIATION ── */
+const ZReport = ({tx,zmap,onSaveZ,cfg}) => {
+  const [date,setDate]=useState(today());
+  const prev=()=>setDate(addDays(date,-1));
+  const next=()=>{ const n=addDays(date,1); if(n<=today()) setDate(n); };
+
+  const dTx=tx.filter(t=>t.date===date);
+  const sum=summarize(dTx);
+  const appPosTotal=sum.pos+sum.posTips; // what POS terminal should show (service + tips)
+  const staff=staffSummary(dTx,cfg.staff||[]);
+  const zEntry=zmap[date]||{};
+
+  const [cashZ,setCashZ]=useState('');
+  const [posZ,setPosZ]=useState('');
+  const [notes,setNotes]=useState('');
+  const [tipsGiven,setTipsGiven]=useState(false);
+  const [saving,setSaving]=useState(false);
+  const [saved,setSaved]=useState(false);
+
+  useEffect(()=>{
+    const z=zmap[date]||{};
+    setCashZ(z.cashZ!=null?String(z.cashZ):'');
+    setPosZ(z.posZ!=null?String(z.posZ):'');
+    setNotes(z.notes||'');
+    setTipsGiven(z.tipsGiven||false);
+    setSaved(false);
+  },[date,zmap]);
+
+  const cashZn=parseFloat(cashZ)||0, posZn=parseFloat(posZ)||0;
+  const cashDiff=cashZn-sum.cash, posDiff=posZn-appPosTotal;
+  const hasMachineData=cashZn>0||posZn>0;
+
+  const save=async()=>{
+    setSaving(true);
+    try{ await onSaveZ(date,{cashZ:cashZn,posZ:posZn,notes,tipsGiven}); setSaved(true); }
+    catch(e){ alert('Σφάλμα αποθήκευσης'); }
+    finally{ setSaving(false); }
+  };
+
+  const DiffBadge=({val})=>{
+    if(!hasMachineData) return null;
+    const ok=Math.abs(val)<0.01;
+    return <span className={`text-xs font-black px-2 py-0.5 rounded-full ${ok?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-600'}`}>{ok?'✓ OK':(val>0?'+':'')+fmt(val)}</span>;
+  };
+
+  return (
+    <div className="safe-pb">
+      {/* Date nav */}
+      <div className="flex items-center gap-2 px-4 py-3 bg-white border-b border-gray-100 sticky top-[73px] z-30">
+        <button onClick={prev} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center"><Ic n="back" s={16} c="#374151"/></button>
+        <div className="flex-1 text-center"><input type="date" value={date} onChange={e=>e.target.value<=today()&&setDate(e.target.value)} max={today()} id="zDate" className="sr-only"/><label htmlFor="zDate" className="text-sm font-black text-gray-700 cursor-pointer">{date===today()?'📅 Σήμερα':fmtDLong(date).split(',')[0]+', '+fmtD(date)}</label></div>
+        <button onClick={next} disabled={date>=today()} className="w-9 h-9 rounded-xl bg-gray-100 flex items-center justify-center disabled:opacity-30"><Ic n="next" s={16} c="#374151"/></button>
+      </div>
+
+      <div className="px-4 mt-4 space-y-3">
+        {/* App calculated */}
+        <div className="card overflow-hidden">
+          <div className="px-4 py-2.5 bg-emerald-600"><p className="text-xs font-black text-white uppercase tracking-wider">📱 Εφαρμογή — Υπολογισμός</p></div>
+          <div className="divide-y divide-gray-50">
+            {[['Μετρητά (υπηρεσίες)',sum.cash],['POS (υπηρεσίες)',sum.pos],['Tips POS',sum.posTips],['─── Σύνολο POS terminal',appPosTotal],['Έξοδα',-sum.expTotal]].map(([l,v])=>(
+              <div key={l} className="flex justify-between items-center px-4 py-2.5">
+                <span className={`text-sm ${l.startsWith('─')?'font-black text-gray-700':'text-gray-600'}`}>{l.replace('─── ','')}</span>
+                <span className={`font-bold amt text-sm ${l.includes('Έξοδα')?'text-red-500':l.startsWith('─')?'text-blue-600':'text-gray-800'}`}>{v<0?'-':''}{fmt(Math.abs(v))}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Machine input */}
+        <div className="card overflow-hidden">
+          <div className="px-4 py-2.5 bg-gray-700"><p className="text-xs font-black text-white uppercase tracking-wider">🖨️ Από Μηχανές — Εισαγωγή Z</p></div>
+          <div className="p-4 space-y-3">
+            <div>
+              <p className="text-xs font-bold text-gray-400 mb-1">Ταμειακή Μηχανή Z (μετρητά)</p>
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                <span className="text-gray-400 font-bold">€</span>
+                <input type="number" value={cashZ} onChange={e=>setCashZ(e.target.value)} placeholder="0,00" step="0.01" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-gray-800 text-lg"/>
+                <DiffBadge val={cashDiff}/>
+              </div>
+            </div>
+            <div>
+              <p className="text-xs font-bold text-gray-400 mb-1">POS Terminal Z (υπηρεσίες + tips)</p>
+              <div className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-3 border border-gray-200">
+                <span className="text-gray-400 font-bold">€</span>
+                <input type="number" value={posZ} onChange={e=>setPosZ(e.target.value)} placeholder="0,00" step="0.01" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-gray-800 text-lg"/>
+                <DiffBadge val={posDiff}/>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Diff summary */}
+        {hasMachineData&&(
+          <div className={`card overflow-hidden ${Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'border-emerald-200':'border-red-200'}`}>
+            <div className={`px-4 py-2.5 ${Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'bg-emerald-50':'bg-red-50'}`}><p className="text-xs font-black text-gray-700 uppercase tracking-wider">⚖️ Διαφορές</p></div>
+            <div className="divide-y divide-gray-50">
+              {[['Ταμειακή',cashDiff],['POS Terminal',posDiff]].map(([l,v])=>(
+                <div key={l} className="flex justify-between items-center px-4 py-3">
+                  <span className="text-sm text-gray-600">{l}</span>
+                  <span className={`font-black text-sm amt ${Math.abs(v)<0.01?'text-emerald-600':v>0?'text-blue-600':'text-red-600'}`}>{Math.abs(v)<0.01?'✓ Μηδέν':(v>0?'+'  :'')+fmt(v)}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Tips per staff */}
+        {staff.some(s=>s.tips>0)&&(
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2.5 bg-yellow-50 border-b border-yellow-100 flex items-center justify-between">
+              <p className="text-xs font-black text-yellow-700 uppercase tracking-wider">💛 Tips — Διανομή</p>
+              <button onClick={()=>setTipsGiven(!tipsGiven)} className={`flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${tipsGiven?'bg-emerald-500 text-white border-emerald-500':'bg-white text-gray-500 border-gray-300'}`}>
+                {tipsGiven?'✓ Δόθηκαν':'Εκκρεμούν'}
+              </button>
+            </div>
+            <div className="divide-y divide-gray-50">
+              {staff.filter(s=>s.tips>0).map(s=>(
+                <div key={s.name} className="flex justify-between items-center px-4 py-3">
+                  <div className="flex items-center gap-2"><Ic n="user" s={15} c="#059669"/><span className="text-sm font-bold text-gray-700">{s.name}</span></div>
+                  <span className="font-black text-yellow-600 amt">{fmt(s.tips)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between items-center px-4 py-3 bg-yellow-50">
+                <span className="text-sm font-black text-yellow-700">Σύνολο Tips</span>
+                <span className="font-black text-yellow-700 amt">{fmt(staff.reduce((s,x)=>s+x.tips,0))}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Notes */}
+        <div className="card px-4 py-3">
+          <input type="text" value={notes} onChange={e=>setNotes(e.target.value)} placeholder="Σημειώσεις Z..." className="w-full text-sm text-gray-700 outline-none bg-transparent"/>
+        </div>
+
+        <button onClick={save} disabled={saving} className={`w-full py-4 rounded-2xl font-black text-white text-base ${saving?'bg-gray-300':'bg-emerald-600 shadow-lg shadow-emerald-200'}`}>
+          {saving?'⏳...':(saved?'✓ Αποθηκεύτηκε':'💾 Αποθήκευση Z')}
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ── REPORTS ── */
+const Reports = ({tx,cfg}) => {
+  const [tab,setTab]=useState('month');
+  const [mo,setMo]=useState(()=>{ const d=new Date(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`; });
+  const [yr,setYr]=useState(new Date().getFullYear());
+  const [q,setQ]=useState(Math.ceil((new Date().getMonth()+1)/3));
+  const chartRef=useRef(null); const chartObj=useRef(null);
+
+  const {filtTx,label}=useMemo(()=>{
+    if(tab==='week'){ const wd=weekOf(today()); return {filtTx:tx.filter(t=>wd.includes(t.date)),label:`Εβδομάδα ${fmtD(wd[0])} – ${fmtD(wd[6])}`}; }
+    if(tab==='month'){ const [y,m]=mo.split('-').map(Number); const {s,e}=monthRange(y,m); return {filtTx:inRange(tx,s,e),label:fmtMon(y,m)}; }
+    const {s,e}=quarterRange(yr,q); return {filtTx:inRange(tx,s,e),label:`Τρίμηνο Τ${q}/${yr}`};
+  },[tab,mo,yr,q,tx]);
+
+  const sum=summarize(filtTx);
+  const staffData=staffSummary(filtTx,cfg.staff||[]);
+  const catAcc={}; filtTx.filter(t=>t.type==='income').forEach(t=>{ catAcc[t.cat]=(catAcc[t.cat]||0)+t.amt; });
+  const catEntries=Object.entries(catAcc).sort((a,b)=>b[1]-a[1]);
+  const avgTx=filtTx.filter(t=>t.type==='income').length>0?sum.gross/filtTx.filter(t=>t.type==='income').length:0;
+
+  useEffect(()=>{
+    if(!chartRef.current||catEntries.length===0) return;
+    if(chartObj.current) chartObj.current.destroy();
+    chartObj.current=new Chart(chartRef.current,{type:'doughnut',data:{labels:catEntries.map(e=>e[0]),datasets:[{data:catEntries.map(e=>e[1]),backgroundColor:COLORS,borderWidth:2,borderColor:'#fff'}]},options:{plugins:{legend:{position:'bottom',labels:{font:{size:11,family:'Inter'},padding:12}}},cutout:'65%'}});
+    return ()=>{ if(chartObj.current) chartObj.current.destroy(); };
+  },[catEntries.map(e=>e[0]+e[1]).join()]);
+
+  const exportCSV=()=>{
+    const rows=[['Ημερομηνία','Ώρα','Τύπος','Ποσό','Τρόπος Πληρωμής','Κατηγορία','Υπάλληλος','Tip','ΦΠΑ','Σημείωση'],...filtTx.map(t=>[t.date,t.time,t.type==='income'?'Έσοδο':'Έξοδο',t.amt,t.pm,t.cat,t.staff||'',t.tip||0,t.type==='income'?VAT_of(t.amt).toFixed(2):0,t.desc||''])];
+    const csv=rows.map(r=>r.map(v=>'"'+String(v).replace(/"/g,'""')+'"').join(',')).join('\n');
+    const blob=new Blob(['﻿'+csv],{type:'text/csv;charset=utf-8'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`SalonPro_${label}.csv`; a.click();
+  };
+
+  return (
+    <div className="safe-pb">
+      {/* Period tabs */}
+      <div className="bg-white border-b border-gray-100 px-4 pt-3 pb-3 sticky top-[73px] z-30">
+        <div className="bg-gray-100 rounded-xl p-1 flex gap-1">
+          {[['week','Εβδ.'],['month','Μήνας'],['quarter','Τρίμηνο']].map(([v,l])=>(
+            <button key={v} onClick={()=>setTab(v)} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${tab===v?'bg-white shadow text-emerald-700':'text-gray-500'}`}>{l}</button>
+          ))}
+        </div>
+        {tab==='month'&&<input type="month" value={mo} onChange={e=>setMo(e.target.value)} className="mt-2 w-full text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2"/>}
+        {tab==='quarter'&&(
+          <div className="mt-2 flex gap-2">
+            <select value={q} onChange={e=>setQ(Number(e.target.value))} className="flex-1 text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2">
+              {[1,2,3,4].map(i=><option key={i} value={i}>Τ{i}</option>)}
+            </select>
+            <select value={yr} onChange={e=>setYr(Number(e.target.value))} className="flex-1 text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2">
+              {[2024,2025,2026,2027].map(y=><option key={y} value={y}>{y}</option>)}
+            </select>
+          </div>
+        )}
+      </div>
+
+      <div className="px-4 mt-4 space-y-3">
+        {/* Main KPIs */}
+        <div className="hero rounded-2xl p-5 text-white hero-shadow">
+          <p className="text-emerald-200 text-xs font-semibold uppercase tracking-wider mb-1">{label}</p>
+          <p className="text-4xl font-black amt mb-3">{fmt(sum.gross)}</p>
+          <div className="grid grid-cols-3 gap-2 pt-3 border-t border-white/20 text-center text-xs">
+            {[['Μετρητά',sum.cash],['POS',sum.pos],['Tips',sum.tips]].map(([l,v])=>(
+              <div key={l}><p className="text-emerald-200">{l}</p><p className="font-bold amt">{fmt(v)}</p></div>
+            ))}
+          </div>
+        </div>
+
+        {/* VAT + Net */}
+        <div className="grid grid-cols-2 gap-2">
+          <div className="card p-4 text-center"><p className="text-xs text-amber-600 font-bold mb-1">ΦΠΑ να κρατηθεί</p><p className="text-2xl font-black text-amber-700 amt">{fmt(sum.netVat)}</p><p className="text-xs text-gray-400 mt-1">Εκροές - Εισροές</p></div>
+          <div className="card p-4 text-center"><p className="text-xs text-gray-500 font-bold mb-1">Μέσος Λογ/σμός</p><p className="text-2xl font-black text-gray-700 amt">{fmt(avgTx)}</p><p className="text-xs text-gray-400 mt-1">{filtTx.filter(t=>t.type==='income').length} συναλλαγές</p></div>
+        </div>
+        <div className="card p-4 flex justify-between items-center">
+          <div><p className="text-xs text-gray-500 font-bold">Καθαρό Υπόλοιπο</p><p className="text-xs text-gray-400 mt-0.5">Έσοδα - Έξοδα</p></div>
+          <p className={`text-2xl font-black amt ${sum.netBalance>=0?'text-emerald-600':'text-red-600'}`}>{fmt(sum.netBalance)}</p>
+        </div>
+
+        {/* VAT breakdown */}
+        <div className="card overflow-hidden">
+          <div className="px-4 py-2.5 bg-amber-50 border-b border-amber-100"><p className="text-xs font-black text-amber-700 uppercase tracking-wider">ΦΠΑ Ανάλυση (για λογιστή)</p></div>
+          <div className="divide-y divide-gray-50">
+            {[['ΦΠΑ Εκροών (εισπράχθηκε)',sum.vatOut,'text-red-600'],['ΦΠΑ Εισροών (εκπεστέο)',sum.vatIn,'text-emerald-600'],['Καθαρό ΦΠΑ (πληρωτέο)',sum.netVat,'text-amber-700 font-black text-lg']].map(([l,v,c])=>(
+              <div key={l} className="flex justify-between items-center px-4 py-3">
+                <span className="text-sm text-gray-600">{l}</span>
+                <span className={`amt font-bold ${c}`}>{fmt(v)}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Staff breakdown */}
+        {staffData.some(s=>s.count>0)&&(
+          <div className="card overflow-hidden">
+            <div className="px-4 py-2.5 bg-emerald-50 border-b border-emerald-100"><p className="text-xs font-black text-emerald-700 uppercase tracking-wider">Ανά Υπάλληλο</p></div>
+            <div className="divide-y divide-gray-50">
+              {staffData.filter(s=>s.count>0).sort((a,b)=>b.rev-a.rev).map(s=>(
+                <div key={s.name} className="px-4 py-3 flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0"><Ic n="user" s={14} c="#059669"/></div>
+                  <div className="flex-1 min-w-0"><p className="text-sm font-bold text-gray-800">{s.name}</p><p className="text-xs text-gray-400">{s.count} εγγραφές</p></div>
+                  <div className="text-right"><p className="font-black text-emerald-600 amt">{fmt(s.rev)}</p>{s.tips>0&&<p className="text-xs text-yellow-500 amt">+tip {fmt(s.tips)}</p>}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Category chart */}
+        {catEntries.length>0&&(
+          <div className="card p-4">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Έσοδα ανά Κατηγορία</p>
+            <div className="flex justify-center mb-3"><canvas ref={chartRef} width="220" height="220"/></div>
+            <div className="space-y-2 mt-2">
+              {catEntries.map(([cat,val],i)=>(
+                <div key={cat} className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full flex-shrink-0" style={{background:COLORS[i%COLORS.length]}}/>
+                  <span className="text-xs text-gray-600 flex-1 truncate">{cat}</span>
+                  <span className="text-xs font-bold text-gray-700 amt">{fmt(val)}</span>
+                  <span className="text-xs text-gray-400 w-10 text-right">{sum.gross>0?Math.round(val/sum.gross*100):0}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Export */}
+        {filtTx.length>0&&(
+          <button onClick={exportCSV} className="w-full py-4 rounded-2xl font-black text-emerald-700 text-sm bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center gap-2">
+            <Ic n="download" s={18} c="#059669"/>Εξαγωγή CSV για λογιστή
+          </button>
+        )}
+        {filtTx.length===0&&<div className="py-12 text-center card"><Ic n="bar" s={40} c="#d1fae5" cls="mx-auto mb-3"/><p className="text-gray-400 font-bold">Δεν υπάρχουν δεδομένα</p></div>}
+      </div>
+    </div>
+  );
+};
+
+/* ── SETTINGS ── */
+const Settings = ({cfg,tx,onSave,onLock,st}) => {
+  const [pin,setPin]=useState(cfg.pin);
+  const [name,setName]=useState(cfg.name);
+  const [staff,setStaff]=useState(cfg.staff||['Υπεύθυνος']);
+  const [newStaff,setNewStaff]=useState('');
+  const [done,setDone]=useState(false);
+
+  const addStaff=()=>{ const n=newStaff.trim(); if(!n||staff.includes(n)) return; setStaff([...staff,n]); setNewStaff(''); };
+  const removeStaff=n=>{ if(staff.length<=1){alert('Πρέπει να υπάρχει τουλάχιστον ένας υπάλληλος.');return;} setStaff(staff.filter(s=>s!==n)); };
+  const save=()=>{ if(!/^\d{4}$/.test(pin)){alert('PIN: 4 ψηφία');return;} onSave({pin,name,staff}); setDone(true); setTimeout(()=>setDone(false),2000); };
+
+  const exportAll=()=>{
+    const blob=new Blob([JSON.stringify({tx,cfg,exportedAt:new Date().toISOString()},null,2)],{type:'application/json'});
+    const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=`SalonPro_backup_${today()}.json`; a.click();
+  };
+
+  return (
+    <div className="px-4 safe-pb">
+      <div className="space-y-3 mt-4">
+        <div className="card p-4 space-y-3">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider">Επωνυμία</p>
+          <input type="text" value={name} onChange={e=>setName(e.target.value)} className="w-full text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2.5"/>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-2">PIN (4 ψηφία)</p>
+          <input type="password" value={pin} onChange={e=>setPin(e.target.value)} maxLength={4} inputMode="numeric" className="w-full text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2.5"/>
+        </div>
+
+        {/* Staff management */}
+        <div className="card p-4">
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Υπάλληλοι</p>
+          <div className="space-y-2 mb-3">
+            {staff.map(s=>(
+              <div key={s} className="flex items-center justify-between bg-gray-50 rounded-xl px-3 py-2.5">
+                <div className="flex items-center gap-2"><Ic n="user" s={15} c="#059669"/><span className="text-sm font-bold text-gray-700">{s}</span></div>
+                {staff.length>1&&<button onClick={()=>removeStaff(s)} className="w-7 h-7 rounded-lg bg-red-50 flex items-center justify-center"><Ic n="x" s={13} c="#ef4444"/></button>}
+              </div>
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <input type="text" value={newStaff} onChange={e=>setNewStaff(e.target.value)} onKeyDown={e=>e.key==='Enter'&&addStaff()} placeholder="Όνομα νέου/ας..." className="flex-1 text-sm font-bold text-gray-700 outline-none bg-gray-50 rounded-xl px-3 py-2.5"/>
+            <button onClick={addStaff} disabled={!newStaff.trim()} className="px-4 py-2 bg-emerald-600 text-white rounded-xl font-bold text-sm disabled:opacity-40">+</button>
+          </div>
+        </div>
+
+        <div className="flex gap-2">
+          <SyncBadge st={st}/>
+        </div>
+
+        <button onClick={save} className="w-full py-4 rounded-2xl font-black text-white bg-emerald-600 shadow-lg shadow-emerald-200">
+          {done?'✓ Αποθηκεύτηκε':'💾 Αποθήκευση Ρυθμίσεων'}
+        </button>
+        <button onClick={exportAll} className="w-full py-3.5 rounded-2xl font-bold text-emerald-700 bg-emerald-50 border-2 border-emerald-200 flex items-center justify-center gap-2">
+          <Ic n="download" s={17} c="#059669"/>Εξαγωγή Backup (JSON)
+        </button>
+        <button onClick={onLock} className="w-full py-3.5 rounded-2xl font-bold text-gray-500 bg-gray-100 flex items-center justify-center gap-2">
+          <Ic n="lock" s={17} c="#9ca3af"/>Κλείδωμα
+        </button>
+      </div>
+    </div>
+  );
+};
+
+/* ── APP ROOT ── */
+const App = () => {
+  const [ok,setOk]=useState(false);
+  const [page,setPage]=useState('dash');
+  const [tx,setTx]=useState([]);
+  const [zmap,setZmap]=useState({});
+  const [cfg,setCfg]=useState(DEF_CFG);
+  const [st,setSt]=useState('spin');
+  const [ready,setReady]=useState(false);
+  const txFired=useRef(false); const cfgFired=useRef(false);
+  const tryReady=useRef(()=>{});
+
+  useEffect(()=>{
+    tryReady.current=()=>{ if(txFired.current&&cfgFired.current) setReady(true); };
+    const conn=db.ref('.info/connected'); conn.on('value',s=>setSt(s.val()?'ok':'err'));
+    const txRef=db.ref(SP_TX); txRef.on('value',s=>{ setTx(snapToArr(s)); txFired.current=true; tryReady.current(); });
+    const zRef=db.ref(SP_Z); zRef.on('value',s=>{ const v=s.val(); setZmap(v||{}); });
+    const cRef=db.ref(SP_CFG); cRef.on('value',s=>{ const v=s.val(); if(v) setCfg({...DEF_CFG,...v,staff:v.staff||DEF_CFG.staff}); cfgFired.current=true; tryReady.current(); },()=>{ cfgFired.current=true; tryReady.current(); });
+    return ()=>{ conn.off(); txRef.off(); zRef.off(); cRef.off(); };
+  },[]);
+
+  const addTx =async data=>db.ref(SP_TX).push(data);
+  const delTx =async key=>{ if(!confirm('Διαγραφή εγγραφής;')) return; db.ref(`${SP_TX}/${key}`).remove(); };
+  const saveCfg=data=>{ const nc={...cfg,...data}; setCfg(nc); db.ref(SP_CFG).set(nc); };
+  const saveZ  =async(date,data)=>db.ref(`${SP_Z}/${date}`).set(data);
+
+  if(!ready) return (
+    <div className="min-h-screen hero flex flex-col items-center justify-center">
+      <div className="w-16 h-16 border-4 border-white/30 border-t-white rounded-full animate-spin mb-6"/>
+      <p className="text-white font-black text-lg">SalonPro</p>
+      <p className="text-emerald-200 text-sm mt-1">Σύνδεση Firebase...</p>
+    </div>
+  );
+
+  if(!ok) return <PinScreen cfg={cfg} onOk={()=>setOk(true)}/>;
+
+  const titles={dash:[cfg.name,'Αρχική'],add:[cfg.name,'Νέα Εγγραφή'],reg:[cfg.name,'Ταμείο'],z:[cfg.name,'Z Ημέρας'],rep:[cfg.name,'Αναφορές'],set:[cfg.name,'Ρυθμίσεις']};
+  const [title,sub]=titles[page]||[cfg.name,''];
+
+  return (
+    <div className="bg-gray-50 min-h-screen">
+      <Header title={title} sub={sub} st={st} onBack={page==='set'?()=>setPage('dash'):null} onSettings={page!=='set'?()=>setPage('set'):null}/>
+      <div className="pop" key={page}>
+        {page==='dash'&&<Dashboard tx={tx} go={setPage} cfg={cfg}/>}
+        {page==='add' &&<AddTx onAdd={addTx} go={setPage} cfg={cfg} tx={tx}/>}
+        {page==='reg' &&<Register tx={tx} onDel={delTx} cfg={cfg}/>}
+        {page==='z'   &&<ZReport tx={tx} zmap={zmap} onSaveZ={saveZ} cfg={cfg}/>}
+        {page==='rep' &&<Reports tx={tx} cfg={cfg}/>}
+        {page==='set' &&<Settings cfg={cfg} tx={tx} onSave={saveCfg} onLock={()=>setOk(false)} st={st}/>}
+      </div>
+      {page!=='set'&&<Nav active={page} go={setPage}/>}
+    </div>
+  );
+};
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App/>);
+</script>
+</body>
+</html>

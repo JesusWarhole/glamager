@@ -1,0 +1,91 @@
+{
+  "rules": {
+    /* ── Glamager (Hair Corner) — Realtime Database security rules ──────────────
+       Μοντέλο: 5 πραγματικοί λογαριασμοί (Firebase Auth email/password), 2 Masters
+       (Ανδρέας, Σοφία) + 3 μη-Master (Τάνια/Λόρα = Staff, Μαργαρίτα = Reception).
+       Δεν υπάρχουν custom claims/Cloud Functions ακόμα, οπότε ο ρόλος "Master"
+       αναγνωρίζεται εδώ απευθείας από το email του λογαριασμού (ίδιο hardcoded
+       πνεύμα με το AUTH_ACCOUNTS lookup μέσα στο index.html).
+
+       ⚠️ ΣΗΜΑΝΤΙΚΟΣ ΠΕΡΙΟΡΙΣΜΟΣ (διάβασε πριν αλλάξεις κάτι): με το σημερινό hybrid
+       auth (login μία φορά ανά ΣΥΣΚΕΥΗ + καθημερινό PIN μεταξύ ατόμων), το "ποιος
+       είναι ο operator" (Τάνια/Λόρα/κ.λπ. — επιλογή PIN) είναι ΤΟΠΙΚΗ κατάσταση,
+       ΟΧΙ κομμάτι του Firebase Auth session. Αυτά τα rules βλέπουν μόνο ΠΟΙΟ από τα
+       5 emails είναι συνδεδεμένο στη ΣΥΣΚΕΥΗ, όχι ποιος πατάει PIN εκείνη τη στιγμή.
+       Άρα: αν η συσκευή είναι συνδεδεμένη ως Master (π.χ. το πρωινό login το έκανε ο
+       Ανδρέας) και μετά περνάνε PIN διάφοροι υπάλληλοι πάνω στην ίδια συσκευή, τα
+       rules θα βλέπουν "Master" ό,τι κι αν κάνουν — το UI (`isMaster` gating) είναι
+       αυτό που πραγματικά κρύβει τα master-only κουμπιά από μη-Master χειριστές.
+       Τα rules εδώ είναι δεύτερη γραμμή άμυνας: πιάνουν κάποιον που παρακάμπτει το
+       UI (π.χ. dev console) ΑΠΟ ΤΟ ΔΙΚΟ ΤΟΥ λογαριασμό/συσκευή — δεν μπορούν να
+       ξεχωρίσουν Τάνια από Λόρα πάνω στο ΙΔΙΟ κοινόχρηστο tablet/session.
+       Πλήρης λύση σε αυτό θα ήθελε custom claims ανά operator (Cloud Function) —
+       εκτός εύρους σήμερα, ίδιο roadmap σημείο με το πολλαπλό-μαγαζί backend. */
+
+    ".read": false,
+    ".write": false,
+
+    "visits":       { ".read": "auth != null", ".write": "auth != null" },
+    "expenses":     { ".read": "auth != null", ".write": "auth != null" },
+    "clients":      { ".read": "auth != null", ".write": "auth != null" },
+    "schedData":    { ".read": "auth != null", ".write": "auth != null" },
+    "leaveReqs":    { ".read": "auth != null", ".write": "auth != null" },
+    "pins":         { ".read": "auth != null", ".write": "auth != null" },
+    "_seeded":      { ".read": "auth != null", ".write": "auth != null" },
+
+    /* Προσωπικό (StaffManager, 18/07) — προφίλ ατόμων: όνομα/email/ρόλος/γενέθλια/πρόσληψη/
+       άδειες. Master-only write, ΙΔΙΟΣ λόγος με τα υπόλοιπα business-config paths παρακάτω —
+       ΕΠΙΠΛΕΟΝ εδώ είναι κρίσιμο γιατί το `role` κάθε εγγραφής καθορίζει ποιος θεωρείται Master
+       (βλ. `authAccounts` μέσα στο index.html) — αν το write ήταν ανοιχτό σε όλους, ένας μη-Master
+       θα μπορούσε θεωρητικά να προάγει τον εαυτό του σε Master αλλάζοντας τη δική του εγγραφή. */
+    "staff": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+
+    /* Κατάλογος υπηρεσιών/προϊόντων — μόνο Master (CatalogManager/CatalogTemplatePicker
+       είναι ήδη isMaster-gated στο UI, εδώ το ίδιο ισχύει server-side). */
+    "services": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+    "products": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+
+    /* Κλείσιμο ημέρας (Ζ) — αυστηρά Master-only, καμία staff self-service εδώ. */
+    "zmap": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+
+    /* Kudos — μόνο ο Master στέλνει (sendKudos περνάει μόνο στο HomeMaster στο UI). */
+    "kudos": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+
+    /* Κατηγορίες εξόδων / πάγια έξοδα — business config, Master-only (ExpenseCatManager/
+       FixedExpensesManager είναι ήδη isMaster-gated στο UI). */
+    "expCats": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+    "fixedExpenses": {
+      ".read": "auth != null",
+      ".write": "auth != null && (auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr')"
+    },
+
+    /* Ρυθμίσεις μαγαζιού: shopName/currency/ΦΠΑ/auto-lock/client-inactivity είναι Master-only
+       στο UI — ΕΚΤΟΣ από το `lang` (γλώσσα εφαρμογής), που μπορεί να αλλάξει ΟΠΟΙΟΣΔΗΠΟΤΕ
+       χειριστής (το toggle EL/EN στις Ρυθμίσεις δεν είναι isMaster-gated). Επειδή κάθε write
+       εδώ είναι πλήρες .set() όλου του object (όχι per-field), ένας μη-Master χειριστής που
+       αλλάζει μόνο τη γλώσσα ΠΡΕΠΕΙ να στέλνει αναλλοίωτα όλα τα υπόλοιπα πεδία — το validate
+       παρακάτω το επιβάλλει ρητά αντί να κλειδώσει εντελώς το `lang` toggle για μη-Master. */
+    "settings": {
+      ".read": "auth != null",
+      ".write": "auth != null && ((auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr') || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val()))"
+    }
+  }
+}
