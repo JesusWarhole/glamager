@@ -2136,6 +2136,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
       </div>
 
       <Celebrations t={todayIso} staff={allStaff} visits={visits} clients={clients}/>
+      <DailySpark t={todayIso}/>
 
       {/* Badge εκκρεμών αιτημάτων — ο Master ανοίγει την εφαρμογή καθημερινά για το Ζ */}
       {pending.length>0 && (
