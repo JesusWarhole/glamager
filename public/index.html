@@ -645,6 +645,13 @@ const STRINGS = {
   questionOfDayLabel: { el:'💬 Ερώτηση της ημέρας',                        en:'💬 Question of the day' },
   zodiacFunFactLabel: { el:'🌟 Ζωδιακό fun fact',                           en:'🌟 Zodiac fun fact' },
   zodiacSeasonLabel:  { el:'Εποχή',                                        en:'Season' },
+  auditLineRemovedLabel: { el:'Αφαιρέθηκε γραμμή',                        en:'Line removed' },
+  auditLineAddedLabel:   { el:'Προστέθηκε γραμμή',                        en:'Line added' },
+  auditNoteChangedLabel: { el:'Σημείωση άλλαξε',                          en:'Note changed' },
+  auditStaffChangedLabel:{ el:'υπάλληλος άλλαξε',                         en:'staff changed' },
+  auditTipStaffChangedLabel: { el:'Tip → άλλος υπάλληλος',                en:'Tip → different employee' },
+  auditTipSplitChangedLabel: { el:'Tip → split άλλαξε',                   en:'Tip → split changed' },
+  auditTipPmChangedLabel:    { el:'Tip → τρόπος πληρωμής άλλαξε',         en:'Tip → payment method changed' },
   kudosToLabel:       { el:'👏 Ένα ευχαριστώ σε...',                      en:'👏 Say thanks to...' },
   kudosMsgPlaceholder:{ el:'Προαιρετικό μήνυμα (π.χ. τέλεια δουλειά με τη βαφή!)...', en:'Optional message (e.g. great job with the color!)...' },
   kudosSendBtn:       { el:'Αποστολή 👏',                                 en:'Send 👏' },
@@ -1485,32 +1492,34 @@ const summarize = (visits, expenses) => {
   return { cash, pos, gross, tips, posTips, vatOut, vatIn, netVat:vatOut-vatIn, expTotal, netBalance:gross-expTotal, discounts };
 };
 
-/* ── AUDIT — diff «πριν→μετά» σε ανθρώπινη μορφή, spec §1β ── */
+/* ── AUDIT — diff «πριν→μετά» σε ανθρώπινη μορφή, spec §1β. i18n-aware (διορθώθηκε 02/08 βράδυ
+   — πριν ήταν 100% hardcoded Ελληνικά, παρέκαμπτε το t() σύστημα εντελώς, real bug σε Master-only
+   οικονομικό audit trail). Χρησιμοποιεί pmName() (ήδη i18n-aware) αντί για το παλιό pmLbl[]. ── */
 const diffVisit = (b,a) => {
   const out = [];
-  if(b.pm!==a.pm) out.push(`Πληρωμή: ${pmLbl[b.pm]} → ${pmLbl[a.pm]}`);
+  if(b.pm!==a.pm) out.push(`${t('paymentLabel')}: ${pmName(b.pm)} → ${pmName(a.pm)}`);
   if((Number(b.tip)||0)!==(Number(a.tip)||0)) out.push(`Tip: ${fmt(b.tip||0)} → ${fmt(a.tip||0)}`);
-  if(b.tipStaffId!==a.tipStaffId) out.push('Tip → άλλος υπάλληλος');
-  if(JSON.stringify(b.tipSplit||null)!==JSON.stringify(a.tipSplit||null)) out.push('Tip → split άλλαξε');
-  if((b.tipPm||'')!==(a.tipPm||'')) out.push('Tip → τρόπος πληρωμής άλλαξε');
-  if((b.note||'')!==(a.note||'')) out.push('Σημείωση άλλαξε');
+  if(b.tipStaffId!==a.tipStaffId) out.push(t('auditTipStaffChangedLabel'));
+  if(JSON.stringify(b.tipSplit||null)!==JSON.stringify(a.tipSplit||null)) out.push(t('auditTipSplitChangedLabel'));
+  if((b.tipPm||'')!==(a.tipPm||'')) out.push(t('auditTipPmChangedLabel'));
+  if((b.note||'')!==(a.note||'')) out.push(t('auditNoteChangedLabel'));
   const maxLen = Math.max(b.lines.length, a.lines.length);
   for(let i=0;i<maxLen;i++){
     const bl=b.lines[i], al=a.lines[i];
-    if(bl && !al) out.push(`Αφαιρέθηκε γραμμή: ${bl.name} (${fmt(lineTotal(bl))})`);
-    else if(!bl && al) out.push(`Προστέθηκε γραμμή: ${al.name} (${fmt(lineTotal(al))})`);
+    if(bl && !al) out.push(`${t('auditLineRemovedLabel')}: ${bl.name} (${fmt(lineTotal(bl))})`);
+    else if(!bl && al) out.push(`${t('auditLineAddedLabel')}: ${al.name} (${fmt(lineTotal(al))})`);
     else if(bl && al){
-      if(bl.price!==al.price || bl.disc!==al.disc || bl.discType!==al.discType) out.push(`${al.name}: τιμή ${fmt(lineTotal(bl))} → ${fmt(lineTotal(al))}`);
-      if(bl.staffId!==al.staffId) out.push(`${al.name}: υπάλληλος άλλαξε`);
+      if(bl.price!==al.price || bl.disc!==al.disc || bl.discType!==al.discType) out.push(`${al.name}: ${t('priceColLabel')} ${fmt(lineTotal(bl))} → ${fmt(lineTotal(al))}`);
+      if(bl.staffId!==al.staffId) out.push(`${al.name}: ${t('auditStaffChangedLabel')}`);
     }
   }
   return out;
 };
 const diffExpense = (b,a) => {
   const out = [];
-  if(b.cat!==a.cat) out.push(`Κατηγορία: ${b.cat} → ${a.cat}`);
-  if((Number(b.amt)||0)!==(Number(a.amt)||0)) out.push(`Ποσό: ${fmt(b.amt)} → ${fmt(a.amt)}`);
-  if((b.note||'')!==(a.note||'')) out.push('Σημείωση άλλαξε');
+  if(b.cat!==a.cat) out.push(`${t('categoryLabel')}: ${b.cat} → ${a.cat}`);
+  if((Number(b.amt)||0)!==(Number(a.amt)||0)) out.push(`${t('amountLabel')}: ${fmt(b.amt)} → ${fmt(a.amt)}`);
+  if((b.note||'')!==(a.note||'')) out.push(t('auditNoteChangedLabel'));
   return out;
 };
 
@@ -2221,7 +2230,6 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
 
 const pmC   = {cash:'#059669', pos:'#3b82f6'};
 const pmIc  = {cash:'cash', pos:'card'};
-const pmLbl = {cash:'Μετρητά', pos:'POS'}; // κρατιέται για συμβατότητα, αλλά χρησιμοποίησε pmName() παρακάτω σε νέο κώδικα (i18n-aware)
 const pmName = pm => pm==='cash' ? t('cashLabel') : 'POS';
 
 /* VisitRow — μία επίσκεψη (καλάθι). Δείχνει και ΟΝΟΜΑ ΠΕΛΑΤΗ όταν είναι
