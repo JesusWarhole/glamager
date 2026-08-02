@@ -641,6 +641,7 @@ const STRINGS = {
   teamCelebratingPrefixLabel: { el:'Γιορτάζει η δική μας ομάδα:',         en:'Our team is celebrating:' },
   manyHappyReturnsSuffixLabel: { el:' — χρόνια πολλά!',                   en:' — happy birthday!' },
   namedayTodayPrefixLabel: { el:'Εορτολόγιο σήμερα:',                     en:"Today's nameday:" },
+  worldDayTodayPrefixLabel: { el:'Σήμερα είναι:',                          en:'Today is:' },
   kudosToLabel:       { el:'👏 Ένα ευχαριστώ σε...',                      en:'👏 Say thanks to...' },
   kudosMsgPlaceholder:{ el:'Προαιρετικό μήνυμα (π.χ. τέλεια δουλειά με τη βαφή!)...', en:'Optional message (e.g. great job with the color!)...' },
   kudosSendBtn:       { el:'Αποστολή 👏',                                 en:'Send 👏' },
@@ -704,32 +705,46 @@ const orthodoxEaster = year => {
 const _isoAddDays = (iso,n) => { const d=new Date(iso+'T00:00:00Z'); d.setUTCDate(d.getUTCDate()+n); return d.toISOString().slice(0,10); };
 
 /* ── ΕΟΡΤΟΛΟΓΙΟ — «ποιος γιορτάζει γενικά σήμερα» (καθημερινή απορία κομμωτηρίου!)
-   Επιμελημένο υποσύνολο των πιο συνηθισμένων ελληνικών ονομάτων (όχι πλήρης βάση ~3.000
-   ονομάτων — eortologio.gr/greeknamedays.gr έχουν το πλήρες, εκτός εύρους για demo).
+   Επιμελημένη λίστα (~85 ημερομηνίες / ~150 ονόματα, ενημέρωση 02/08/2026) των πιο
+   συνηθισμένων ελληνικών ονομάτων — ΟΧΙ η πλήρης βάση ~3.000 ονομάτων/παραγώγων που έχουν
+   το eortologio.gr/namedays.gr/greeknamedays.gr. Ρητή απόφαση Ανδρέα (02/08): προτιμήθηκε
+   επιμελημένο, υψηλής εμπιστοσύνης υποσύνολο αντί για bulk αντιγραφή compiled βάσης τρίτου
+   site σε εμπορική εφαρμογή (αναφορά: PROJECT_STATUS.md). Αν λείπει/λάθος κάποιο όνομα που
+   θα το χρειαζόμασταν στην πράξη, προσθήκη/διόρθωση σε επόμενο session.
    ΚΙΝΗΤΕΣ εορτές (εξαρτώνται από το Πάσχα, βλ. movableNamedaysOn παρακάτω):
    • Θωμάς: Κυριακή του Θωμά (Πάσχα +7)
+   • Ζωή: Ζωοδόχου Πηγής, Παρασκευή της Διακαινησίμου (Πάσχα +5)
    • Γιώργος/Γεωργία: κανονικά 23/4, ΑΛΛΑ αν το Πάσχα εκείνης της χρονιάς πέφτει
      23/4 ή νωρίτερα, ο Άγιος Γεώργιος «μετατίθεται» στη Δευτέρα του Πάσχα («Λαμπριάτης») ── */
 const NAMEDAYS = {
-  '01-01':['Βασίλης','Βασιλική'], '01-06':['Φώτης','Φωτεινή','Θεοφάνης'], '01-07':['Γιάννης','Ιωάννα'],
-  '01-17':['Αντώνης','Αντωνία'], '01-18':['Θανάσης','Αθανασία'], '01-20':['Ευθύμιος'], '01-24':['Ξένια'],
-  '01-25':['Γρηγόρης'],
-  '02-01':['Τρύφων'], '02-10':['Χαράλαμπος','Χαρά'],
-  '03-25':['Βαγγέλης','Ευαγγελία'],
-  '04-09':['Ραφαήλ','Νικόλαος','Ειρήνη'], '04-23':['Γιώργος','Γεωργία'], '04-25':['Μάρκος'],
-  '05-05':['Ειρήνη'], '05-21':['Κωνσταντίνος','Ελένη'],
-  '06-29':['Πέτρος','Παύλος'], '06-30':['Απόστολος'],
+  '01-01':['Βασίλης','Βασιλική','Βασίλειος'], '01-02':['Σιλβέστρος'], '01-05':['Θεοπίστη'],
+  '01-06':['Φώτης','Φωτεινή','Θεοφάνης','Θεοφανία'], '01-07':['Γιάννης','Ιωάννα','Ιωάννης'],
+  '01-12':['Τατιανή'], '01-17':['Αντώνης','Αντωνία','Αντώνιος'],
+  '01-18':['Θανάσης','Αθανασία','Αθανάσιος','Κύριλλος'], '01-19':['Μακάριος'],
+  '01-20':['Ευθύμιος','Ευθυμία'], '01-21':['Μάξιμος','Νεόφυτος'], '01-22':['Αναστάσιος','Τάσος'],
+  '01-24':['Ξένια','Ξένη'], '01-25':['Γρηγόρης','Γρηγόριος'],
+  '02-01':['Τρύφων'], '02-02':['Συμεών','Άννα'], '02-10':['Χαράλαμπος','Χαρά','Χαραλαμπία'],
+  '02-11':['Βλάσιος'], '02-17':['Θεόδωρος','Θοδωρής'],
+  '03-25':['Βαγγέλης','Ευαγγελία','Ευάγγελος','Ευαγγελίνα'],
+  '04-09':['Ραφαήλ','Νικόλαος','Ειρήνη'], '04-23':['Γιώργος','Γεωργία','Γεώργιος'],
+  '04-25':['Μάρκος'], '04-30':['Ιάκωβος'],
+  '05-05':['Ειρήνη'], '05-08':['Ιωάννης'], '05-11':['Κύριλλος','Μεθόδιος'],
+  '05-21':['Κωνσταντίνος','Κώστας','Ελένη','Κωνσταντίνα'],
+  '06-11':['Βαρθολομαίος','Βαρνάβας'], '06-29':['Πέτρος','Παύλος'], '06-30':['Απόστολος','Αποστολία'],
   '07-07':['Κυριακή'], '07-11':['Όλγα','Ευφημία'], '07-17':['Μαρίνα'], '07-20':['Ηλίας'],
-  '07-22':['Μαγδαληνή'], '07-26':['Παρασκευή'], '07-27':['Παντελής'],
-  '08-15':['Μαρία','Παναγιώτης','Παναγιώτα','Δέσποινα'], '08-30':['Αλέξανδρος','Αλεξάνδρα'],
-  '09-05':['Ζαχαρίας','Ελισάβετ'], '09-09':['Ιωακείμ'], '09-14':['Σταύρος','Σταυρούλα'],
-  '09-17':['Σοφία','Αγάπη','Ελπίδα'], '09-24':['Θέκλα'],
-  '10-18':['Λουκάς'], '10-20':['Αρτέμης'], '10-26':['Δημήτρης','Δήμητρα'],
-  '11-08':['Μιχάλης','Άγγελος','Αγγελική'], '11-13':['Χρυσόστομος'], '11-14':['Φίλιππος'],
-  '11-16':['Ματθαίος'], '11-25':['Κατερίνα'], '11-30':['Ανδρέας'],
-  '12-04':['Βαρβάρα'], '12-05':['Σάββας'], '12-06':['Νίκος','Νικολέτα'], '12-09':['Άννα'],
-  '12-12':['Σπύρος'], '12-15':['Ελευθέριος','Ελευθερία'], '12-17':['Δανιήλ'],
-  '12-25':['Χρήστος','Χριστίνα','Εμμανουήλ'], '12-27':['Στέφανος','Στεφανία'],
+  '07-22':['Μαγδαληνή'], '07-25':['Άννα'], '07-26':['Παρασκευή'], '07-27':['Παντελής','Παντελεήμων'],
+  '08-06':['Σωτήρης','Σωτηρία'], '08-15':['Μαρία','Παναγιώτης','Παναγιώτα','Δέσποινα'],
+  '08-27':['Φανούριος'], '08-30':['Αλέξανδρος','Αλεξάνδρα'],
+  '09-05':['Ζαχαρίας','Ελισάβετ'], '09-09':['Ιωακείμ','Άννα'], '09-14':['Σταύρος','Σταυρούλα'],
+  '09-17':['Σοφία','Αγάπη','Ελπίδα','Πίστη'], '09-20':['Ευστάθιος','Στάθης'], '09-24':['Θέκλα'],
+  '10-01':['Ανανίας'], '10-03':['Διονύσιος','Διονύσης'], '10-18':['Λουκάς'],
+  '10-20':['Αρτέμης','Γεράσιμος'], '10-23':['Ιάκωβος'], '10-26':['Δημήτρης','Δήμητρα','Δημήτριος'],
+  '11-01':['Κοσμάς','Δαμιανός'], '11-08':['Μιχάλης','Μιχαήλ','Γαβριήλ','Άγγελος','Αγγελική'],
+  '11-11':['Μηνάς','Βίκτωρ','Βικτωρία'], '11-13':['Χρυσόστομος','Ιωάννης'], '11-14':['Φίλιππος'],
+  '11-16':['Ματθαίος'], '11-22':['Χρυσοβαλάντου'], '11-25':['Κατερίνα','Αικατερίνη'], '11-30':['Ανδρέας'],
+  '12-04':['Βαρβάρα'], '12-05':['Σάββας'], '12-06':['Νίκος','Νικολέτα','Νικόλαος'], '12-09':['Άννα'],
+  '12-12':['Σπύρος','Σπυριδούλα','Σπυρίδων'], '12-15':['Ελευθέριος','Ελευθερία'], '12-20':['Ιγνάτιος'],
+  '12-25':['Χρήστος','Χριστίνα','Εμμανουήλ','Μανώλης','Χριστός'], '12-27':['Στέφανος','Στεφανία'],
 };
 const movableNamedaysOn = ds => {
   const year = parseInt(ds.slice(0,4));
@@ -737,7 +752,8 @@ const movableNamedaysOn = ds => {
   const georgeMoved = easter <= `${year}-04-23`;
   const out = [];
   if (ds === _isoAddDays(easter,7)) out.push('Θωμάς');
-  if (georgeMoved && ds === _isoAddDays(easter,1)) out.push('Γιώργος','Γεωργία');
+  if (ds === _isoAddDays(easter,5)) out.push('Ζωή');
+  if (georgeMoved && ds === _isoAddDays(easter,1)) out.push('Γιώργος','Γεωργία','Γεώργιος');
   return out;
 };
 const namedaysOn = ds => {
@@ -745,9 +761,95 @@ const namedaysOn = ds => {
   const easter = orthodoxEaster(year);
   const georgeMoved = easter <= `${year}-04-23`;
   const fixed = NAMEDAYS[ds.slice(5)] || [];
-  const base = (ds.slice(5)==='04-23' && georgeMoved) ? fixed.filter(n=>n!=='Γιώργος'&&n!=='Γεωργία') : fixed;
+  const base = (ds.slice(5)==='04-23' && georgeMoved) ? fixed.filter(n=>n!=='Γιώργος'&&n!=='Γεωργία'&&n!=='Γεώργιος') : fixed;
   return [...base, ...movableNamedaysOn(ds)];
 };
+
+/* ── ΠΑΓΚΟΣΜΙΕΣ/ΔΙΕΘΝΕΙΣ ΗΜΕΡΕΣ — δεύτερο, ανεξάρτητο «χαρούμενο layer» (απόφαση 02/08/2026,
+   επέκταση ίδια μέρα το βράδυ). Σκεπτικό Ανδρέα: πολύ συνηθισμένο σε σαλόνι ομορφιάς να
+   σχολιάζεται «τι γιορτάζουμε σήμερα παγκοσμίως» — και μάλιστα οι πιο ΚΟΥΛΕΣ/χαλαρές ημέρες
+   (Talk Like a Pirate Day, Work Naked Day κ.λπ.) βγάζουν περισσότερη κουβέντα από τις σοβαρές
+   θεσμικές. Ρητή απόφαση: ΚΑΙ τα δύο μαζί, καμία λογοκρισία λόγω "σοβαρότητας" — value ανά
+   ημερομηνία είναι ΠΛΕΟΝ ARRAY (μπορεί να έχει πάνω από ένα). Πηγές: κυρίως ΟΗΕ/UNESCO/WHO για
+   τις σοβαρές, timeanddate.com/holidays/fun για τις χαλαρές — και οι δύο ΜΟΝΟ ΣΤΑΘΕΡΗΣ
+   ημερομηνίας (όχι "1η Παρασκευή του μήνα" τύπου, δεν το υποστηρίζει ακόμα το μοντέλο).
+   Ακόμα ΔΕΝ είναι το πλήρες σύμπαν (υπάρχουν χιλιάδες ανεπίσημες) — γενναία επιλογή, όχι όλες. */
+const WORLD_DAYS = {
+  '01-03':['Festival of Sleep Day 😴'], '01-04':['Trivia Day 🧠'], '01-06':['Bean Day'],
+  '01-16':['Nothing Day (κυριολεκτικά τίποτα)'], '01-17':["Kid Inventors' Day"],
+  '01-19':['Popcorn Day 🍿'], '01-20':['Penguin Awareness Day 🐧'],
+  '01-21':['Squirrel Appreciation Day 🐿️'], '01-24':['Διεθνής Ημέρα Εκπαίδευσης'],
+  '01-25':['Opposite Day (ό,τι πεις, το αντίθετο!)'], '01-27':['Chocolate Cake Day 🍫'],
+  '01-29':['Puzzle Day 🧩'], '01-31':['Backwards Day'],
+  '02-02':['Work Naked Day 😅 (ναι, υπάρχει)'], '02-04':['Παγκόσμια Ημέρα κατά του Καρκίνου'],
+  '02-08':['Laugh and Get Rich Day 😂'], '02-09':['Παγκόσμια Ημέρα Πίτσας 🍕'],
+  '02-11':["Don't Cry Over Spilled Milk Day"], '02-12':['Darwin Day 🧬'],
+  '02-14':['Ημέρα Αγίου Βαλεντίνου 💘'], '02-16':['Do a Grouch a Favor Day'],
+  '02-17':['Random Act of Kindness Day'], '02-20':['Παγκόσμια Ημέρα Κοινωνικής Δικαιοσύνης'],
+  '02-21':['Διεθνής Ημέρα Μητρικής Γλώσσας'], '02-24':['World Sword Swallowers Day 🗡️ (σοβαρά)'],
+  '02-27':['No Brainer Day'], '02-28':['Public Sleeping Day 😴'],
+  '03-04':['March Forth and Do Something Day (λογοπαίγνιο: march-4th)'],
+  '03-08':['Παγκόσμια Ημέρα της Γυναίκας'], '03-10':['Mario Day 🍄 (MAR10 = Mario)'],
+  '03-14':['Pi Day 🥧 (3.14)'], '03-18':['Awkward Moments Day 😬'], '03-19':["Let's Laugh Day"],
+  '03-20':['Διεθνής Ημέρα Ευτυχίας','World Storytelling Day'], '03-21':['Παγκόσμια Ημέρα Ποίησης'],
+  '03-22':['Παγκόσμια Ημέρα Νερού'], '03-23':['Puppy Day 🐶'],
+  '03-26':['Make Up Your Own Holiday Day (σοβαρά, φτιάξε μια δική σου!)'],
+  '04-01':['Fun at Work Day (και Πρωταπριλιά!)'], '04-07':['Παγκόσμια Ημέρα Υγείας'],
+  '04-10':['Siblings Day'], '04-11':['Barbershop Quartet Day 💇 (κοντά στην καρδιά μας)'],
+  '04-13':['Scrabble Day'], '04-14':['International Moment of Laughter Day'],
+  '04-16':['Wear Pajamas to Work Day 🩱'], '04-20':['Look Alike Day (ποιος μοιάζει σε ποιον;)'],
+  '04-22':['Παγκόσμια Ημέρα της Γης'], '04-23':['Παγκόσμια Ημέρα Βιβλίου',"Lover's Day 💋"],
+  '04-25':['DNA Day 🧬'], '04-30':['Honesty Day'],
+  '05-01':['Batman Day 🦇'], '05-04':['Star Wars Day ("May the 4th be with you") 🚀'],
+  '05-08':['Παγκόσμια Ημέρα Ερυθρού Σταυρού'], '05-09':['Lost Sock Memorial Day 🧦'],
+  '05-12':['Limerick Day'], '05-14':['Dance Like a Chicken Day 🐔'],
+  '05-15':['Διεθνής Ημέρα Οικογένειας'], '05-20':['Παγκόσμια Ημέρα Μελισσών 🐝'],
+  '05-21':['Talk Like Yoda Day 🟢 (κάνε το, θα γελάσεις)'], '05-25':["Towel Day 🛸 (Hitchhiker's Guide)"],
+  '05-28':['Hamburger Day 🍔'], '05-31':['Παγκόσμια Ημέρα Χωρίς Κάπνισμα'],
+  '06-01':['Παγκόσμια Ημέρα Παιδιού'], '06-04':['Hug Your Cat Day 🐱'],
+  '06-05':['Παγκόσμια Ημέρα Περιβάλλοντος'], '06-08':['Παγκόσμια Ημέρα Ωκεανών'],
+  '06-09':['Donald Duck Day 🦆'], '06-12':['Red Rose Day 🌹'], '06-16':['World Juggling Day'],
+  '06-18':['International Panic Day'], '06-20':['Παγκόσμια Ημέρα Προσφύγων'],
+  '06-21':['Διεθνής Ημέρα Γιόγκα & Μουσικής'], '06-23':['Typewriter Day ⌨️'],
+  '06-28':['Tau Day 🥧 (6.28, το "άλλο" Pi Day)'],
+  '07-01':['International Joke Day 😂'], '07-06':['World Kissing Day 😘'],
+  '07-07':['Παγκόσμια Ημέρα Σοκολάτας 🍫'], '07-13':['Embrace Your Geekness Day'],
+  '07-15':['Ice Cream Day 🍦'], '07-17':['World Emoji Day 😎'],
+  '07-19':['Stick Out Your Tongue Day 😛'], '07-21':['Junk Food Day 🍟'],
+  '07-27':['Take your Pants for a Walk Day (ναι, το λέει κι αυτό)'],
+  '07-29':['Lasagna Day 🍝'], '07-30':['Διεθνής Ημέρα Φιλίας'],
+  '08-01':["Girlfriend's Day"], '08-03':['International Beer Day 🍺'],
+  '08-05':["Sisters' Day"], '08-08':['Διεθνής Ημέρα Γάτας 🐱'], '08-10':['Lazy Day 🛋️'],
+  '08-12':['Διεθνής Ημέρα Νεολαίας'], '08-13':['Left-Handers Day'],
+  '08-16':['Tell a Joke Day 🤣'], '08-19':['Παγκόσμια Ημέρα Φωτογραφίας'],
+  '08-25':['Kiss and Make up Day 💋'], '08-26':['Dog Appreciation Day 🐕'],
+  '08-28':['Bow Tie Day 🎀'],
+  '09-06':['Read a Book Day 📖'], '09-08':['Διεθνής Ημέρα Αλφαβητισμού'],
+  '09-09':['Teddy Bear Day 🧸'], '09-11':['Make Your Bed Day 🛏️'],
+  '09-13':['Positive Thinking Day'], '09-16':['Guacamole Day 🥑'],
+  '09-19':['International Talk Like a Pirate Day 🏴‍☠️'], '09-21':['Διεθνής Ημέρα Ειρήνης'],
+  '09-25':['Comic Book Day 💥'], '09-27':['Παγκόσμια Ημέρα Τουρισμού'],
+  '09-28':['Ask a Stupid Question Day (καμία ερώτηση δεν είναι χαζή!)'],
+  '10-01':['Διεθνής Ημέρα Μουσικής & Καφέ ☕'], '10-04':['Παγκόσμια Ημέρα Ζώων 🐾','Taco Day 🌮'],
+  '10-05':['Παγκόσμια Ημέρα Εκπαιδευτικών','World Smile Day 🙂'], '10-06':['Mad Hatter Day 🎩'],
+  '10-10':['Παγκόσμια Ημέρα Ψυχικής Υγείας'], '10-13':['International Skeptics Day 🤨'],
+  '10-16':['Παγκόσμια Ημέρα Διατροφής','Dictionary Day'], '10-17':['Wear Something Gaudy Day ✨'],
+  '10-20':['International Sloth Day 🦥'], '10-22':['Caps Lock Day (ΓΙΑΤΙ ΟΧΙ)'],
+  '10-24':['Ημέρα Ηνωμένων Εθνών'], '10-30':['Candy Corn Day 🌽'], '10-31':['Magic Day 🎩'],
+  '11-01':['Men Make Dinner Day 👨‍🍳'], '11-03':['Sandwich Day 🥪'],
+  '11-08':['Tongue Twister Day 🗣️'],
+  '11-13':['Παγκόσμια Ημέρα Καλοσύνης','Sadie Hawkins Day'], '11-14':['Παγκόσμια Ημέρα Διαβήτη'],
+  '11-16':['Διεθνής Ημέρα Ανεκτικότητας'], '11-17':['Take A Hike Day 🥾'],
+  '11-19':['Διεθνής Ημέρα Ανδρών'], '11-21':['World Hello Day'],
+  '11-23':['Fibonacci Day (1,1,2,3...)'], '11-24':['Celebrate Your Unique Talent Day'],
+  '11-25':['Διεθνής Ημέρα κατά της Βίας για τις Γυναίκες'], '11-26':['Cake Day 🎂'],
+  '12-01':['Παγκόσμια Ημέρα κατά του AIDS'], '12-03':['Διεθνής Ημέρα Ατόμων με Αναπηρία'],
+  '12-05':['Διεθνής Ημέρα Εθελοντών','Day of the Ninja 🥷'],
+  '12-08':['Pretend to Be a Time Traveler Day ⏳'], '12-10':['Παγκόσμια Ημέρα Ανθρωπίνων Δικαιωμάτων'],
+  '12-12':['Gingerbread House Day 🍪'], '12-14':['Monkey Day 🐒'], '12-19':['Underdog Day'],
+  '12-21':['Ugly Sweater Day 🎄'], '12-23':['Festivus (Seinfeld) 📺'], '12-24':['Eggnog Day 🥛'],
+};
+const worldDayOn = ds => WORLD_DAYS[ds.slice(5)] || null;
 /* Ποιοι ΔΙΚΟΙ μας (προσωπικό ΚΑΙ masters) έχουν ονομαστική εορτή τη μέρα αυτή. 18/07: πριν έλεγχε
    μόνο DEMO_STAFF + DEMO_BOSS (δηλ. μόνο τον πρώτο Master, ποτέ τη Σοφία) — τώρα ελέγχει ΟΛΟΥΣ
    μέσα στη staffList ομοιόμορφα, ασυνέπεια που διορθώθηκε σαν φυσικό side-effect του refactor. */
@@ -1694,6 +1796,7 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
                 {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
                 {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
                 {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
+                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
             </div>
           );
@@ -1741,10 +1844,11 @@ const Confetti = () => (
 const Celebrations = ({t:dateIso,staff,visits,clients}) => {
   const b  = birthdaysOn(dateIso,staff);
   const nd = namedaysOn(dateIso);
+  const wd = worldDayOn(dateIso);
   const sc = staffCelebratingOn(dateIso,staff);
   const an = annivOn(dateIso,staff);
   const ms = milestonesToday(visits,clients,dateIso);
-  if(b.length+nd.length+an.length+ms.length===0) return null;
+  if(b.length+nd.length+an.length+ms.length===0 && !wd) return null;
   const festive = b.length>0 || sc.length>0 || an.length>0; /* δικός μας άνθρωπος γιορτάζει → confetti */
   return (
     <div className={`rounded-2xl p-4 mb-3 border fade ${festive?'confetti-wrap':''}`} style={{background:'#fdf2f8',borderColor:'#fbcfe8'}}>
@@ -1758,6 +1862,7 @@ const Celebrations = ({t:dateIso,staff,visits,clients}) => {
       {an.map(a=><p key={a.name} className="font-black text-sm" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
       {ms.map(m=><p key={m.name} className="font-bold text-sm" style={{color:'#7c3aed'}}>🏆 {LANG==='en'?`${m.name} — visit #${m.n} today! Maybe treat them to something?`:`${m.name} — ${m.n}η επίσκεψη σήμερα! Αξίζει ένα κέρασμα;`}</p>)}
       {nd.length>0 && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🎈 {t('namedayTodayPrefixLabel')} {nd.join(', ')}</p>}
+      {wd && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🌍 {t('worldDayTodayPrefixLabel')} {wd.join(' · ')}</p>}
     </div>
   );
 };
@@ -3542,6 +3647,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
                 {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
                 {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
                 {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
+                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
               <div className="w-6 h-6 rounded-lg bg-white/60 flex items-center justify-center flex-shrink-0"><Ic n="next" s={13} c={st.color}/></div>
             </div>
