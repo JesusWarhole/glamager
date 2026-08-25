@@ -633,6 +633,16 @@ const STRINGS = {
   finTabLabel:        { el:'📊 Οικον.',                                   en:'📊 Fin.' },
   perfTabLabel:       { el:'⚡ Απόδοση',                                  en:'⚡ Performance' },
   schedTabLabel:      { el:'📅 Πρόγρ.',                                   en:'📅 Sched.' },
+  shopClosureBtnLabel:{ el:'🔒 Κλειστό μαγαζί',                            en:'🔒 Shop closed' },
+  shopClosureTitle:   { el:'Κλειστό μαγαζί',                              en:'Shop closed' },
+  shopClosureHint:    { el:'Βάζει «Αργία» σε όλο το ενεργό προσωπικό για τη μέρα αυτή. Όποιον έχει ήδη κάτι καταχωρημένο (π.χ. εγκεκριμένη άδεια) ΔΕΝ τον πειράζει — τον προσπερνάει και σου το λέει.', en:'Sets "Holiday" for all active staff on this day. Anyone who already has something recorded (e.g. approved leave) is NOT touched — skipped, and reported to you.' },
+  shopClosureDateLabel: { el:'Ημερομηνία',                                en:'Date' },
+  shopClosureNoteLabel: { el:'Σημείωση (π.χ. "17 Νοέμβρη — Πολυτεχνείο")', en:'Note (e.g. "Nov 17 — Polytechnio")' },
+  shopClosureConfirmBtn:{ el:'Εφαρμογή σε όλους',                         en:'Apply to everyone' },
+  shopClosureAppliedPrefix: { el:'Εφαρμόστηκε σε',                        en:'Applied to' },
+  shopClosureSkippedPrefix: { el:'Είχαν ήδη κάτι καταχωρημένο:',          en:'Already had something recorded:' },
+  shopClosureSkippedSuffix: { el:'έλεγξέ τους χειροκίνητα αν χρειάζεται.', en:'check them manually if needed.' },
+  okBtn:              { el:'Εντάξει',                                    en:'OK' },
   csvTimeCol:         { el:'Ώρα',                                         en:'Time' },
   csvDescCol:         { el:'Περιγραφή',                                   en:'Description' },
   clientLabel:        { el:'Πελάτης',                                     en:'Client' },
@@ -3934,11 +3944,66 @@ const MasterDayModal = ({dateStr,emp,entry,onSave,onClose}) => {
 };
 
 /* Salon Staff module (Master) — πρόγραμμα ΟΛΩΝ + στατιστικά + CSV */
+/* «Κλειστό μαγαζί» bulk action (25/08, αίτημα Ανδρέα) — Master βάζει «Αργία» σε ΟΛΟΥΣ τους
+   ενεργούς υπαλλήλους μαζί για μια μέρα (π.χ. εθνική επέτειος όπως 17 Νοέμβρη που ΔΕΝ είναι
+   στη λίστα υποχρεωτικών αργιών FIXED_HOLIDAYS_MMDD — απόφαση επιχείρησης, όχι αυτόματο).
+   Χρησιμοποιεί activeStaff (25/08, βλ. πιο πάνω) — ανενεργό προσωπικό δεν αγγίζεται καν.
+   ΔΕΝ πειράζει ΠΟΤΕ κάποιον που έχει ήδη κάτι καταχωρημένο εκείνη τη μέρα (π.χ. εγκεκριμένη
+   άδεια/αναρρωτική) — τον προσπερνάει και το αναφέρει ρητά στο τέλος, δεν σβήνει σιωπηλά τίποτα
+   υπάρχον. Καμία ξεχωριστή «undo» λειτουργία — διόρθωση γίνεται όπως πάντα, μέρα-μέρα. */
+const ShopClosureModal = ({staff,schedData,onSaveDay,onClose}) => {
+  const [dateStr,setDateStr] = useState(today());
+  const [note,setNote] = useState('');
+  const [result,setResult] = useState(null);
+  const apply = () => {
+    const [y,m,d] = dateStr.split('-');
+    const active = activeStaff(staff);
+    let applied=0; const skipped=[];
+    active.forEach(s=>{
+      const existing = schedData[y]?.[m]?.[s.id]?.[d];
+      if(existing){ skipped.push(s.name); return; }
+      onSaveDay(s.id,dateStr,{status:'holiday',start:'',end:'',note:note.trim()});
+      applied++;
+    });
+    setResult({applied,total:active.length,skipped});
+  };
+  return (
+    <div className="modal-bg fade" onClick={onClose}>
+      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('shopClosureTitle')}</h2>
+          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
+        </div>
+        {result ? (
+          <div>
+            <p className="text-sm font-bold mb-2" style={{color:'var(--text)'}}>
+              ✅ {t('shopClosureAppliedPrefix')} {result.applied}/{result.total}
+            </p>
+            {result.skipped.length>0 && (
+              <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>
+                ⚠️ {t('shopClosureSkippedPrefix')} {result.skipped.join(', ')} — {t('shopClosureSkippedSuffix')}
+              </p>
+            )}
+            <button onClick={onClose} className="w-full mt-2 py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>{t('okBtn')}</button>
+          </div>
+        ) : (
+          <React.Fragment>
+            <div className="mb-3"><CInput label={t('shopClosureDateLabel')} value={dateStr} onChange={setDateStr} type="date"/></div>
+            <div className="mb-3"><CInput label={t('shopClosureNoteLabel')} value={note} onChange={setNote}/></div>
+            <p className="text-xs mb-4" style={{color:'var(--text-dim)'}}>{t('shopClosureHint')}</p>
+            <button onClick={apply} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'#dc2626'}}>{t('shopClosureConfirmBtn')}</button>
+          </React.Fragment>
+        )}
+      </div>
+    </div>
+  );
+};
 const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
   const [year,setYear] = useState(CUR_Y);
   const [month,setMonth] = useState(CUR_M);
   const [empId,setEmpId] = useState(staff[0]?.id);
   const [modal,setModal] = useState(null);
+  const [closureOpen,setClosureOpen] = useState(false);
   const emp = staff.find(s=>s.id===empId)||staff[0];
   const days = daysInMonth(year,month);
   const empData = schedData[year]?.[pad2(month)]?.[emp.id]||{};
@@ -3977,6 +4042,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
         <button onClick={()=>{ if(month===12){setMonth(1);setYear(y=>y+1);} else setMonth(m=>m+1); }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
         <button onClick={exportCSV} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--accent-50)'}}><Ic n="download" s={16} c="var(--accent-600)"/></button>
       </div>
+      <button onClick={()=>setClosureOpen(true)} className="w-full py-2.5 rounded-2xl font-bold text-sm mb-3 border-2 border-dashed" style={{borderColor:'#fde047',color:'#ca8a04',background:'#fefce8'}}>{t('shopClosureBtnLabel')}</button>
       <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
         {staff.map(s=><button key={s.id} onClick={()=>setEmpId(s.id)} className={`chip ${empId===s.id?'on':''}`}>{s.name}</button>)}
       </div>
@@ -4024,6 +4090,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
 
       {modal && <MasterDayModal dateStr={modal.dk} emp={emp} entry={modal.raw}
         onSave={entry=>onSaveDay(emp.id,modal.dk,entry)} onClose={()=>setModal(null)}/>}
+      {closureOpen && <ShopClosureModal staff={staff} schedData={schedData} onSaveDay={onSaveDay} onClose={()=>setClosureOpen(false)}/>}
     </div>
   );
 };
@@ -5135,12 +5202,27 @@ const App = () => {
   const setAccent = a => { setAccentState(a); applyAccent(a); };
   /* accent/theme: τοπικές προτιμήσεις συσκευής — τρέχουν μία φορά στο mount */
   useEffect(()=>{ applyAccent(accent); applyTheme(theme); },[]);
-  /* currency/lang: ΜΕΡΟΣ του settings που έρχεται από Firebase — πρέπει να ξαναεφαρμόζεται
-     κάθε φορά που αλλάζει το settings (τοπικά Ή από άλλη συσκευή), όχι μόνο στο mount */
-  useEffect(()=>{ applyCurrency(settings.currency); applyLang(settings.lang); },[settings.currency, settings.lang]);
+  /* 25/08 — BUG (αναφορά Ανδρέα): η γλώσσα "έπιανε" μόνο αφού έφευγες από τις Ρυθμίσεις, όχι
+     αμέσως. Αιτία: το LANG (module-level μεταβλητή, όχι React state) ενημερώνεται μέσα σε αυτό
+     το useEffect, που τρέχει ΜΕΤΑ το render — άρα το πρώτο render μετά το toggle εξακολουθεί να
+     δείχνει την ΠΑΛΙΑ γλώσσα (LANG δεν έχει αλλάξει ακόμα), και επειδή το LANG δεν είναι state,
+     τίποτα δεν λέει στο React «ξανα-τρέξε render τώρα» — χρειαζόταν άσχετη αλλαγή state (π.χ. το
+     κλείσιμο των Ρυθμίσεων) για να ξαναρχίσει render και να «τσιμπήσει» επιτέλους το ενημερωμένο
+     LANG. Λύση: μικρό dummy state που αναγκάζει άμεσο δεύτερο render αμέσως μετά το applyLang. */
+  const [,bumpLangTick] = useState(0);
+  useEffect(()=>{ applyCurrency(settings.currency); applyLang(settings.lang); bumpLangTick(n=>n+1); },[settings.currency, settings.lang]);
   /* TEST MODE (25/08) — classList στο <html>, ίδιο μοτίβο με applyTheme('dark') πιο πάνω. Το CSS
-     (.test-banner / html.test-mode .hdr κλπ) κάνει όλη τη δουλειά του layout· εδώ μόνο toggle. */
-  useEffect(()=>{ document.documentElement.classList.toggle('test-mode', !!settings.testMode); },[settings.testMode]);
+     (.test-banner / html.test-mode .hdr κλπ) κάνει όλη τη δουλειά του layout· εδώ μόνο toggle.
+     25/08 β' — BUG (αναφορά Ανδρέα, iPhone standalone PWA): η safe-area-inset-top περιοχή (πίσω
+     από το notch) μερικές φορές «κρατάει» οπτικά το προηγούμενο (πορτοκαλί) χρώμα λίγο παραπάνω
+     όταν σβήνει το TEST MODE, ΑΝ ΚΑΙ το ίδιο το banner εξαφανίζεται σωστά (δηλ. το DOM είναι ήδη
+     σωστό — καθαρά compositing/repaint καθυστέρηση WebKit, όχι λάθος state). Το forced reflow
+     (offsetHeight read) παρακάτω είναι τυπικό, ασφαλές τέχνασμα για τέτοιες περιπτώσεις — θέλει
+     επιβεβαίωση σε πραγματικό iPhone, δεν δοκιμάζεται εδώ χωρίς συσκευή. */
+  useEffect(()=>{
+    document.documentElement.classList.toggle('test-mode', !!settings.testMode);
+    void document.body.offsetHeight;
+  },[settings.testMode]);
   /* module-level mirror ώστε components χωρίς direct πρόσβαση στο state (LIVE_EXP_CATS pattern)
      να βλέπουν πάντα τρέχουσες κατηγορίες, είτε άλλαξαν τοπικά είτε από άλλη συσκευή */
   useEffect(()=>{ LIVE_EXP_CATS = expCats; },[expCats]);
