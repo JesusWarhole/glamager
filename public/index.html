@@ -69,6 +69,14 @@
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
     .hdr-spacer{padding-top:108px;}
+    /* TEST MODE (25/08) — λεπτή, πάντα-ορατή λωρίδα πάνω-πάνω σε ΟΛΕΣ τις οθόνες (login, PIN,
+       κύρια εφαρμογή). Toggle γίνεται με classList στο <html> (ίδιο μοτίβο με applyTheme/.dark),
+       ΟΧΙ per-screen prop — έτσι δεν χρειάζεται να αγγίξουμε κάθε component ξεχωριστά. Όταν είναι
+       ενεργό, σπρώχνει το fixed header/hero κάτω κατά το ύψος του banner ώστε να μην καλύπτει τίποτα. */
+    .test-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;z-index:70;background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+    html.test-mode .hdr{top:27px;}
+    html.test-mode .hdr-spacer{padding-top:135px;}
+    html.test-mode .hero{padding-top:27px;box-sizing:border-box;}
     .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);}
     .amt{font-variant-numeric:tabular-nums;}
     .hero-shadow{box-shadow:0 8px 32px rgba(5,150,105,.28);}
@@ -509,6 +517,20 @@ const STRINGS = {
   staffRoleFieldLabel: { el:'Ρόλος',                                    en:'Role' },
   servesClientsLabel: { el:'Παρέχει υπηρεσίες',                         en:'Provides services' },
   servesClientsHint:  { el:'Εμφανίζεται στην επιλογή «ποιος εξυπηρέτησε» σε γραμμή/tip — ανεξάρτητο από τον ρόλο.', en:'Shows up in the "who served" picker for lines/tips — independent of role.' },
+  activeStaffLabel:  { el:'Ενεργός/-ή',                                 en:'Active' },
+  activeStaffHint:   { el:'Ανενεργός/-ή σημαίνει: δεν εμφανίζεται πια στο PIN ούτε σε νέες αναθέσεις — αλλά ΟΛΟ το ιστορικό (ποιος εξυπηρέτησε, πότε, τι) μένει για πάντα, μόνο το όνομα φαίνεται γκρι.', en:'Inactive means: no longer appears in PIN entry or new-work pickers — but ALL history (who served, when, what) stays forever, the name just shows greyed out.' },
+  inactiveStaffBadge:{ el:'ανενεργός/-ή',                               en:'inactive' },
+  testModeSectionLabel: { el:'Δοκιμαστική λειτουργία',                  en:'Test mode' },
+  testModeToggleLabel:  { el:'Ενεργό TEST MODE',                        en:'TEST MODE active' },
+  testModeToggleHint:   { el:'Εμφανίζει πορτοκαλί ταμπέλα σε ΟΛΕΣ τις οθόνες, σε όλους — ειδοποιεί ότι ό,τι καταχωρείται τώρα μπορεί να διαγραφεί.', en:'Shows an orange banner on ALL screens, for everyone — warns that anything entered now may get deleted.' },
+  testModeSectionHint:  { el:'Άναψέ το πριν δοκιμάσετε τη ροή στο πραγματικό μαγαζί, σβήσ\' το όταν είστε έτοιμοι για κανονική χρήση. Δουλεύει μαζί με την «Επαναφορά πριν την έναρξη» παρακάτω.', en:'Turn it on before testing the real flow in the shop, turn it off when ready for normal use. Works together with "Reset before launch" below.' },
+  testModeBannerText:   { el:'ό,τι καταχωρείς μπορεί να διαγραφεί',     en:'whatever you enter may get deleted' },
+  resetPreLaunchTitle:  { el:'⚠️ Επαναφορά πριν την έναρξη',            en:'⚠️ Reset before launch' },
+  resetPreLaunchHint:   { el:'Σβήνει ΟΡΙΣΤΙΚΑ όλες τις επισκέψεις, έξοδα, πελάτες, αιτήματα αδειών, kudos και κλειδώματα Ζ — ό,τι δοκιμαστικό έχει μπει μέχρι τώρα. ΔΕΝ αγγίζει προσωπικό, κατάλογο, ρυθμίσεις μαγαζιού, ή πρόγραμμα βαρδιών/αδειών. Μη αναστρέψιμο.', en:'PERMANENTLY deletes all visits, expenses, clients, leave requests, kudos and Z-locks — any test data entered so far. Does NOT touch staff, catalog, shop settings, or the shift/leave schedule. Irreversible.' },
+  resetPreLaunchTypePrompt: { el:'Πληκτρολόγησε',                       en:'Type' },
+  resetConfirmWord:     { el:'ΕΠΑΝΑΦΟΡΑ',                                en:'RESET' },
+  resetPreLaunchBtn:    { el:'Οριστική επαναφορά',                      en:'Confirm reset' },
+  resetPreLaunchDoneMsg:{ el:'Έγινε επαναφορά. Η εφαρμογή είναι καθαρή για πραγματική χρήση.', en:'Reset complete. The app is clean and ready for real use.' },
   birthdayLabel:     { el:'Γενέθλια',                                   en:'Birthday' },
   hiredLabel:        { el:'Ημ/νία πρόσληψης',                           en:'Hire date' },
   leaveTotalLabel:   { el:'Μέρες άδειας/έτος',                          en:'Leave days/year' },
@@ -1468,6 +1490,36 @@ const visitTotal = v => v.lines.reduce((s,l)=>s+lineTotal(l),0);
 const visitVat   = v => v.lines.reduce((s,l)=>s+vatOf(lineTotal(l),l.vat||24),0);
 /* Μερίδιο tip ανά υπάλληλο — υποστηρίζει «split» (π.χ. πελάτης λέει «για τα κορίτσια»):
    v.tipSplit = [staffId,...] ισομερής διαμοιρασμός· αλλιώς παλιά λογική v.tipStaffId (όλο σε ένα άτομο). */
+/* Ενεργός/Ανενεργός υπάλληλος (StaffManager, 25/08) — soft-deactivate, ΠΟΤΕ delete του staff
+   record. Το ιστορικό attribution (visits/expenses/reports/Πελατολόγιο) εξαρτάται από το id
+   αυτό, οπότε μένει άθικτο ΓΙΑ ΠΑΝΤΑ — απλά ο άνθρωπος εξαφανίζεται από PIN/νέες αναθέσεις και
+   το όνομά του εμφανίζεται γκρι όπου υπάρχει ήδη στο ιστορικό. Απουσία πεδίου `active` = ενεργός
+   (ίδιο fallback pattern με servesClients) ώστε να μη χρειάζεται migration στα υπάρχοντα records. */
+const isActiveStaff = s => s.active !== false;
+const activeStaff = list => (list||[]).filter(isActiveStaff);
+/* Pickers πάνω σε ΥΠΑΡΧΟΥΣΑ ανάθεση (επεξεργασία παλιάς εγγραφής/γραμμής καλαθιού): δείχνει τους
+   ενεργούς + όποιον είναι ήδη εκεί ανατεθειμένος ακόμα κι αν έγινε ανενεργός στο μεταξύ — αλλιώς
+   το chip της υπάρχουσας ανάθεσης θα εξαφανιζόταν από το picker και θα έδειχνε σαν να μη διάλεξε
+   κανείς κανέναν. Για ΝΕΕΣ αναθέσεις (currentId=null/κενό) γυρνάει απλά τους ενεργούς. */
+const pickableStaff = (list, currentId) => {
+  const act = activeStaff(list);
+  if(currentId && !act.some(s=>s.id===currentId)){
+    const cur = (list||[]).find(s=>s.id===currentId);
+    if(cur) return [...act, cur];
+  }
+  return act;
+};
+/* Όνομα υπαλλήλου για ΙΣΤΟΡΙΚΑ records (Ταμείο/Πελατολόγιο/reports) — ΠΟΤΕ δεν φιλτράρει, πάντα
+   ψάχνει σε ΟΛΟΚΛΗΡΗ τη λίστα (ενεργούς+ανενεργούς) ώστε να μη σπάει ποτέ παλιό ιστορικό· αν ο
+   άνθρωπος είναι ανενεργός, μπαίνει γκρι πλάγιο στυλ + μικρή ετικέτα. Καλείται ως συνάρτηση
+   {StaffNameTag(staff,id)} — ΟΧΙ <StaffNameTag/> — ίδιο μοτίβο με NoteBlock/ClientCard, ζει μέσα
+   σε άλλα components και δεν χρειάζεται δικό του mount/state. */
+const StaffNameTag = (staffList, id, fallback) => {
+  const s = (staffList||[]).find(x=>x.id===id);
+  if(!s) return fallback!==undefined ? fallback : '—';
+  if(isActiveStaff(s)) return s.name;
+  return <React.Fragment>{s.name} <span className="text-[9px] font-bold not-italic" style={{opacity:0.65}}>({t('inactiveStaffBadge')})</span></React.Fragment>;
+};
 const tipShareFor = (v,staffId) => {
   if(!(v.tip>0)) return 0;
   if(v.tipSplit && v.tipSplit.length>0) return v.tipSplit.includes(staffId) ? v.tip/v.tipSplit.length : 0;
@@ -1664,7 +1716,10 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
      18/07: `staff` είναι πλέον η ζωντανή Firebase-backed λίστα (πριν ήταν module-level
      DEMO_MASTERS/DEMO_STAFF merge) — ίδιο αποτέλεσμα σχήματος, απλά ζωντανή πηγή. */
   const RANK = { [ROLE.STAFF]:0, [ROLE.RECEPTION]:1, [ROLE.MASTER]:2 };
-  const people = staff.map(s=>({id:s.id, name:s.name, role:s.role})).sort((a,b)=>{
+  /* Ανενεργό προσωπικό (25/08) δεν εμφανίζεται πια εδώ — pickableStaff(staff,myId) κρατάει τον
+     ενεργό κόσμο + όποιον έκανε μόλις login (myId) ακόμα κι αν έγινε ανενεργός στο μεταξύ, ώστε
+     να μη μείνει ποτέ κάποιος «κλειδωμένος έξω» μόνος του χωρίς επιλογή. */
+  const people = pickableStaff(staff, myId).map(s=>({id:s.id, name:s.name, role:s.role})).sort((a,b)=>{
     if(a.id===myId) return -1;
     if(b.id===myId) return 1;
     return RANK[a.role]-RANK[b.role];
@@ -1741,6 +1796,10 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
    footer (ήδη fixed) μένει ακίνητο, γι' αυτό φαινόταν να «πάει βόλτα». Λύση: fixed (ίδιο
    μοτίβο με το Nav footer) — πλήρως αποσυνδεδεμένο από το scroll/bounce του #root, ό,τι κι αν
    συμβαίνει στο περιεχόμενο. Χρειάζεται αντίστοιχο padding-top στο περιεχόμενο (βλ. App). */
+/* TEST MODE banner — καλείται σε ΟΛΑ τα top-level branches του App (login/operator picker/κύρια
+   εφαρμογή) ώστε να είναι πάντα ορατό ανεξάρτητα από το πού βρίσκεται κανείς. */
+const TestBanner = () => <div className="test-banner">🧪 TEST MODE — {t('testModeBannerText')}</div>;
+
 const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock}) => (
   <div className="hdr px-4 pt-11 pb-4 flex items-center gap-3 fixed top-0 z-40" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
     {onBack
@@ -2358,7 +2417,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
               <div className="mb-2"><CInput label={t('priceEuroLabel')} value={l.price} onChange={v2=>setLine(i,{price:v2})} type="number"/></div>
               <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffLabel')}</p>
               <div className="flex gap-1.5 flex-wrap">
-                {staff.map(s=><button key={s.id} onClick={()=>setLine(i,{staffId:s.id})} className={`chip ${l.staffId===s.id?'on':''}`}>{s.name}</button>)}
+                {pickableStaff(staff, l.staffId).map(s=><button key={s.id} onClick={()=>setLine(i,{staffId:s.id})} className={`chip ${l.staffId===s.id?'on':''}`}>{s.name}{!isActiveStaff(s)?` (${t('inactiveStaffBadge')})`:''}</button>)}
               </div>
             </div>
           ))}
@@ -2444,7 +2503,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
             <div key={i} className="rounded-xl px-3 py-2.5 flex items-center gap-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{l.name}</p>
-                <p className="text-xs" style={{color:'var(--text-dim)'}}>{staff.find(s=>s.id===l.staffId)?.name||'—'}{l.dur>0?` · ${l.dur}′`:''}{lineDiscount(l)>0.005?` · ${t('discountFullInline')} −${fmt(lineDiscount(l))}`:''}</p>
+                <p className="text-xs" style={{color:'var(--text-dim)'}}>{StaffNameTag(staff,l.staffId)}{l.dur>0?` · ${l.dur}′`:''}{lineDiscount(l)>0.005?` · ${t('discountFullInline')} −${fmt(lineDiscount(l))}`:''}</p>
               </div>
               <p className="font-black amt text-sm" style={{color:'var(--text)'}}>{fmt(lineTotal(l))}</p>
             </div>
@@ -2458,7 +2517,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
         {v.tip>0 && <div className="flex justify-between items-center py-1.5">
           <span className="text-xs font-bold" style={{color:'var(--text-dim)'}}>Tip → {v.tipSplit?.length>1
             ? `${v.tipSplit.map(id=>staff.find(s=>s.id===id)?.name||'—').join(' + ')} (÷${v.tipSplit.length} ${t('perPersonLabel')})`
-            : staff.find(s=>s.id===v.tipStaffId)?.name||'—'}</span>
+            : StaffNameTag(staff,v.tipStaffId)}</span>
           <span className="font-bold amt text-yellow-500">{fmt(v.tip)}</span>
         </div>}
         {isMaster && <div className="flex justify-between items-center py-1.5">
@@ -2535,7 +2594,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
 
   /* Βήμα 2 — «ποιος το έκανε»: υπάλληλοι υπηρεσίας πρώτα, Ρεσεψιόν τελευταία
      (η ρεσεψιόν σπάνια είναι αυτή που εξυπηρέτησε — να μην είναι το πρώτο tap-target) */
-  const staffOrdered = [...staff].sort((a,b)=>(a.role===ROLE.RECEPTION?1:0)-(b.role===ROLE.RECEPTION?1:0));
+  const staffOrdered = pickableStaff(staff, defaultStaffId).sort((a,b)=>(a.role===ROLE.RECEPTION?1:0)-(b.role===ROLE.RECEPTION?1:0));
 
   /* Πρόσφατα ελεύθερα είδη (εκτός καταλόγου) — ίδιο ★ πνεύμα, ώστε να μη γράφεις το ίδιο custom item απ' την αρχή κάθε φορά */
   const recentFree = useMemo(()=>{
@@ -2677,8 +2736,8 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
 
         <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('whoServedLabel')}</p>
         <div className="flex gap-2 flex-wrap mb-5">
-          {staff.map(s=>(
-            <button key={s.id} onClick={()=>onChange({...line,staffId:s.id})} className={`chip ${line.staffId===s.id?'on':''}`}>{s.name}</button>
+          {pickableStaff(staff, line.staffId).map(s=>(
+            <button key={s.id} onClick={()=>onChange({...line,staffId:s.id})} className={`chip ${line.staffId===s.id?'on':''}`}>{s.name}{!isActiveStaff(s)?` (${t('inactiveStaffBadge')})`:''}</button>
           ))}
         </div>
 
@@ -3483,7 +3542,7 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
   const daysSinceLast = last ? Math.floor((new Date(today())-new Date(last.date))/86400000) : null;
   const isInactive = daysSinceLast!=null && daysSinceLast>=inactiveThreshold;
   const products = [];
-  hist.forEach(v=>v.lines.forEach(l=>{ if(l.kind==='product') products.push({date:v.date,name:l.name,price:lineTotal(l),staff:staff.find(s=>s.id===l.staffId)?.name}); }));
+  hist.forEach(v=>v.lines.forEach(l=>{ if(l.kind==='product') products.push({date:v.date,name:l.name,price:lineTotal(l),staffId:l.staffId}); }));
   const total = hist.reduce((s,v)=>s+visitTotal(v),0);
   const yearVisits = hist.filter(v=>v.date>=`${CUR_Y}-01-01`).length;
   const [editing,setEditing] = useState(null); // visitId
@@ -3532,7 +3591,7 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
             <p className="text-xs font-black uppercase tracking-wide" style={{color:'#b45309'}}>{t('lastVisitLabel')} — {fmtD(last.date)}</p>
             {isInactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'#fee2e2',color:'#dc2626'}}>😴 {t('inactiveLabel')} · {daysSinceLast}{t('daysAbbrev')}</span>}
           </div>
-          <p className="text-sm font-bold" style={{color:'#78350f'}}>{last.lines.map(l=>l.name).join(' + ')} · {staff.find(s=>s.id===last.lines[0]?.staffId)?.name||''}</p>
+          <p className="text-sm font-bold" style={{color:'#78350f'}}>{last.lines.map(l=>l.name).join(' + ')} · {StaffNameTag(staff,last.lines[0]?.staffId,'')}</p>
           {NoteBlock({v:last,big:true})}
         </div>
       ) : <div className="card py-8 text-center mb-3"><p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('noVisitsYet')}</p></div>}
@@ -3558,7 +3617,7 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
           <div className="card overflow-hidden">
             {products.map((p,i)=>(
               <div key={i} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
-                <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{p.name}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{fmtD(p.date)}{p.staff?` · ${p.staff}`:''}</p></div>
+                <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{p.name}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{fmtD(p.date)}{p.staffId?<React.Fragment> · {StaffNameTag(staff,p.staffId)}</React.Fragment>:null}</p></div>
                 <p className="font-bold amt text-sm" style={{color:'var(--accent-600)'}}>{fmt(p.price)}</p>
               </div>
             ))}
@@ -3577,7 +3636,7 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
                 {v.lines.map((l,i)=>(
                   <p key={i} className="text-sm mt-1" style={{color:'var(--text)'}}>
                     <span className="font-bold">{l.name}</span>
-                    <span style={{color:'var(--text-dim)'}}> · {staff.find(s=>s.id===l.staffId)?.name||'—'} · </span>
+                    <span style={{color:'var(--text-dim)'}}> · {StaffNameTag(staff,l.staffId)} · </span>
                     <span className="amt font-bold" style={{color:'var(--accent-600)'}}>{fmt(lineTotal(l))}</span>
                   </p>
                 ))}
@@ -4410,13 +4469,13 @@ const birthdayInputValue = b => (b && b.length>5) ? b : '';
 
 const StaffManager = ({staff,onSave,onClose}) => {
   const [edit,setEdit] = useState(null);
-  const blank = () => ({ id:null, name:'', email:'', role:ROLE.STAFF, servesClients:true, birthday:null, hired:'', leaveTotal:20, schedule:DEF_SCHEDULE });
+  const blank = () => ({ id:null, name:'', email:'', role:ROLE.STAFF, servesClients:true, active:true, birthday:null, hired:'', leaveTotal:20, schedule:DEF_SCHEDULE });
   const startEdit = p => setEdit({...p});
   const set = (k,v) => setEdit(e=>({...e,[k]:v}));
   const canSave = edit && edit.name?.trim() && edit.email?.trim();
   const save = async () => {
     try{
-      await onSave({...edit, name:edit.name.trim(), email:edit.email.trim().toLowerCase(), leaveTotal:parseInt(edit.leaveTotal)||0, hired:edit.hired||null, servesClients: edit.servesClients ?? edit.role===ROLE.STAFF});
+      await onSave({...edit, name:edit.name.trim(), email:edit.email.trim().toLowerCase(), leaveTotal:parseInt(edit.leaveTotal)||0, hired:edit.hired||null, servesClients: edit.servesClients ?? edit.role===ROLE.STAFF, active: edit.active ?? true});
       setEdit(null);
     }catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
   };
@@ -4453,6 +4512,19 @@ const StaffManager = ({staff,onSave,onClose}) => {
                 <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.servesClients ?? edit.role===ROLE.STAFF)?'translateX(24px)':'none'}}/>
               </button>
             </div>
+            {/* Ενεργός/Ανενεργός (25/08) — soft-deactivate, ΠΟΤΕ delete. Κρύβει το άτομο από
+                PIN/νέες αναθέσεις· όλο το ιστορικό μένει, απλά γκρι με ετικέτα όπου εμφανίζεται. */}
+            {edit.id && (
+              <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-3" style={{background:'var(--surface)'}}>
+                <div className="pr-2">
+                  <p className="text-sm font-bold" style={{color:'var(--text)'}}>👤 {t('activeStaffLabel')}</p>
+                  <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('activeStaffHint')}</p>
+                </div>
+                <button onClick={()=>set('active',!(edit.active ?? true))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.active ?? true)?'var(--accent-600)':'#d1d5db'}}>
+                  <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.active ?? true)?'translateX(24px)':'none'}}/>
+                </button>
+              </div>
+            )}
             <div className="flex gap-2 mb-3">
               <CInput label={t('birthdayLabel')} value={birthdayInputValue(edit.birthday)} onChange={v=>set('birthday',v||null)} type="date"/>
               <CInput label={t('hiredLabel')} value={edit.hired} onChange={v=>set('hired',v)} type="date"/>
@@ -4469,10 +4541,10 @@ const StaffManager = ({staff,onSave,onClose}) => {
         )}
 
         <div className="space-y-1.5">
-          {staff.map(p=>(
-            <button key={p.id} onClick={()=>startEdit(p)} className="card px-4 py-3 flex items-center justify-between gap-2 w-full text-left">
+          {[...staff].sort((a,b)=>(isActiveStaff(a)?0:1)-(isActiveStaff(b)?0:1)).map(p=>(
+            <button key={p.id} onClick={()=>startEdit(p)} className="card px-4 py-3 flex items-center justify-between gap-2 w-full text-left" style={!isActiveStaff(p)?{opacity:0.55}:{}}>
               <div className="min-w-0">
-                <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{p.name}</p>
+                <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{p.name}{!isActiveStaff(p)?<span className="text-[10px] font-bold ml-1.5" style={{color:'var(--text-dim)'}}>({t('inactiveStaffBadge')})</span>:null}</p>
                 <p className="text-xs truncate" style={{color:'var(--text-dim)'}}>{roleLabel(p.role)}{(p.servesClients ?? p.role===ROLE.STAFF)?' · ✂️':''} · {p.email}{p.birthday?` · 🎂 ${p.birthday.split('-').reverse().join('/')}`:''}</p>
               </div>
               <Ic n="next" s={16} c="var(--text-dim)"/>
@@ -4581,9 +4653,12 @@ const PinChangeCard = ({onChangePin}) => {
   );
 };
 
-const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData}) => {
+const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch}) => {
   const [wiped,setWiped] = useState(false);
   const [wiping,setWiping] = useState(false);
+  const [resetConfirmText,setResetConfirmText] = useState('');
+  const [resetting,setResetting] = useState(false);
+  const [resetDone,setResetDone] = useState(false);
   const set = async (k,v) => {
     try{ await updateSettings({[k]:v}); }
     catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
@@ -4718,6 +4793,47 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
         {t('changePwTitle')}{deviceEmail ? ` (${t('deviceAccountLabel')}: ${deviceEmail})` : ''}
       </p>
       <ChangePasswordCard onChangePassword={onChangePassword}/>
+
+      {isMaster && (<React.Fragment>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('testModeSectionLabel')}</p>
+        <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-2" style={{background:'var(--soft)'}}>
+          <div className="pr-2">
+            <p className="text-sm font-bold" style={{color:'var(--text)'}}>🧪 {t('testModeToggleLabel')}</p>
+            <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('testModeToggleHint')}</p>
+          </div>
+          <button onClick={()=>set('testMode',!settings.testMode)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.testMode?'#f59e0b':'#d1d5db'}}>
+            <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:settings.testMode?'translateX(24px)':'none'}}/>
+          </button>
+        </div>
+        <p className="text-xs mb-5" style={{color:'var(--text-dim)'}}>{t('testModeSectionHint')}</p>
+      </React.Fragment>)}
+
+      {isMaster && onResetPreLaunch && (<React.Fragment>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'#dc2626'}}>{t('resetPreLaunchTitle')}</p>
+        <div className="rounded-2xl p-4 mb-5 border-2" style={{borderColor:'#fecaca',background:'#fef2f2'}}>
+          <p className="text-xs mb-3" style={{color:'#7f1d1d'}}>{t('resetPreLaunchHint')}</p>
+          {resetDone ? (
+            <p className="text-xs font-bold" style={{color:'#16a34a'}}>✅ {t('resetPreLaunchDoneMsg')}</p>
+          ) : (<React.Fragment>
+            <p className="text-[11px] font-bold mb-1.5" style={{color:'#7f1d1d'}}>{t('resetPreLaunchTypePrompt')} <span className="font-black">{t('resetConfirmWord')}</span></p>
+            <input value={resetConfirmText} onChange={e=>setResetConfirmText(e.target.value)}
+              className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none border mb-2" style={{background:'white',borderColor:'#fecaca',color:'#7f1d1d'}}/>
+            <button onClick={async ()=>{
+                if(resetting) return;
+                if(resetConfirmText.trim().toUpperCase()!==t('resetConfirmWord')) return;
+                setResetting(true);
+                const res = await onResetPreLaunch();
+                setResetting(false);
+                if(!res.ok){ window.alert(t('wipeDemoErrorPrefix')+' '+res.error); return; }
+                setResetDone(true);
+              }}
+              disabled={resetting || resetConfirmText.trim().toUpperCase()!==t('resetConfirmWord')}
+              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'#dc2626'}}>
+              {resetting ? t('wipeDemoBusyBtn') : t('resetPreLaunchBtn')}
+            </button>
+          </React.Fragment>)}
+        </div>
+      </React.Fragment>)}
 
       {isMaster && onWipeDemoData && (<React.Fragment>
         <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('wipeDemoTitle')}</p>
@@ -4863,6 +4979,9 @@ const App = () => {
   /* currency/lang: ΜΕΡΟΣ του settings που έρχεται από Firebase — πρέπει να ξαναεφαρμόζεται
      κάθε φορά που αλλάζει το settings (τοπικά Ή από άλλη συσκευή), όχι μόνο στο mount */
   useEffect(()=>{ applyCurrency(settings.currency); applyLang(settings.lang); },[settings.currency, settings.lang]);
+  /* TEST MODE (25/08) — classList στο <html>, ίδιο μοτίβο με applyTheme('dark') πιο πάνω. Το CSS
+     (.test-banner / html.test-mode .hdr κλπ) κάνει όλη τη δουλειά του layout· εδώ μόνο toggle. */
+  useEffect(()=>{ document.documentElement.classList.toggle('test-mode', !!settings.testMode); },[settings.testMode]);
   /* module-level mirror ώστε components χωρίς direct πρόσβαση στο state (LIVE_EXP_CATS pattern)
      να βλέπουν πάντα τρέχουσες κατηγορίες, είτε άλλαξαν τοπικά είτε από άλλη συσκευή */
   useEffect(()=>{ LIVE_EXP_CATS = expCats; },[expCats]);
@@ -4942,6 +5061,30 @@ const App = () => {
       return { ok:true, totalFound, found };
     }catch(err){
       return { ok:false, totalFound, found, error: (err && (err.message||err.code)) || String(err) };
+    }
+  };
+
+  /* «Επαναφορά πριν την έναρξη» (25/08) — ΓΕΝΙΚΟ reset, διαφορετικό από το wipeDemoData πιο πάνω
+     (που πιάνει ΜΟΝΟ τα γνωστά DEMO_SEED_IDS). Αυτό σβήνει ΟΤΙΔΗΠΟΤΕ έχει μπει μέχρι τη στιγμή
+     που πατιέται — δοκιμαστικό ή μη — σε visits/expenses/clients/leaveReqs/kudos/zmap, ώστε η
+     εφαρμογή να είναι καθαρή για την πρώτη πραγματική μέρα. ΡΗΤΑ ΔΕΝ αγγίζει: staff (πραγματικοί
+     λογαριασμοί), services/products (πραγματικός κατάλογος/απόθεμα), settings, expCats,
+     fixedExpenses, pins, ΚΑΙ schedData (απόφαση Ανδρέα 25/08 — το πρόγραμμα βαρδιών/αδειών είναι
+     ήδη πραγματικό ωράριο του μαγαζιού, όχι δοκιμαστικός τζίρος, μένει όπως είναι). Μη
+     αναστρέψιμο — το UI (SettingsSheet) απαιτεί πληκτρολόγηση λέξης επιβεβαίωσης, όχι απλό OK. */
+  const resetPreLaunch = async () => {
+    try{
+      await Promise.all([
+        setVisits(()=>[]),
+        setExpenses(()=>[]),
+        setClients(()=>[]),
+        setLeaveReqs(()=>[]),
+        setKudos(()=>[]),
+        setZmap(()=>({})),
+      ]);
+      return { ok:true };
+    }catch(err){
+      return { ok:false, error:(err && (err.message||err.code)) || String(err) };
     }
   };
 
@@ -5094,16 +5237,17 @@ const App = () => {
   if(!authReady){
     return (
       <div className="min-h-screen hero flex items-center justify-center">
+        {settings.testMode && <TestBanner/>}
         <p className="text-white/80 text-sm font-semibold">{t('loadingApp')}</p>
       </div>
     );
   }
   if(!fbUser){
-    return <LoginScreen shopName={settings.shopName} busy={authBusy} err={authErr} onLogin={doLogin}/>;
+    return <React.Fragment>{settings.testMode && <TestBanner/>}<LoginScreen shopName={settings.shopName} busy={authBusy} err={authErr} onLogin={doLogin}/></React.Fragment>;
   }
   if(!operator){
-    return <OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
-      myId={authAccounts[(fbUser.email||'').toLowerCase()]?.id}/>;
+    return <React.Fragment>{settings.testMode && <TestBanner/>}<OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
+      myId={authAccounts[(fbUser.email||'').toLowerCase()]?.id}/></React.Fragment>;
   }
 
   const isMaster = operator.role===ROLE.MASTER;
@@ -5114,6 +5258,7 @@ const App = () => {
 
   return (
     <div style={{minHeight:'100dvh',background:'var(--bg)'}}>
+      {settings.testMode && <TestBanner/>}
       <Header title={titles[tab]} sub={settings.shopName} operator={operator}
         onSettings={()=>setShowSettings(true)}
         onLock={lockNow}
@@ -5194,7 +5339,7 @@ const App = () => {
           onOpenTemplates={isMaster?()=>{setShowSettings(false);setTemplatePickerOpen(true);}:null}
           onOpenStaffManager={isMaster?()=>{setShowSettings(false);setStaffManagerOpen(true);}:null}
           onChangePassword={changePassword} onChangePin={changePin}
-          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData}/>
+          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch}/>
       )}
     </div>
   );
