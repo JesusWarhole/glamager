@@ -69,12 +69,16 @@
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
     .hdr-spacer{padding-top:108px;}
-    /* TEST MODE (25/08) — λεπτή, πάντα-ορατή λωρίδα πάνω-πάνω σε ΟΛΕΣ τις οθόνες (login, PIN,
-       κύρια εφαρμογή). Toggle γίνεται με classList στο <html> (ίδιο μοτίβο με applyTheme/.dark),
-       ΟΧΙ per-screen prop — έτσι δεν χρειάζεται να αγγίξουμε κάθε component ξεχωριστά. Όταν είναι
-       ενεργό, σπρώχνει το fixed header/hero κάτω κατά το ύψος του banner ώστε να μην καλύπτει τίποτα. */
+    /* TEST MODE (25/08, αναθεωρήθηκε 25/08 β' μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο»
+       στην safe-area/notch περιοχή iOS standalone PWA μετά το off, ΑΚΟΜΑ ΚΑΙ μετά από καθαρή
+       επανεγκατάσταση, άρα πραγματικό rendering bug όχι cache). Η ΠΑΛΙΑ προσέγγιση είχε ΔΥΟ fixed
+       στοιχεία — ένα ξεχωριστό πάντα-πάνω banner (.test-banner, τώρα ΑΧΡΗΣΤΟ, μένει εδώ μόνο ως
+       ιστορικό/αναφορά) ΚΑΙ το ίδιο το Header να μετακινείται (top:0↔27px) — αυτός ο συνδυασμός
+       πιθανότατα μπέρδευε το WebKit compositor στη safe-area. ΝΕΑ προσέγγιση: το banner ζει ΜΕΣΑ
+       στο ΙΔΙΟ fixed κουτί του Header (.test-banner-inline, βλ. Header component) — το `.hdr`
+       ΠΟΤΕ δεν μετακινείται/εξαφανίζεται πια, μόνο μεγαλώνει/μικραίνει εσωτερικά. */
     .test-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;z-index:70;background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
-    html.test-mode .hdr{top:27px;}
+    .test-banner-inline{background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
     html.test-mode .hdr-spacer{padding-top:135px;}
     html.test-mode .hero{padding-top:27px;box-sizing:border-box;}
     .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);}
@@ -1963,23 +1967,34 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
    εφαρμογή) ώστε να είναι πάντα ορατό ανεξάρτητα από το πού βρίσκεται κανείς. */
 const TestBanner = () => <div className="test-banner">🧪 TEST MODE — {t('testModeBannerText')}</div>;
 
-const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock}) => (
-  <div className="hdr px-4 pt-11 pb-4 flex items-center gap-3 fixed top-0 z-40" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
-    {onBack
-      ? <button onClick={onBack} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={18} c="white"/></button>
-      : <BrandMark s={36}/>}
-    <div className="flex-1 min-w-0">
-      <h1 className="text-base font-black text-white truncate">{title}</h1>
-      {sub && <p className="text-white/70 text-xs mt-0.5 truncate">{sub}</p>}
-    </div>
-    {operator && (
-      <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1 flex-shrink-0">
-        <span className="text-white text-xs font-bold">{operator.name}</span>
+const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}) => (
+  <div className="hdr fixed top-0 z-40" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
+    {/* 25/08 β' — TEST MODE banner ΜΕΣΑ στο ίδιο πάντα-παρόν fixed κουτί, όχι ξεχωριστό στοιχείο
+        από πάνω (όπως ήταν πριν) που εμφανιζόταν/εξαφανιζόταν ΚΑΙ ταυτόχρονα μετακινούσε το ίδιο
+        το Header (top:0↔27px). Αυτός ο συνδυασμός (δύο fixed στοιχεία, το ένα να μετακινείται
+        ενώ το άλλο εμφανίζεται/χάνεται) είναι πολύ πιθανή αιτία του bug που ανέφερε ο Ανδρέας
+        (πορτοκαλί «κολλημένο» στην safe-area/notch περιοχή στο iOS standalone PWA μετά το
+        απενεργοποίηση). Τώρα το `.hdr` ΠΟΤΕ δεν μετακινείται ούτε εξαφανίζεται — μένει το ΙΔΙΟ
+        στοιχείο στο top:0 πάντα, απλά μεγαλώνει/μικραίνει εσωτερικά. Χρειάζεται επιβεβαίωση σε
+        πραγματικό iPhone, δεν μπορεί να δοκιμαστεί εδώ χωρίς συσκευή. */}
+    {testMode && <div className="test-banner-inline">🧪 TEST MODE — {t('testModeBannerText')}</div>}
+    <div className="px-4 pt-11 pb-4 flex items-center gap-3">
+      {onBack
+        ? <button onClick={onBack} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={18} c="white"/></button>
+        : <BrandMark s={36}/>}
+      <div className="flex-1 min-w-0">
+        <h1 className="text-base font-black text-white truncate">{title}</h1>
+        {sub && <p className="text-white/70 text-xs mt-0.5 truncate">{sub}</p>}
       </div>
-    )}
-    {onClients && <button onClick={onClients} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="users" s={18} c="white"/></button>}
-    {onLock && <button onClick={onLock} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="lock" s={17} c="white"/></button>}
-    {onSettings && <button onClick={onSettings} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="gear" s={18} c="white"/></button>}
+      {operator && (
+        <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1 flex-shrink-0">
+          <span className="text-white text-xs font-bold">{operator.name}</span>
+        </div>
+      )}
+      {onClients && <button onClick={onClients} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="users" s={18} c="white"/></button>}
+      {onLock && <button onClick={onLock} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="lock" s={17} c="white"/></button>}
+      {onSettings && <button onClick={onSettings} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="gear" s={18} c="white"/></button>}
+    </div>
   </div>
 );
 
@@ -5211,18 +5226,14 @@ const App = () => {
      LANG. Λύση: μικρό dummy state που αναγκάζει άμεσο δεύτερο render αμέσως μετά το applyLang. */
   const [,bumpLangTick] = useState(0);
   useEffect(()=>{ applyCurrency(settings.currency); applyLang(settings.lang); bumpLangTick(n=>n+1); },[settings.currency, settings.lang]);
-  /* TEST MODE (25/08) — classList στο <html>, ίδιο μοτίβο με applyTheme('dark') πιο πάνω. Το CSS
-     (.test-banner / html.test-mode .hdr κλπ) κάνει όλη τη δουλειά του layout· εδώ μόνο toggle.
-     25/08 β' — BUG (αναφορά Ανδρέα, iPhone standalone PWA): η safe-area-inset-top περιοχή (πίσω
-     από το notch) μερικές φορές «κρατάει» οπτικά το προηγούμενο (πορτοκαλί) χρώμα λίγο παραπάνω
-     όταν σβήνει το TEST MODE, ΑΝ ΚΑΙ το ίδιο το banner εξαφανίζεται σωστά (δηλ. το DOM είναι ήδη
-     σωστό — καθαρά compositing/repaint καθυστέρηση WebKit, όχι λάθος state). Το forced reflow
-     (offsetHeight read) παρακάτω είναι τυπικό, ασφαλές τέχνασμα για τέτοιες περιπτώσεις — θέλει
-     επιβεβαίωση σε πραγματικό iPhone, δεν δοκιμάζεται εδώ χωρίς συσκευή. */
-  useEffect(()=>{
-    document.documentElement.classList.toggle('test-mode', !!settings.testMode);
-    void document.body.offsetHeight;
-  },[settings.testMode]);
+  /* TEST MODE (25/08) — classList στο <html>, ίδιο μοτίβο με applyTheme('dark') πιο πάνω.
+     25/08 β' — BUG (αναφορά Ανδρέα, iPhone standalone PWA, επιβεβαιωμένο ΞΑΝΑ μετά από καθαρή
+     επανεγκατάσταση — άρα πραγματικό rendering bug, όχι cache): πορτοκαλί «κολλημένο» στη
+     safe-area/notch περιοχή μετά το off. Η πρώτη προσπάθεια (forced reflow μέσω offsetHeight
+     read εδώ) ΔΕΝ έπιασε. Το πραγματικό fix έγινε δομικά στο Header component (βλ. εκεί) — το
+     `.hdr` δεν μετακινείται/εξαφανίζεται πια καθόλου, το test-mode banner ζει πάντα ΜΕΣΑ στο
+     ίδιο fixed κουτί. Το toggle εδώ μένει απλό. */
+  useEffect(()=>{ document.documentElement.classList.toggle('test-mode', !!settings.testMode); },[settings.testMode]);
   /* module-level mirror ώστε components χωρίς direct πρόσβαση στο state (LIVE_EXP_CATS pattern)
      να βλέπουν πάντα τρέχουσες κατηγορίες, είτε άλλαξαν τοπικά είτε από άλλη συσκευή */
   useEffect(()=>{ LIVE_EXP_CATS = expCats; },[expCats]);
@@ -5499,8 +5510,7 @@ const App = () => {
 
   return (
     <div style={{minHeight:'100dvh',background:'var(--bg)'}}>
-      {settings.testMode && <TestBanner/>}
-      <Header title={titles[tab]} sub={settings.shopName} operator={operator}
+      <Header title={titles[tab]} sub={settings.shopName} operator={operator} testMode={settings.testMode}
         onSettings={()=>setShowSettings(true)}
         onLock={lockNow}
         onClients={isMaster && tab!=='clients' ? ()=>setTab('clients') : null}
