@@ -85,7 +85,7 @@
        παρακάτω το επιβάλλει ρητά αντί να κλειδώσει εντελώς το `lang` toggle για μη-Master. */
     "settings": {
       ".read": "auth != null",
-      ".write": "auth != null && ((auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr') || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val()))"
+      ".write": "auth != null && ((auth.token.email==='antreas@haircorner.gr' || auth.token.email==='sofia@haircorner.gr') || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val() && newData.child('testMode').val() === data.child('testMode').val()))"
     }
   }
 }
