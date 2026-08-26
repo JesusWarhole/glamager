@@ -721,7 +721,7 @@ const DEF_SCHEDULE = { 0:null, 1:null, 2:{s:'10:00',e:'19:00'}, 3:{s:'09:00',e:'
 const DEFAULT_STAFF = [
   { id:'s1', name:'Μαργαρίτα', email:'margarita@haircorner.gr', role:ROLE.RECEPTION, servesClients:false, leaveTotal:20, schedule:DEF_SCHEDULE, birthday:'03-22', hired:'2022-09-01' },
   { id:'s2', name:'Τάνια',     email:'tania@haircorner.gr',     role:ROLE.STAFF,     servesClients:true,  leaveTotal:20, schedule:DEF_SCHEDULE, birthday:'07-18', hired:'2023-07-16' },
-  { id:'s3', name:'Λαούρα',    email:'laura@haircorner.gr',     role:ROLE.STAFF,     servesClients:true,  leaveTotal:22, schedule:DEF_SCHEDULE, birthday:'11-05', hired:'2019-02-10' },
+  { id:'s3', name:'Λάουρα',    email:'laura@haircorner.gr',     role:ROLE.STAFF,     servesClients:true,  leaveTotal:22, schedule:DEF_SCHEDULE, birthday:'11-05', hired:'2019-02-10' },
   { id:'m1', name:'Ανδρέας',   email:'antreas@haircorner.gr',   role:ROLE.MASTER,    servesClients:false, leaveTotal:20, schedule:null, birthday:'07-24', hired:null },
   { id:'m2', name:'Σοφία',     email:'sofia@haircorner.gr',     role:ROLE.MASTER,    servesClients:true,  leaveTotal:20, schedule:null, birthday:null,    hired:null },
 ];
@@ -5216,7 +5216,7 @@ const App = () => {
   /* ⚠️ Migration: το 'staff' path υπάρχει ΗΔΗ live στο Firebase (από πριν αυτό το field υπάρξει),
      άρα οι υπαρκτές εγγραφές δεν θα έχουν καθόλου servesClients (undefined) — το seed νέου path
      δεν ξαναγράφει πάνω σε ό,τι υπάρχει. Fallback: undefined → true μόνο για role STAFF (ασφαλές
-     μάντεμα, καλύπτει Τάνια/Λαούρα αυτόματα)· η Σοφία (Master) ΔΕΝ θα καλυφθεί αυτόματα από αυτό
+     μάντεμα, καλύπτει Τάνια/Λάουρα αυτόματα)· η Σοφία (Master) ΔΕΝ θα καλυφθεί αυτόματα από αυτό
      το fallback — θέλει ΕΝΑ χειροκίνητο toggle ON από τον Master μέσω Ρυθμίσεις→Προσωπικό, μία
      φορά, μετά μένει μόνιμα στο Firebase σαν πραγματική τιμή. */
   const serviceStaff = useMemo(()=>staff.filter(s=>s.servesClients ?? s.role===ROLE.STAFF),[staff]);
