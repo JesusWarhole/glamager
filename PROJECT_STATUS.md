@@ -2,9 +2,11 @@
 
 > **Διάβασε αυτό ΠΡΩΤΟ σε κάθε νέο chat.** Αυτό το αρχείο ενημερώνεται (όχι προσθήκη στο τέλος — αντικαθίσταται) ώστε να δείχνει πάντα τη ΣΗΜΕΡΙΝΗ αλήθεια. Για ιστορικό αποφάσεων/σκεπτικού βλέπε `reference/SESSION_DECISIONS.md` και `reference/Glamager_Spec_v2.md` (αυτά ΔΕΝ ενημερώνονται πάντα — μπορεί να δείχνουν παλιότερο/ελαφρώς διαφορετικό σχέδιο από ό,τι υλοποιήθηκε τελικά).
 >
-> Τελευταία ενημέρωση: **25/08/2026 — commit `3bab50c`, pushed & live (deploy επιβεβαιωμένο μέσω GitHub Actions).**
+> Τελευταία ενημέρωση: **26/08/2026 — commits `9e889ed`→`2ddc42b`, pushed & live (functions deploy + database rules deploy, τρέχτηκαν χειροκίνητα από τον Ανδρέα μέσω `firebase deploy`, επιβεβαιωμένα με "Deploy complete!" logs).**
 >
-> ⚠️ Τα 7 commits της 25/08 έγιναν μέσω του GitHub web-upload flow (drag & drop `index.html`) γιατί το αρχείο είναι πλέον 400+KB — αυτό το flow ΔΕΝ επιτρέπει custom commit message, γι' αυτό εμφανίζονται όλα ως γενικό "Add files via upload" στο git log. Αυτό εδώ το αρχείο είναι η ΜΟΝΑΔΙΚΗ αφηγηματική καταγραφή του τι έγινε εκείνη τη μέρα — το git log από μόνο του δεν λέει τίποτα χρήσιμο για τις 25/08.
+> ⚠️ Τα commits της 25/08 έγιναν μέσω του GitHub web-upload flow — δεν επιτρέπει custom commit message, γι' αυτό εμφανίζονται όλα ως γενικό "Add files via upload" στο git log. Αυτό εδώ το αρχείο είναι η ΜΟΝΑΔΙΚΗ αφηγηματική καταγραφή — το git log από μόνο του δεν λέει αρκετά.
+>
+> ⚠️ **Νέο σήμερα (26/08): υπάρχει πλέον `functions/` φάκελος με πραγματική Cloud Function.** Το GitHub Actions (`firebase-hosting-merge.yml`) κάνει deploy ΜΟΝΟ το Hosting — ΠΟΤΕ functions, ΠΟΤΕ database rules. Και τα δύο χρειάζονται χειροκίνητο `firebase deploy --only functions` / `--only database` από τοπικό terminal (`C:\Users\andwa\Glamager`). Αν στο μέλλον αλλάξει κάτι σε αυτά τα δύο αρχεία, ΜΗΝ υποθέσεις ότι το GitHub push αρκεί — πρέπει να το πεις ρητά στον Ανδρέα να τρέξει το deploy, αλλιώς το repo και το live project θα ξεσυγχρονιστούν ξανά (ίδιο μάθημα με το testMode gap νωρίτερα σήμερα).
 
 ## Πού είναι ο πραγματικός κώδικας
 
@@ -61,7 +63,7 @@ Backend: Firebase Realtime Database, project **`glamager-hair-corner`**, region 
 
 ## Εκκρεμότητες / ΔΕΝ έχει γίνει ακόμα
 
-- **Auth model per-υπάλληλο** (email invite + custom claims + Security Rules per §8 του spec) — η τωρινή υλοποίηση είναι απλούστερη (κοινό device login + τοπικό PIN). Δεν έχει αποφασιστεί ρητά αν θα προχωρήσει το πλήρες μοντέλο ή θα μείνει έτσι.
+- ~~Auth model per-υπάλληλο~~ **✅ Custom claims μέρος λύθηκε 26/08:** νέα Cloud Function `syncStaffClaims` (`functions/index.js`, Node.js 20, 2nd Gen, region `europe-west1`) διαβάζει το `staff` node και βάζει custom claim `{role}` σε κάθε πραγματικό λογαριασμό — καλείται χειροκίνητα από νέο κουμπί **"Συγχρονισμός δικαιωμάτων"** στις Ρυθμίσεις (Master-only), όχι αυτόματα. Deployed live, τρέχτηκε, **όλοι οι 5 λογαριασμοί επιβεβαιώθηκαν ✅** (verified από τον Ανδρέα). Τα `database.rules.json` ενημερώθηκαν να κοιτάνε `auth.token.role === 'master'` αντί για hardcoded emails σε όλα τα Master-only paths (`staff`/`services`/`products`/`zmap`/`kudos`/`expCats`/`fixedExpenses`/`settings`) — deployed live, `rules ... released successfully`. Χρειάστηκε πρώτα upgrade του Firebase project σε **Blaze plan** (pay-as-you-go — Cloud Functions δεν τρέχουν σε Spark). Πρακτικό κόστος: ~0€/μήνα (5 λογαριασμοί, function καλείται σπάνια — πολύ κάτω από το δωρεάν όριο 2εκ. invocations/μήνα). ⚠️ Το πλήρες "email invite" self-service UX (Cloud Function να στέλνει πρόσκληση, να δημιουργεί λογαριασμό) **ΔΕΝ έγινε** — οι 5 λογαριασμοί παραμένουν χειροκίνητα φτιαγμένοι όπως πριν, μόνο το claims/rules κομμάτι αναβαθμίστηκε. Ο περιορισμός device-login+PIN (βλ. σχόλιο στην κορυφή του `database.rules.json`) παραμένει ίδιος — το UI `isMaster` gating είναι ακόμα η πρώτη γραμμή άμυνας.
 - ~~Εορτολόγιο μη αξιόπιστο/ελλιπές~~ **✅ Λύθηκε 02/08:** επιμελημένη λίστα ~150 ονομάτων (βλ. πάνω). Αν στην καθημερινή χρήση φανεί ότι λείπει συχνά κάποιο κοινό όνομα, προσθήκη σε επόμενο session — φυσικό QA loop μέσω χρήσης, όχι μπλοκάρισμα.
 - ~~i18n EN~~ **✅ Ελέγχθηκε 02/08:** ήδη σχεδόν πλήρες, βρέθηκε+διορθώθηκε το audit trail bug (βλ. πάνω). Λείπει ακόμα μόνο η μετάφραση του σημερινού νέου περιεχομένου (ερωτήσεις/ζωδιακό/μερικά world days) — δεν είναι blocker, χαμηλή προτεραιότητα.
 - Συνδρομές/portal/Stripe/store listing — δεν έχει ξεκινήσει.
