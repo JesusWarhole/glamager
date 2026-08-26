@@ -447,6 +447,17 @@ const STRINGS = {
   savePromptSuffix:   { el:'— αποθήκευση;',                             en:'— save?' },
   phoneOptionalPlaceholder: { el:'Τηλέφωνο (προαιρετικό)...',           en:'Phone (optional)...' },
   sessionNotePlaceholder: { el:'Σημείωση συνεδρίας (π.χ. βαφή 6.3 + 7.1)...', en:'Session note (e.g. color 6.3 + 7.1)...' },
+  photoToggleLabel:    { el:'📷 Φωτό',                                   en:'📷 Photo' },
+  photoToggleHint:     { el:'Βγήκε φωτογραφία σε αυτή την επίσκεψη',     en:'A photo was taken during this visit' },
+  pendingPhotosTabLabel: { el:'📷',                                      en:'📷' },
+  pendingPhotosTitle:  { el:'Εκκρεμείς φωτογραφίες',                     en:'Pending photos' },
+  pendingPhotosHint:   { el:'Επισκέψεις με 📷 που δεν έχουν ανέβει ακόμα — παλιότερες πρώτα.', en:'Visits with 📷 not yet posted — oldest first.' },
+  pendingPhotosEmpty:  { el:'Καμία εκκρεμής φωτογραφία 🎉',               en:'No pending photos 🎉' },
+  markPostedBtn:       { el:'✅ Ανέβηκε',                                en:'✅ Posted' },
+  postedCountLabel:    { el:'φορές έχει ανέβει',                         en:'times posted' },
+  postedNeverLabel:    { el:'ποτέ δεν έχει ανέβει',                      en:'never posted before' },
+  postedLastLabel:     { el:'τελευταία',                                 en:'last' },
+  noClientLabel:       { el:'Χωρίς πελάτη',                              en:'No client' },
   expenseAmountLabel: { el:'Ποσό (τελικό, όπως στο τιμολόγιο)',         en:'Amount (final, as on the invoice)' },
   categoryLabel:      { el:'Κατηγορία',                                 en:'Category' },
   noteOptionalPlaceholder: { el:'Σημείωση (προαιρετικό)...',            en:'Note (optional)...' },
@@ -3228,6 +3239,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
   const [tipSplitIds,setTipSplitIds] = useState([]);    // ενεργό μόνο όταν tipSplitOn
   const [tipPm,setTipPm] = useState('cash');
   const [note,setNote] = useState('');
+  const [photo,setPhoto] = useState(false); // 26/08: "Φωτό" — μία φορά ανά επίσκεψη, όχι ανά γραμμή (απόφαση Ανδρέα)
   const [cq,setCq] = useState('');          // client query
   const [clientId,setClientId] = useState(null);
   const [newPhone,setNewPhone] = useState('');
@@ -3279,10 +3291,10 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
     onAddVisit({
       id:uid(), date:today(), time:nowTime(), clientId:cid||null, pm,
       tip:tp, tipStaffId:(tp>0 && !useSplit)?tipStaffId:null, tipSplit:(tp>0 && useSplit)?[...tipSplitIds]:null, tipPm:tp>0?tipPm:null,
-      note:note.trim(), lines:[...lines], enteredBy:operator.id, deleted:null, audit:[],
+      note:note.trim(), photo:photo, posted:false, lines:[...lines], enteredBy:operator.id, deleted:null, audit:[],
     });
     setDone(true);
-    setTimeout(()=>{ setDone(false); setLines([]); setNote(''); setTip(''); setTipStaffId(defStaff); setTipTouched(false); setTipSplitOn(false); setTipSplitIds([]); setCq(''); setClientId(null); setShowNew(false); setNewPhone(''); go('reg'); },900);
+    setTimeout(()=>{ setDone(false); setLines([]); setNote(''); setPhoto(false); setTip(''); setTipStaffId(defStaff); setTipTouched(false); setTipSplitOn(false); setTipSplitIds([]); setCq(''); setClientId(null); setShowNew(false); setNewPhone(''); go('reg'); },900);
   };
 
   const saveExpense = () => {
@@ -3418,9 +3430,18 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
         </div>
 
         {/* Σημείωση συνεδρίας — ο «μπούσουλας» (χρωματολογία κ.λπ.) */}
-        <div className="card px-4 py-3 mb-4">
+        <div className="card px-4 py-3 mb-3">
           <input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t('sessionNotePlaceholder')} className="w-full text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
         </div>
+
+        {/* Φωτό (26/08) — μία φορά ανά επίσκεψη, δεν αποθηκεύει την ίδια τη φωτογραφία (GDPR),
+            μόνο σημαιάκι ώστε να ξέρουμε ότι υπάρχει + να τροφοδοτεί την ουρά "Εκκρεμείς φωτογραφίες". */}
+        <button type="button" onClick={()=>setPhoto(p=>!p)} className="w-full card px-4 py-3 flex items-center justify-between mb-4">
+          <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('photoToggleLabel')}</span>
+          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'#d1d5db'}}>
+            <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:photo?'translateX(24px)':'none'}}/>
+          </div>
+        </button>
 
         <button onClick={saveIncome} disabled={lines.length===0} className="w-full py-4 rounded-2xl font-black text-white text-base disabled:opacity-30" style={{background:'var(--accent-600)'}}>
           ↑ {t('saveBtn')} {total>0?fmt(total):''}
@@ -4426,12 +4447,67 @@ const FinReports = ({visits,expenses,staff,clients}) => {
   );
 };
 
-const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,schedData,leaveReqs,kudos,onSaveDay,onApprove,onDecline,onDeleteLeaveReq,onDeleteKudos}) => {
+/* Ουρά "Εκκρεμείς φωτογραφίες" (26/08) — επισκέψεις με photo=true που δεν έχουν ακόμα posted=true,
+   παλιότερες πρώτα. Δίπλα σε κάθε πελάτη: πόσες φορές έχει ήδη ανέβει + πότε τελευταία, ώστε να
+   μη ξαναδείχνει κανείς πάντα τους ίδιους 2-3 πελάτες — κριτήριο ΠΕΛΑΤΗΣ, ρητή απόφαση Ανδρέα. */
+const PendingPhotosQueue = ({visits,clients,onMarkPosted}) => {
+  const clientName = id => id ? (clients.find(c=>c.id===id)?.name || t('noClientLabel')) : t('noClientLabel');
+
+  const pending = useMemo(()=>{
+    return visits
+      .filter(v=>v.photo && !v.posted && !isDel(v))
+      .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)); // παλιότερο πρώτο
+  },[visits]);
+
+  const clientStatsOf = clientId => {
+    if(!clientId) return {count:0, last:null};
+    const posted = visits.filter(v=>v.clientId===clientId && v.posted && !isDel(v));
+    if(posted.length===0) return {count:0, last:null};
+    const last = posted.reduce((a,v)=>v.date>a?v.date:a, posted[0].date);
+    return {count:posted.length, last};
+  };
+
+  if(pending.length===0) return (
+    <div className="flex flex-col items-center justify-center py-16">
+      <p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('pendingPhotosEmpty')}</p>
+    </div>
+  );
+
+  return (
+    <div>
+      <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pendingPhotosHint')}</p>
+      <div className="space-y-2">
+        {pending.map(v=>{
+          const stats = clientStatsOf(v.clientId);
+          const svcNames = v.lines.filter(l=>l.kind!=='product').map(l=>l.name).join(', ') || v.lines.map(l=>l.name).join(', ');
+          return (
+            <div key={v.id} className="card px-4 py-3">
+              <div className="flex items-start justify-between gap-2 mb-1">
+                <p className="text-sm font-bold" style={{color:'var(--text)'}}>{clientName(v.clientId)}</p>
+                <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{fmtD(v.date)}</p>
+              </div>
+              <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNames}</p>
+              <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>
+                {stats.count===0 ? t('postedNeverLabel') : `×${stats.count} ${t('postedCountLabel')} · ${t('postedLastLabel')} ${fmtD(stats.last)}`}
+              </p>
+              <button onClick={()=>onMarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>
+                {t('markPostedBtn')}
+              </button>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,schedData,leaveReqs,kudos,onSaveDay,onApprove,onDecline,onDeleteLeaveReq,onDeleteKudos,onMarkPosted}) => {
   const pending = leaveReqs.filter(r=>r.status==='pending').length;
+  const pendingPhotos = visits.filter(v=>v.photo && !v.posted && !isDel(v)).length;
   return (
     <div className="px-4 pt-4 safe-pb">
       <div className="rounded-xl p-1 flex gap-1 mb-4" style={{background:'var(--soft)'}}>
-        {[['fin',t('finTabLabel')],['perf',t('perfTabLabel')],['staffmod',t('schedTabLabel')],['reqs',`🏖️${pending>0?` ${pending}`:''}`]].map(([v,l])=>(
+        {[['fin',t('finTabLabel')],['perf',t('perfTabLabel')],['staffmod',t('schedTabLabel')],['reqs',`🏖️${pending>0?` ${pending}`:''}`],['photos',`${t('pendingPhotosTabLabel')}${pendingPhotos>0?` ${pendingPhotos}`:''}`]].map(([v,l])=>(
           <button key={v} onClick={()=>setSub(v)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${sub===v?'shadow':''}`} style={sub===v?{background:'var(--surface)',color:'var(--accent-600)'}:{color:'var(--text-dim)'}}>{l}</button>
         ))}
       </div>
@@ -4444,6 +4520,7 @@ const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,sched
         <LeaveRequests leaveReqs={leaveReqs} staff={staffOnly} onApprove={onApprove} onDecline={onDecline} onDelete={onDeleteLeaveReq}/>
         <KudosManager kudos={kudos} staff={staffOnly} onDelete={onDeleteKudos}/>
       </React.Fragment>)}
+      {sub==='photos' && <PendingPhotosQueue visits={visits} clients={clients} onMarkPosted={onMarkPosted}/>}
     </div>
   );
 };
@@ -5495,6 +5572,9 @@ const App = () => {
     return {...e, ...next, audit:[...(e.audit||[]),{id:uid(),by:operator.id,at,action:'edit',changes}]};
   }));
   const updateVisitNote = (id,note) => setVisits(vs=>vs.map(v=>v.id===id?{...v,note}:v));
+  /* Φωτό → Ανέβηκε (26/08): ελαφρύ update, ίδιο πνεύμα με το updateVisitNote — καμία ανάγκη
+     για πλήρες audit trail σε ένα λειτουργικό flag για social media, δεν είναι οικονομικό στοιχείο. */
+  const markPosted = id => setVisits(vs=>vs.map(v=>v.id===id?{...v,posted:true,postedAt:today()}:v));
 
   /* Hard delete Ταμείου/εξόδων (31/07) — ΑΥΣΤΗΡΑ περιορισμένο, ΔΕΝ είναι σαν το «διόρθωση
      δοκιμαστικών» των αδειών/kudos/πελατών. Λόγος: ένα οικονομικό στοιχείο (έσοδο/έξοδο) που
@@ -5605,7 +5685,7 @@ const App = () => {
       {tab==='rep' && isMaster && <ReportsScreen sub={repSub} setSub={setRepSub} visits={visits} expenses={expenses}
         staff={serviceStaff} staffOnly={staffOnly} clients={clients} schedData={schedData} leaveReqs={leaveReqs} kudos={kudos}
         onSaveDay={(empId,dk,entry)=>writeSched(empId,dk,entry)} onApprove={approveReq} onDecline={declineReq}
-        onDeleteLeaveReq={deleteLeaveReq} onDeleteKudos={deleteKudos}/>}
+        onDeleteLeaveReq={deleteLeaveReq} onDeleteKudos={deleteKudos} onMarkPosted={markPosted}/>}
 
       {tab==='z' && isMaster && <ZScreen visits={visits} expenses={expenses} staff={serviceStaff} zmap={zmap} onSaveZ={saveZ} onBack={()=>setTab('home')}/>}
       </div>
