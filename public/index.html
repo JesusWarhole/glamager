@@ -20,6 +20,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
@@ -164,6 +165,7 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 const fbDb = firebase.database();
+const fbFunctions = firebase.app().functions('europe-west1'); // ίδιο region με τη Cloud Function (functions/index.js)
 
 /* ── useFirebaseState: useState-like hook αλλά backed από RTDB path, live μεταξύ συσκευών.
    - enabled=false (π.χ. πριν το login): ΔΕΝ ανοίγει listener καθόλου — μηδέν reads χωρίς auth.
@@ -528,6 +530,10 @@ const STRINGS = {
   testModeToggleLabel:  { el:'Ενεργό TEST MODE',                        en:'TEST MODE active' },
   testModeToggleHint:   { el:'Εμφανίζει πορτοκαλί ταμπέλα σε ΟΛΕΣ τις οθόνες, σε όλους — ειδοποιεί ότι ό,τι καταχωρείται τώρα μπορεί να διαγραφεί.', en:'Shows an orange banner on ALL screens, for everyone — warns that anything entered now may get deleted.' },
   testModeSectionHint:  { el:'Άναψέ το πριν δοκιμάσετε τη ροή στο πραγματικό μαγαζί, σβήσ\' το όταν είστε έτοιμοι για κανονική χρήση. Δουλεύει μαζί με την «Επαναφορά πριν την έναρξη» παρακάτω.', en:'Turn it on before testing the real flow in the shop, turn it off when ready for normal use. Works together with "Reset before launch" below.' },
+  syncClaimsTitle:      { el:'Συγχρονισμός δικαιωμάτων',                  en:'Sync permissions' },
+  syncClaimsHint:       { el:'Πάτα το μετά από κάθε πρόσληψη, αλλαγή ρόλου ή αποχώρηση προσωπικού — ενημερώνει τα δικαιώματα πρόσβασης ώστε να ταιριάζουν με το τι λέει η λίστα Προσωπικού. Δεν αγγίζει email/κωδικό/PIN κανενός.', en:'Tap this after any hire, role change, or departure — updates access permissions to match what the Staff list says. Does not touch anyone\'s email/password/PIN.' },
+  syncClaimsBtn:        { el:'Συγχρονισμός τώρα',                        en:'Sync now' },
+  syncClaimsBusyBtn:    { el:'Συγχρονισμός…',                            en:'Syncing…' },
   testModeBannerText:   { el:'ό,τι καταχωρείς μπορεί να διαγραφεί',     en:'whatever you enter may get deleted' },
   resetPreLaunchTitle:  { el:'⚠️ Επαναφορά πριν την έναρξη',            en:'⚠️ Reset before launch' },
   resetPreLaunchHint:   { el:'Σβήνει ΟΡΙΣΤΙΚΑ όλες τις επισκέψεις, έξοδα, πελάτες, αιτήματα αδειών, kudos και κλειδώματα Ζ — ό,τι δοκιμαστικό έχει μπει μέχρι τώρα. ΔΕΝ αγγίζει προσωπικό, κατάλογο, ρυθμίσεις μαγαζιού, ή πρόγραμμα βαρδιών/αδειών. Μη αναστρέψιμο.', en:'PERMANENTLY deletes all visits, expenses, clients, leave requests, kudos and Z-locks — any test data entered so far. Does NOT touch staff, catalog, shop settings, or the shift/leave schedule. Irreversible.' },
@@ -4894,12 +4900,14 @@ const PinChangeCard = ({onChangePin}) => {
   );
 };
 
-const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch}) => {
+const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch, onSyncClaims}) => {
   const [wiped,setWiped] = useState(false);
   const [wiping,setWiping] = useState(false);
   const [resetConfirmText,setResetConfirmText] = useState('');
   const [resetting,setResetting] = useState(false);
   const [resetDone,setResetDone] = useState(false);
+  const [syncBusy,setSyncBusy] = useState(false);
+  const [syncResult,setSyncResult] = useState(null);
   const set = async (k,v) => {
     try{ await updateSettings({[k]:v}); }
     catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
@@ -5047,6 +5055,44 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
           </button>
         </div>
         <p className="text-xs mb-5" style={{color:'var(--text-dim)'}}>{t('testModeSectionHint')}</p>
+      </React.Fragment>)}
+
+      {isMaster && onSyncClaims && (<React.Fragment>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('syncClaimsTitle')}</p>
+        <div className="rounded-xl px-3 py-3 mb-1" style={{background:'var(--soft)'}}>
+          <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('syncClaimsHint')}</p>
+          <button onClick={async ()=>{
+              if(syncBusy) return;
+              setSyncBusy(true); setSyncResult(null);
+              try{
+                const res = await onSyncClaims();
+                setSyncResult(res);
+              }catch(err){
+                setSyncResult({ok:false, error:(err&&(err.message||err.code))||String(err)});
+              }finally{
+                setSyncBusy(false);
+              }
+            }}
+            disabled={syncBusy}
+            className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
+            {syncBusy ? t('syncClaimsBusyBtn') : t('syncClaimsBtn')}
+          </button>
+          {syncResult && (
+            <div className="mt-3 text-[11px]" style={{color:'var(--text)'}}>
+              {syncResult.ok===false ? (
+                <p style={{color:'#dc2626'}}>❌ {syncResult.error}</p>
+              ) : (
+                <React.Fragment>
+                  {(syncResult.results||[]).map((r,i)=>(
+                    <p key={i} style={{color:r.ok?'#16a34a':'#dc2626'}}>
+                      {r.ok?'✅':'⚠️'} {r.name||r.email}{!r.ok && r.error ? ' — '+r.error : ''}
+                    </p>
+                  ))}
+                </React.Fragment>
+              )}
+            </div>
+          )}
+        </div>
       </React.Fragment>)}
 
       {isMaster && onResetPreLaunch && (<React.Fragment>
@@ -5340,6 +5386,17 @@ const App = () => {
     }
   };
 
+  /* Master-only: καλεί την Cloud Function `syncStaffClaims` (functions/index.js) — διαβάζει το
+     `staff` node και βάζει custom claim {role} στον αντίστοιχο Firebase Auth λογαριασμό κάθε
+     ατόμου. Χειροκίνητο κουμπί (SettingsSheet), όχι αυτόματο σε κάθε staff edit — βλ. σχόλιο
+     στην ίδια τη function για το γιατί. Το αποτέλεσμα (ok/error ανά άτομο) επιστρέφει ως έχει,
+     το UI το δείχνει ωμά, καμία επιπλέον επεξεργασία εδώ. */
+  const syncStaffClaims = async () => {
+    const call = fbFunctions.httpsCallable('syncStaffClaims');
+    const res = await call();
+    return res.data;
+  };
+
   /* Κλείδωμα/αλλαγή χεριού — ΚΑΘΗΜΕΡΙΝΗ χρήση. ΔΕΝ κάνει signOut (το Firebase session μένει
      ζωντανό στο παρασκήνιο) — απλά καθαρίζει τον τοπικό operator, γυρνάει στο OperatorPicker. */
   const lockNow = useCallback(()=>{
@@ -5590,7 +5647,7 @@ const App = () => {
           onOpenTemplates={isMaster?()=>{setShowSettings(false);setTemplatePickerOpen(true);}:null}
           onOpenStaffManager={isMaster?()=>{setShowSettings(false);setStaffManagerOpen(true);}:null}
           onChangePassword={changePassword} onChangePin={changePin}
-          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch}/>
+          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch} onSyncClaims={syncStaffClaims}/>
       )}
     </div>
   );
