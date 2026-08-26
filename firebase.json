@@ -1,4 +1,39 @@
 {
+    "hosting": {
+          "public": "public",
+          "ignore": [
+                  "firebase.json",
+                  "**/.*"
+          ],
+          "headers": [
+                  {
+                            "source": "**/*.html",
+                            "headers": [
+                                        {
+                                                      "key": "Cache-Control",
+                                                      "value": "no-cache, no-store, must-revalidate"
+                                        }
+                            ]
+                  },
+                  {
+                            "source": "**/manifest-*.json",
+                            "headers": [
+                                        {
+                                                      "key": "Cache-Control",
+                                                      "value": "no-cache"
+                                        }
+                            ]
+                  }
+          ]
+    },
+    "database": {
+          "rules": "database.rules.json"
+    },
+    "functions": {
+          "source": "functions"
+    }
+}
+
   "hosting": {
     "public": "public",
     "ignore": [
