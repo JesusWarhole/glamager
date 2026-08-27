@@ -1747,7 +1747,7 @@ const diffVisit = (b,a) => {
   const out = [];
   if(b.pm!==a.pm) out.push(`${t('paymentLabel')}: ${pmName(b.pm)} → ${pmName(a.pm)}`);
   if((Number(b.tip)||0)!==(Number(a.tip)||0)) out.push(`Tip: ${fmt(b.tip||0)} → ${fmt(a.tip||0)}`);
-  if(b.tipStaffId!==a.tipStaffId) out.push(t('auditTipStaffChangedLabel'));
+  if((b.tipStaffId||null)!==(a.tipStaffId||null)) out.push(t('auditTipStaffChangedLabel'));
   if(JSON.stringify(b.tipSplit||null)!==JSON.stringify(a.tipSplit||null)) out.push(t('auditTipSplitChangedLabel'));
   if((b.tipPm||'')!==(a.tipPm||'')) out.push(t('auditTipPmChangedLabel'));
   if((b.note||'')!==(a.note||'')) out.push(t('auditNoteChangedLabel'));
@@ -3760,8 +3760,12 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
    icon στο header για Master. ΠΛΗΡΗΣ πρόσβαση ιστορικού/χρωματολογίας
    για ΟΛΟΥΣ. Στατιστικά αξίας πελάτη: Master + Ρεσεψιόν ΜΟΝΟ. */
 
-const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,onDeleteClient}) => {
+const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,onUpdateNote,onDeleteClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
   const canStats = operator.role===ROLE.MASTER || operator.role===ROLE.RECEPTION;
+  const isMaster = operator.role===ROLE.MASTER;
+  const [selVisitId,setSelVisitId] = useState(null);
+  /* live lookup — ώστε το VisitDetail να δείχνει φρέσκα δεδομένα αμέσως μετά από edit (ίδιο pattern με App-level selVisitLive) */
+  const selVisitLive = selVisitId ? visits.find(v=>v.id===selVisitId) : null;
   const hist = visits.filter(v=>v.clientId===client.id && !isDel(v)).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
   /* Hard delete πελάτη (31/07) — ΜΟΝΟ αν δεν έχει ΚΑΜΙΑ επίσκεψη πουθενά, ούτε soft-deleted
      (γι' αυτό ελέγχουμε το ακατέργαστο `visits`, όχι το φιλτραρισμένο `hist`) — αλλιώς μια παλιά
@@ -3862,7 +3866,7 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
       <div className="space-y-2">
         {hist.map(v=>(
           <div key={v.id} className="card px-4 py-3">
-            <div className="flex justify-between items-start">
+            <div className="flex justify-between items-start" onClick={isMaster?()=>setSelVisitId(v.id):undefined} style={isMaster?{cursor:'pointer'}:{}}>
               <div className="flex-1 min-w-0">
                 <p className="text-xs font-bold" style={{color:'var(--text-dim)'}}>{fmtD(v.date)} · {v.time} · {pmName(v.pm)}</p>
                 {v.lines.map((l,i)=>(
@@ -3878,18 +3882,26 @@ const ClientCard = ({client,visits,staff,operator,settings,onBack,onUpdateNote,o
           </div>
         ))}
       </div>
+
+      {selVisitLive && isMaster && (
+        <VisitDetail v={selVisitLive} staff={staff} clients={clients} operator={operator}
+          locked={!!zmap?.[selVisitLive.date]} onDel={onSoftDelete} onEdit={onEditVisit}
+          onClose={()=>setSelVisitId(null)} onHardDelete={onHardDeleteVisit}/>
+      )}
     </div>
   );
 };
 
-const ClientsScreen = ({operator,clients,visits,staff,settings,onUpdateNote,onDeleteClient}) => {
+const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote,onDeleteClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
   const [q,setQ] = useState('');
   const [selId,setSelId] = useState(null);
   const [onlyInactive,setOnlyInactive] = useState(false);
   const sel = clients.find(c=>c.id===selId);
   /* Επιτυχής διαγραφή → γύρνα στη λίστα (ο επιλεγμένος πελάτης δεν υπάρχει πια) */
   const handleDeleteClient = onDeleteClient ? (id=>{ const res=onDeleteClient(id); if(res?.ok) setSelId(null); return res; }) : null;
-  if(sel) return <ClientCard client={sel} visits={visits} staff={staff} operator={operator} settings={settings} onBack={()=>setSelId(null)} onUpdateNote={onUpdateNote} onDeleteClient={handleDeleteClient}/>;
+  if(sel) return <ClientCard client={sel} visits={visits} clients={clients} staff={staff} operator={operator} settings={settings} zmap={zmap}
+    onBack={()=>setSelId(null)} onUpdateNote={onUpdateNote} onDeleteClient={handleDeleteClient}
+    onEditVisit={onEditVisit} onSoftDelete={onSoftDelete} onHardDeleteVisit={onHardDeleteVisit}/>;
 
   /* Αδράνεια πελάτη (spec §1ε) — όριο από τις Ρυθμίσεις. Χωρίς επίσκεψη ακόμα ≠ αδρανής (είναι νέος). */
   const inactiveThreshold = parseInt(settings?.clientInactivityDays)||60;
@@ -5701,7 +5713,9 @@ const App = () => {
             onSoftDeleteExpense={softDeleteExpense} onEditExpense={editExpense}
             onHardDeleteVisit={hardDeleteVisit} onHardDeleteExpense={hardDeleteExpense}/>)}
 
-      {tab==='clients' && <ClientsScreen operator={operator} clients={clients} visits={visits} staff={staff} settings={settings} onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null}/>}
+      {tab==='clients' && <ClientsScreen operator={operator} clients={clients} visits={visits} staff={staff} settings={settings} zmap={zmap}
+        onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null}
+        onEditVisit={editVisit} onSoftDelete={softDelete} onHardDeleteVisit={hardDeleteVisit}/>}
 
       {tab==='rep' && isMaster && <ReportsScreen sub={repSub} setSub={setRepSub} visits={visits} expenses={expenses}
         staff={serviceStaff} staffOnly={staffOnly} clients={clients} schedData={schedData} leaveReqs={leaveReqs} kudos={kudos}
