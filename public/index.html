@@ -717,6 +717,8 @@ const STRINGS = {
   auditTipStaffChangedLabel: { el:'Tip → άλλος υπάλληλος',                en:'Tip → different employee' },
   auditTipSplitChangedLabel: { el:'Tip → split άλλαξε',                   en:'Tip → split changed' },
   auditTipPmChangedLabel:    { el:'Tip → τρόπος πληρωμής άλλαξε',         en:'Tip → payment method changed' },
+  auditPhotoOnLabel:  { el:'📷 Φωτό ενεργοποιήθηκε',                      en:'📷 Photo enabled' },
+  auditPhotoOffLabel: { el:'📷 Φωτό απενεργοποιήθηκε',                    en:'📷 Photo disabled' },
   kudosToLabel:       { el:'👏 Ένα ευχαριστώ σε...',                      en:'👏 Say thanks to...' },
   kudosMsgPlaceholder:{ el:'Προαιρετικό μήνυμα (π.χ. τέλεια δουλειά με τη βαφή!)...', en:'Optional message (e.g. great job with the color!)...' },
   kudosSendBtn:       { el:'Αποστολή 👏',                                 en:'Send 👏' },
@@ -1749,6 +1751,7 @@ const diffVisit = (b,a) => {
   if(JSON.stringify(b.tipSplit||null)!==JSON.stringify(a.tipSplit||null)) out.push(t('auditTipSplitChangedLabel'));
   if((b.tipPm||'')!==(a.tipPm||'')) out.push(t('auditTipPmChangedLabel'));
   if((b.note||'')!==(a.note||'')) out.push(t('auditNoteChangedLabel'));
+  if(!!b.photo!==!!a.photo) out.push(t(a.photo?'auditPhotoOnLabel':'auditPhotoOffLabel'));
   const maxLen = Math.max(b.lines.length, a.lines.length);
   for(let i=0;i<maxLen;i++){
     const bl=b.lines[i], al=a.lines[i];
@@ -2593,6 +2596,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
   const [tipSplitIds,setTipSplitIds] = useState(v.tipSplit||[]);
   const [tipPm,setTipPm] = useState(v.tipPm||'cash');
   const [note,setNote] = useState(v.note||'');
+  const [photo,setPhoto] = useState(!!v.photo);
 
   const setLine = (i,patch) => setLines(ls=>ls.map((l,idx)=>idx===i?{...l,...patch}:l));
   const removeLine = i => setLines(ls=>ls.filter((_,idx)=>idx!==i));
@@ -2605,7 +2609,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
     onSave({
       ...v, pm, lines:cleanLines,
       tip:tp, tipStaffId:(tp>0 && !useSplit)?tipStaffId:null, tipSplit:(tp>0 && useSplit)?[...tipSplitIds]:null, tipPm:tp>0?tipPm:null,
-      note:note.trim(),
+      note:note.trim(), photo,
     });
   };
 
@@ -2680,6 +2684,13 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
         <div className="card px-4 py-3 mb-4">
           <input type="text" value={note} onChange={e=>setNote(e.target.value)} className="w-full text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
         </div>
+
+        <button type="button" onClick={()=>setPhoto(p=>!p)} className="w-full card px-4 py-3 flex items-center justify-between mb-4">
+          <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('photoToggleLabel')}</span>
+          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'#d1d5db'}}>
+            <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:photo?'translateX(24px)':'none'}}/>
+          </div>
+        </button>
 
         <div className="flex gap-2">
           <button onClick={onClose} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
