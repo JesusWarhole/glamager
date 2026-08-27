@@ -167,6 +167,16 @@ const fbAuth = firebase.auth();
 const fbDb = firebase.database();
 const fbFunctions = firebase.app().functions('europe-west1'); // ίδιο region με τη Cloud Function (functions/index.js)
 
+/* ── Multi-tenant θεμέλιο (27/08/2026, Phase 2) ─────────────────────────────
+   Πριν: bare paths στο RTDB (/visits, /staff, κ.λπ.) — ένα μαγαζί, καμία δομή
+   για δεύτερο. Τώρα: όλα τα δεδομένα ζουν κάτω από /tenants/{TENANT_ID}/...
+   Το Hair Corner είναι σήμερα ο μοναδικός tenant, hardcoded — θα γίνει δυναμικό
+   (από membership/URL/κ.λπ.) στο Phase 3 όταν μπει το πραγματικό auth/invite flow.
+   Το `_seeded/` flag ΠΑΡΑΜΕΝΕΙ top-level, εκτός tenants/ — είναι εσωτερικό
+   bookkeeping του ίδιου του hook (useFirebaseState), όχι δεδομένα μαγαζιού. */
+const TENANT_ID = 'hair-corner';
+const tPath = p => `tenants/${TENANT_ID}/${p}`;
+
 /* ── useFirebaseState: useState-like hook αλλά backed από RTDB path, live μεταξύ συσκευών.
    - enabled=false (π.χ. πριν το login): ΔΕΝ ανοίγει listener καθόλου — μηδέν reads χωρίς auth.
    - Πρώτη φορά ποτέ (path άδειο): γράφει το seed (demo/αρχικά δεδομένα) στο Firebase.
@@ -5281,8 +5291,8 @@ const App = () => {
      ΑΝΕΞΑΡΤΗΤΑ από το αν έχει διαλέξει ήδη κάποιος το όνομά του (operator). Πριν το login
      κρατάει τα seed/demo δεδομένα τοπικά αλλά ΔΕΝ ανοίγει κανένα listener. */
   const authed = authReady && !!fbUser;
-  const [pins,setPins] = useFirebaseState('pins', DEFAULT_PINS, authed);
-  const [staff,setStaff] = useFirebaseState('staff', DEFAULT_STAFF, authed);
+  const [pins,setPins] = useFirebaseState(tPath('pins'), DEFAULT_PINS, authed);
+  const [staff,setStaff] = useFirebaseState(tPath('staff'), DEFAULT_STAFF, authed);
   /* staffOnly: Ρεσεψιόν+Προσωπικό χωρίς Masters — χρησιμοποιείται ΜΟΝΟ πλέον για πρόγραμμα/άδειες
      (schedule-eligibility), ΟΧΙ για attribution υπηρεσιών — βλ. serviceStaff παρακάτω για αυτό. */
   const staffOnly = useMemo(()=>staff.filter(s=>s.role!==ROLE.MASTER),[staff]);
@@ -5315,23 +5325,23 @@ const App = () => {
       fbAuth.signOut();
     }
   },[fbUser, authAccounts]);
-  const [visits,setVisits] = useFirebaseState('visits', DEMO_VISITS, authed);
-  const [expenses,setExpenses] = useFirebaseState('expenses', DEMO_EXPENSES, authed);
-  const [clients,setClients] = useFirebaseState('clients', DEMO_CLIENTS, authed);
-  const [services,setServices] = useFirebaseState('services', DEMO_SERVICES, authed);
-  const [products,setProducts] = useFirebaseState('products', DEMO_PRODUCTS, authed);
+  const [visits,setVisits] = useFirebaseState(tPath('visits'), DEMO_VISITS, authed);
+  const [expenses,setExpenses] = useFirebaseState(tPath('expenses'), DEMO_EXPENSES, authed);
+  const [clients,setClients] = useFirebaseState(tPath('clients'), DEMO_CLIENTS, authed);
+  const [services,setServices] = useFirebaseState(tPath('services'), DEMO_SERVICES, authed);
+  const [products,setProducts] = useFirebaseState(tPath('products'), DEMO_PRODUCTS, authed);
   const [catalogOpen,setCatalogOpen] = useState(false);
   const [templatePickerOpen,setTemplatePickerOpen] = useState(false);
-  const [schedData,setSchedData] = useFirebaseState('schedData', DEMO_SCHED, authed);
-  const [leaveReqs,setLeaveReqs] = useFirebaseState('leaveReqs', DEMO_LEAVE_REQS, authed);
-  const [zmap,setZmap] = useFirebaseState('zmap', {}, authed);
+  const [schedData,setSchedData] = useFirebaseState(tPath('schedData'), DEMO_SCHED, authed);
+  const [leaveReqs,setLeaveReqs] = useFirebaseState(tPath('leaveReqs'), DEMO_LEAVE_REQS, authed);
+  const [zmap,setZmap] = useFirebaseState(tPath('zmap'), {}, authed);
   const [selVisit,setSelVisit] = useState(null);
   /* Kudos — seed ένα για demo (η πρώτη φορά μόνο, μετά είναι ό,τι υπάρχει στο Firebase) */
-  const [kudos,setKudos] = useFirebaseState('kudos', [{id:'k1', empId:'s3', date:TODAY_ISO, msg:'Τέλεια δουλειά με τη δύσκολη βαφή χθες — η πελάτισσα έφυγε χαρούμενη!'}], authed);
+  const [kudos,setKudos] = useFirebaseState(tPath('kudos'), [{id:'k1', empId:'s3', date:TODAY_ISO, msg:'Τέλεια δουλειά με τη δύσκολη βαφή χθες — η πελάτισσα έφυγε χαρούμενη!'}], authed);
   /* Ρυθμίσεις καταστήματος (spec §1α) */
-  const [settings,setSettingsState] = useFirebaseState('settings', DEMO_SETTINGS, authed);
-  const [expCats,setExpCats] = useFirebaseState('expCats', EXP_CATS, authed);
-  const [fixedExpenses,setFixedExpenses] = useFirebaseState('fixedExpenses', DEMO_FIXED_EXPENSES, authed);
+  const [settings,setSettingsState] = useFirebaseState(tPath('settings'), DEMO_SETTINGS, authed);
+  const [expCats,setExpCats] = useFirebaseState(tPath('expCats'), EXP_CATS, authed);
+  const [fixedExpenses,setFixedExpenses] = useFirebaseState(tPath('fixedExpenses'), DEMO_FIXED_EXPENSES, authed);
   const [expCatsOpen,setExpCatsOpen] = useState(false);
   const [fixedExpOpen,setFixedExpOpen] = useState(false);
   const [staffManagerOpen,setStaffManagerOpen] = useState(false);
