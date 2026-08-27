@@ -34,7 +34,7 @@
                                          throw new HttpsError("permission-denied", "Μόνο Master μπορεί να συγχρονίσει δικαιώματα.");
                                            }
 
-                                             const snap = await admin.database().ref("staff").once("value");
+                                             const snap = await admin.database().ref("tenants/hair-corner/staff").once("value");
                                                const staff = snap.val() || {};
                                                  const entries = Object.values(staff).filter((s) => s && s.email && s.role != null);
 
