@@ -10,8 +10,7 @@ Current phase:
 **Phase 2 — Tenant Model: COMPLETE**
 
 Πιο πρόσφατο shift (Claude, 27/08):
-**Photo toggle στο VisitEditor — LIVE, επιβεβαιωμένο από τον Ανδρέα.**
-**+2 follow-up fixes (audit-log false-positive, edit επίσκεψης από Πελατολόγιο) — ΚΩΔΙΚΑΣ ΕΤΟΙΜΟΣ, ΕΚΚΡΕΜΕΙ upload + test.**
+**Photo toggle στο VisitEditor + 2 follow-up fixes — LIVE, deployed, tested από τον Ανδρέα. CLOSED.**
 Βλ. πλήρες debrief: `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`
 
 Next phase:
@@ -36,7 +35,9 @@ Root cause: το Firebase RTDB διαγράφει field όταν του γράφ
 
 ### Status
 Μέρος Α: **live, deployed, tested ✅**
-Μέρος Β: κώδικας έτοιμος, παραδόθηκε στον Ανδρέα (`public/index.html`), **εκκρεμεί upload + manual test.**
+Μέρος Β: **live, deployed, tested ✅** — ο Ανδρέας επιβεβαίωσε live: audit log καθαρό (χωρίς ψεύτικο "Tip → άλλος υπάλληλος"), edit επίσκεψης δουλεύει κανονικά από το Πελατολόγιο.
+
+**Αυτό το shift θεωρείται πλήρως CLOSED.**
 
 ---
 
@@ -70,7 +71,7 @@ GitHub Actions δείχνει προειδοποίηση Node.js 20 deprecation.
 ---
 
 ## 5. FILE / GIT STATE
-- `public/index.html`: τροποποιημένο τοπικά (Β1+Β2, 3 επιπλέον σημεία πάνω στο ήδη live Μέρος Α) — εκκρεμεί upload/commit από τον Ανδρέα.
+- `public/index.html`: Β1+Β2 uploaded και live, μαζί με το ήδη live Μέρος Α.
 - `firebase-key.json`: καλυμμένο από `.gitignore`, local only.
 - Pre-existing untracked files (αμετάβλητα): `functions/package-lock.json`, `glamager.zip`.
 
@@ -90,8 +91,7 @@ Do not weaken or bypass these rules.
 ## 7. NEXT RECOMMENDED WORK
 
 ### P0 — NEXT
-1. Ανδρέας: upload το ενημερωμένο `public/index.html` (Β1+Β2) → auto-deploy.
-2. Manual test: audit log καθαρό (χωρίς ψεύτικο Tip-change), edit επίσκεψης λειτουργεί από Πελατολόγιο.
+1. **Firebase Backups tab** — ΑΚΟΜΑ δεν έχει ενεργοποιηθεί (Firebase Console → Realtime Database → Backups → Get started). Χρειάζεται πριν την πραγματική έναρξη Σεπτεμβρίου — βλ. περιστατικό 27/08 (`resetPreLaunch` άδειασε nodes, δεν υπήρχε backup δίχτυ). Σημείωση: το `reference/GLAMAGER_ROADMAP.md` έχει αυτό το item σημειωμένο `[x]` αλλά η δική του περιγραφή λέει ρητά "ΑΚΟΜΑ δεν έχει γίνει" — ασυνέπεια στο checkbox, θέλει διόρθωση.
 
 ### P1
 **Phase 3: Auth / Memberships / Roles**
@@ -99,7 +99,8 @@ Status: **BLOCKED / WAITING FOR ANDREAS APPROVAL**
 Πριν implementation: inspect repo, διάβασε τα current docs, μην υποθέσεις αρχιτεκτονική, παρουσίασε scope+risks, περίμενε ρητή έγκριση.
 
 ### P2
-GitHub Actions Node.js 20 deprecation cleanup — ξεχωριστό maintenance task.
+- GitHub Actions Node.js 20 deprecation cleanup — ξεχωριστό maintenance task.
+- `reference/SESSION_DECISIONS.md`: το αντίγραφο στο Claude Project έχει μια καταχώρηση (υιοθέτηση Shift Handoff Protocol) που δεν έχει ποτέ ανέβει στο ζωντανό repo (567 γραμμές live vs 578 στο Project). Μικρό, μη-μπλοκάρον, αλλά καλό να κλείσει κάποια στιγμή για συνέπεια.
 
 ---
 
@@ -111,8 +112,8 @@ Treat this document as the authoritative current project state.
 
 - Phase 2 (tenant model): COMPLETE.
 - Firebase credential rotation: COMPLETE and CLOSED — μην το ξανανοίξεις χωρίς νέο συγκεκριμένο security issue.
-- Photo toggle στο VisitEditor: LIVE, tested.
-- 2 follow-up fixes (audit-log tipStaffId normalization, edit επίσκεψης από Πελατολόγιο): κώδικας έτοιμος, εκκρεμεί upload+test από τον Ανδρέα (βλ. section 1, ή το πλήρες `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`).
+- Photo toggle στο VisitEditor + 2 follow-up fixes: LIVE, tested, CLOSED (βλ. section 1, ή το πλήρες `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`).
 - Phase 3 (Auth/Memberships/Roles): επόμενο βήμα, ΔΕΝ έχει ξεκινήσει, ΔΕΝ έχει έγκριση — περίμενε ρητό σήμα από τον Ανδρέα.
+- Firebase Backups tab: ΑΚΟΜΑ δεν έχει ενεργοποιηθεί, χρειάζεται πριν Σεπτέμβριο (βλ. section 7, P0).
 
 Καμία αλλαγή κώδικα/deploy χωρίς ρητή έγκριση Ανδρέα.
