@@ -1,5 +1,5 @@
 # GLAMAGER — CURRENT HANDOFF
-## Authoritative Project State — 27 August 2026 (ενημέρωση: photo-toggle shift)
+## Authoritative Project State — 27 August 2026 (ενημέρωση: photo-toggle shift + 2 follow-up fixes)
 
 ## 0. CURRENT STATE
 Project: Glamager
@@ -10,7 +10,8 @@ Current phase:
 **Phase 2 — Tenant Model: COMPLETE**
 
 Πιο πρόσφατο shift (Claude, 27/08):
-**Photo toggle στο VisitEditor — ΚΩΔΙΚΑΣ ΕΤΟΙΜΟΣ, ΕΚΚΡΕΜΕΙ upload + test από τον Ανδρέα.**
+**Photo toggle στο VisitEditor — LIVE, επιβεβαιωμένο από τον Ανδρέα.**
+**+2 follow-up fixes (audit-log false-positive, edit επίσκεψης από Πελατολόγιο) — ΚΩΔΙΚΑΣ ΕΤΟΙΜΟΣ, ΕΚΚΡΕΜΕΙ upload + test.**
 Βλ. πλήρες debrief: `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`
 
 Next phase:
@@ -20,23 +21,22 @@ No Phase 3 implementation should begin until Andreas explicitly approves it.
 
 ---
 
-## 1. LATEST SHIFT — PHOTO TOGGLE STO VISITEDITOR (Claude, 27/08)
+## 1. LATEST SHIFT — PHOTO TOGGLE + 2 FOLLOW-UP FIXES (Claude, 27/08)
 
-### Τι έγινε
-Το "📷 Φωτό" flag μπορούσε μέχρι τώρα να μπει μόνο στο checkout (AddScreen). Επειδή στις περισσότερες περιπτώσεις ο πελάτης πληρώνει πρώτα και φωτογραφίζεται μετά, προστέθηκε η δυνατότητα να ενεργοποιείται/απενεργοποιείται και σε ήδη αποθηκευμένη επίσκεψη, μέσω του Master's `VisitEditor` (edit visit screen).
+### Μέρος Α — Photo toggle στο VisitEditor (LIVE)
+Το "📷 Φωτό" flag μπορούσε πριν να μπει μόνο στο checkout (AddScreen). Προστέθηκε δυνατότητα ενεργοποίησης/απενεργοποίησης και σε ήδη αποθηκευμένη επίσκεψη, μέσω του Master's `VisitEditor`. Live, επιβεβαιωμένο με πραγματικό testing από τον Ανδρέα (audit log καταγράφει σωστά).
 
-### Αλλαγές σε `public/index.html` (5 σημεία)
-1. +2 STRINGS keys (`auditPhotoOnLabel`/`auditPhotoOffLabel`, el/en) για το audit log.
-2. `diffVisit`: προστέθηκε σύγκριση του `photo` field — **κρίσιμη διόρθωση**: χωρίς αυτήν, μια αλλαγή μόνο στο photo θα χανόταν σιωπηλά (το `editVisit` πετάει edits όταν το diff είναι άδειο).
-3. `VisitEditor`: νέο `photo` state, αρχικοποιημένο από την υπάρχουσα τιμή.
-4. `VisitEditor.save()`: το `photo` περνάει τώρα στο `onSave` payload.
-5. `VisitEditor` JSX: νέο toggle switch, ίδιο UI με του AddScreen.
+### Μέρος Β — 2 follow-up fixes (βρέθηκαν κατά το live testing, εκκρεμεί upload)
 
-### Σύνδεση με "Ανέβηκε" / Reports
-Καμία επιπλέον αλλαγή δεν χρειάστηκε — το `PendingPhotosQueue` φιλτράρει ήδη με `photo && !posted && !isDel(v)`, άρα μια επίσκεψη που παίρνει `photo:true` αργότερα εμφανίζεται αυτόματα στην ουρά "Εκκρεμείς φωτογραφίες".
+**Β1. False-positive "Tip → άλλος υπάλληλος" στο audit log**
+Root cause: το Firebase RTDB διαγράφει field όταν του γράφεις `null` (δεν το αποθηκεύει). Το `VisitEditor`/`AddScreen` γράφουν `tipStaffId: null` όταν δεν υπάρχει tip → στο επόμενο read γίνεται `undefined`, όχι `null`. Το `diffVisit` συνέκρινε με strict `!==` χωρίς normalization → `undefined !== null` πάντα αληθές → ψεύτικη γραμμή σε ΚΑΘΕ edit επίσκεψης χωρίς tip. Fix: `(b.tipStaffId||null)!==(a.tipStaffId||null)`.
+
+**Β2. Πλήρες edit επίσκεψης από το Πελατολόγιο**
+Πριν: το ιστορικό επισκέψεων στο `ClientCard` ήταν αμιγώς read-only (μόνο η σημείωση επεξεργάσιμη), καμία πρόσβαση στο Φωτό. Τώρα: κάθε κάρτα επίσκεψης (Master only) ανοίγει το ίδιο `VisitDetail`/`VisitEditor` που ήδη χρησιμοποιείται στο Ταμείο/Αρχική — καμία διπλή υλοποίηση, ίδιο component. Wiring: `ClientCard`/`ClientsScreen`/App-level πήραν τα απαραίτητα νέα props (`clients`, `zmap`, `onEditVisit`, `onSoftDelete`, `onHardDeleteVisit`).
 
 ### Status
-Κώδικας έτοιμος, παραδόθηκε στον Ανδρέα (`public/index.html`) για upload. **Δεν έχει γίνει commit/deploy ακόμα.** Εκκρεμεί manual test μετά το upload (βλ. section 8 στο dated debrief).
+Μέρος Α: **live, deployed, tested ✅**
+Μέρος Β: κώδικας έτοιμος, παραδόθηκε στον Ανδρέα (`public/index.html`), **εκκρεμεί upload + manual test.**
 
 ---
 
@@ -70,7 +70,7 @@ GitHub Actions δείχνει προειδοποίηση Node.js 20 deprecation.
 ---
 
 ## 5. FILE / GIT STATE
-- `public/index.html`: τροποποιημένο τοπικά (photo toggle, 5 σημεία) — εκκρεμεί upload/commit από τον Ανδρέα.
+- `public/index.html`: τροποποιημένο τοπικά (Β1+Β2, 3 επιπλέον σημεία πάνω στο ήδη live Μέρος Α) — εκκρεμεί upload/commit από τον Ανδρέα.
 - `firebase-key.json`: καλυμμένο από `.gitignore`, local only.
 - Pre-existing untracked files (αμετάβλητα): `functions/package-lock.json`, `glamager.zip`.
 
@@ -90,8 +90,8 @@ Do not weaken or bypass these rules.
 ## 7. NEXT RECOMMENDED WORK
 
 ### P0 — NEXT
-1. Ανδρέας: upload `public/index.html` (photo toggle) → auto-deploy.
-2. Manual test του toggle + audit log + σύνδεση με Reports → 📷.
+1. Ανδρέας: upload το ενημερωμένο `public/index.html` (Β1+Β2) → auto-deploy.
+2. Manual test: audit log καθαρό (χωρίς ψεύτικο Tip-change), edit επίσκεψης λειτουργεί από Πελατολόγιο.
 
 ### P1
 **Phase 3: Auth / Memberships / Roles**
@@ -111,7 +111,8 @@ Treat this document as the authoritative current project state.
 
 - Phase 2 (tenant model): COMPLETE.
 - Firebase credential rotation: COMPLETE and CLOSED — μην το ξανανοίξεις χωρίς νέο συγκεκριμένο security issue.
-- Πιο πρόσφατο shift: photo toggle στο VisitEditor — κώδικας έτοιμος, εκκρεμεί upload+test από τον Ανδρέα (βλ. section 1 πάνω, ή το πλήρες `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`).
+- Photo toggle στο VisitEditor: LIVE, tested.
+- 2 follow-up fixes (audit-log tipStaffId normalization, edit επίσκεψης από Πελατολόγιο): κώδικας έτοιμος, εκκρεμεί upload+test από τον Ανδρέα (βλ. section 1, ή το πλήρες `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`).
 - Phase 3 (Auth/Memberships/Roles): επόμενο βήμα, ΔΕΝ έχει ξεκινήσει, ΔΕΝ έχει έγκριση — περίμενε ρητό σήμα από τον Ανδρέα.
 
 Καμία αλλαγή κώδικα/deploy χωρίς ρητή έγκριση Ανδρέα.
