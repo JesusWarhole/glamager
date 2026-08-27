@@ -1,67 +1,71 @@
 {
-    "rules": {
-          /* Glamager (Hair Corner) — Realtime Database security rules.
-         Μοντέλο: 5 πραγματικοί λογαριασμοί (Firebase Auth email/password), 2 Masters
-         (Ανδρέας, Σοφία) + 3 μη-Master (Τάνια/Λόρα = Staff, Μαργαρίτα = Reception).
+      "rules": {
+              /* Glamager — Realtime Database security rules.
+           27/08/2026 (Phase 2, multi-tenant θεμέλιο): όλα τα δεδομένα μαγαζιού ζουν πλέον
+       κάτω από tenants/{tenantId}/... αντί για bare paths στη ρίζα. Το Hair Corner
+       είναι σήμερα ο μοναδικός tenant, hardcoded ως "hair-corner" (ίδιο TENANT_ID
+       constant με το index.html). Θα γίνει δυναμικό στο Phase 3 (auth/membership).
 
-             26/08: custom claim role πλέον υπάρχει σε όλους τους 5 λογαριασμούς
-             (Cloud Function syncStaffClaims, κουμπί Συγχρονισμός δικαιωμάτων στις
-             Ρυθμίσεις — Master το πατάει μετά από κάθε πρόσληψη/αλλαγή ρόλου/αποχώρηση).
-             Το Master αναγνωρίζεται πλέον από auth.token.role === master, όχι από
-             hardcoded email σύγκριση.
+       _seeded/ ΠΑΡΑΜΕΝΕΙ top-level, ΕΚΤΟΣ tenants/ — είναι εσωτερικό bookkeeping
+       του useFirebaseState hook, όχι δεδομένα μαγαζιού. Το hook γράφει σε
+       _seeded/<path> όπου <path> ήδη περιέχει το tenants/hair-corner/... πρόθεμα.
 
-             Ο περιορισμός device-level login + καθημερινό PIN μεταξύ ατόμων στο ΙΔΙΟ
-             tablet παραμένει ίδιος και για το role claim - ανήκει στον λογαριασμό που
-             έκανε login στη συσκευή, όχι σε ποιον PIN operator δουλεύει τη στιγμή. Το
-             UI isMaster gating παραμένει η πρώτη γραμμή άμυνας γι' αυτό το σενάριο. */
+       27/08: το pins κλειδώθηκε Master-only εδώ (ήδη αναγνωρισμένη εκκρεμότητα
+       από το ChatGPT audit της 26/08). */
 
-          ".read": false,
-          ".write": false,
+    ".read": false,
+    ".write": false,
 
-          "visits":       { ".read": "auth != null", ".write": "auth != null" },
-          "expenses":     { ".read": "auth != null", ".write": "auth != null" },
-          "clients":      { ".read": "auth != null", ".write": "auth != null" },
-          "schedData":    { ".read": "auth != null", ".write": "auth != null" },
-          "leaveReqs":    { ".read": "auth != null", ".write": "auth != null" },
-          "pins":         { ".read": "auth != null", ".write": "auth != null" },
-          "_seeded":      { ".read": "auth != null", ".write": "auth != null" },
+    "_seeded": { ".read": "auth != null", ".write": "auth != null" },
 
-          "staff": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
+    "tenants": {
+              "hair-corner": {
 
-          "services": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
-          "products": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
+                "visits":       { ".read": "auth != null", ".write": "auth != null" },
+                          "expenses":     { ".read": "auth != null", ".write": "auth != null" },
+                          "clients":      { ".read": "auth != null", ".write": "auth != null" },
+                          "schedData":    { ".read": "auth != null", ".write": "auth != null" },
+                          "leaveReqs":    { ".read": "auth != null", ".write": "auth != null" },
 
-          "zmap": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
+                          "pins": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
 
-          "kudos": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
+                          "staff": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "services": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "products": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "zmap": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "kudos": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "expCats": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "fixedExpenses": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && auth.token.role === 'master'"
+                          },
+                          "settings": {
+                                        ".read": "auth != null",
+                                        ".write": "auth != null && (auth.token.role === 'master' || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val() && newData.child('testMode').val() === data.child('testMode').val()))"
+                          }
 
-          "expCats": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
-          "fixedExpenses": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && auth.token.role === 'master'"
-          },
-
-          "settings": {
-                  ".read": "auth != null",
-                  ".write": "auth != null && (auth.token.role === 'master' || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val() && newData.child('testMode').val() === data.child('testMode').val()))"
-          }
+              }
     }
+}
 }
