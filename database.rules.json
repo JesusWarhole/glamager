@@ -1,17 +1,20 @@
 {
-      "rules": {
-              /* Glamager — Realtime Database security rules.
-           27/08/2026 (Phase 2, multi-tenant θεμέλιο): όλα τα δεδομένα μαγαζιού ζουν πλέον
-       κάτω από tenants/{tenantId}/... αντί για bare paths στη ρίζα. Το Hair Corner
-       είναι σήμερα ο μοναδικός tenant, hardcoded ως "hair-corner" (ίδιο TENANT_ID
-       constant με το index.html). Θα γίνει δυναμικό στο Phase 3 (auth/membership).
+  "rules": {
+    /* Glamager — Realtime Database security rules.
+       28/08/2026 (Phase 3, Step 3β): το "hair-corner" έγινε μεταβλητό tenant key
+       ($tenantId), και σε ΚΑΘΕ read/write μέσα στο tenants/ block προστέθηκε
+       "auth.token.tenantId === $tenantId" — αυτό είναι το πραγματικό tenant
+       isolation: authenticated χρήστης του Tenant A δεν μπορεί ΠΟΤΕ να διαβάσει/
+       γράψει data άλλου tenant, ακόμα κι αν ξέρει/μαντέψει το path του.
+       Προηγούμενο ιστορικό (27/08, Phase 2): όλα τα δεδομένα μαγαζιού μπήκαν κάτω
+       από tenants/{tenantId}/... αντί για bare paths στη ρίζα — αυτό το βήμα
+       έκανε το namespace, το σημερινό βήμα κλειδώνει ΠΟΙΟΣ μπορεί να το αγγίξει.
 
-       _seeded/ ΠΑΡΑΜΕΝΕΙ top-level, ΕΚΤΟΣ tenants/ — είναι εσωτερικό bookkeeping
-       του useFirebaseState hook, όχι δεδομένα μαγαζιού. Το hook γράφει σε
-       _seeded/<path> όπου <path> ήδη περιέχει το tenants/hair-corner/... πρόθεμα.
+       _seeded/ ΠΑΡΑΜΕΝΕΙ top-level, ΕΚΤΟΣ tenants/, ΧΩΡΙΣ tenant-check — εσωτερικό
+       bookkeeping του useFirebaseState hook (flag "έχω ήδη γεμίσει seed data"),
+       καμία πραγματική επιχειρησιακή πληροφορία μέσα. Ρητή, τεκμηριωμένη εξαίρεση.
 
-       27/08: το pins κλειδώθηκε Master-only εδώ (ήδη αναγνωρισμένη εκκρεμότητα
-       από το ChatGPT audit της 26/08). */
+       27/08: το pins κλειδώθηκε Master-only εδώ. */
 
     ".read": false,
     ".write": false,
@@ -19,53 +22,53 @@
     "_seeded": { ".read": "auth != null", ".write": "auth != null" },
 
     "tenants": {
-              "hair-corner": {
+      "$tenantId": {
 
-                "visits":       { ".read": "auth != null", ".write": "auth != null" },
-                          "expenses":     { ".read": "auth != null", ".write": "auth != null" },
-                          "clients":      { ".read": "auth != null", ".write": "auth != null" },
-                          "schedData":    { ".read": "auth != null", ".write": "auth != null" },
-                          "leaveReqs":    { ".read": "auth != null", ".write": "auth != null" },
+        "visits":       { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
+        "expenses":     { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
+        "clients":      { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
+        "schedData":    { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
+        "leaveReqs":    { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
 
-                          "pins": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
+        "pins": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
 
-                          "staff": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "services": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "products": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "zmap": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "kudos": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "expCats": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "fixedExpenses": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && auth.token.role === 'master'"
-                          },
-                          "settings": {
-                                        ".read": "auth != null",
-                                        ".write": "auth != null && (auth.token.role === 'master' || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val() && newData.child('testMode').val() === data.child('testMode').val()))"
-                          }
+        "staff": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "services": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "products": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "zmap": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "kudos": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "expCats": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "fixedExpenses": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
+        },
+        "settings": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && (auth.token.role === 'master' || (newData.child('shopName').val() === data.child('shopName').val() && newData.child('currency').val() === data.child('currency').val() && newData.child('aegeanIslands').val() === data.child('aegeanIslands').val() && newData.child('vatServiceDefault').val() === data.child('vatServiceDefault').val() && newData.child('vatProductDefault').val() === data.child('vatProductDefault').val() && newData.child('autoLockMinutes').val() === data.child('autoLockMinutes').val() && newData.child('clientInactivityDays').val() === data.child('clientInactivityDays').val() && newData.child('testMode').val() === data.child('testMode').val()))"
+        }
 
-              }
+      }
     }
-}
+  }
 }
