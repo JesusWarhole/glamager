@@ -342,6 +342,7 @@ const STRINGS = {
   /* «Διόρθωση δοκιμαστικών» (31/07) — Master hard delete για άδειες/kudos/πελάτες χωρίς επισκέψεις. */
   hardDeleteConfirm:  { el:'Οριστική διαγραφή — δεν αναιρείται. Σίγουρα;', en:'Permanent deletion — cannot be undone. Are you sure?' },
   hardDeleteTitleAttr:{ el:'Οριστική διαγραφή',                          en:'Permanently delete' },
+  editClientInfoTitleAttr:{ el:'Επεξεργασία τηλεφώνου/πατρώνυμου',        en:'Edit phone/patronym' },
   kudosManagerTitle:  { el:'Kudos — ιστορικό',                           en:'Kudos — history' },
   kudosManagerEmpty:  { el:'Δεν υπάρχουν kudos ακόμα.',                  en:'No kudos yet.' },
   clientDeleteBlockedLabel: { el:'Έχει επισκέψεις',                      en:'Has visits' },
@@ -474,6 +475,8 @@ const STRINGS = {
   clientOptionalLabel:{ el:'Πελάτης (προαιρετικό)',                     en:'Client (optional)' },
   fullNamePlaceholder:{ el:'Ονοματεπώνυμο...',                          en:'Full name...' },
   newClientPrefix:    { el:'Νέος πελάτης',                              en:'New client' },
+  newClientDifferentPersonPrefix: { el:'➕ Διαφορετικό άτομο, ίδιο όνομα', en:'➕ Different person, same name' },
+  newClientAutoHint:  { el:'Αν δεν διαλέξεις κάποιον παραπάνω, θα καταχωρηθεί ΝΕΟΣ πελάτης με αυτό το όνομα.', en:'If you don\'t pick someone above, a NEW client will be created with this name.' },
   savePromptSuffix:   { el:'— αποθήκευση;',                             en:'— save?' },
   phoneOptionalPlaceholder: { el:'Τηλέφωνο (προαιρετικό)...',           en:'Phone (optional)...' },
   sessionNotePlaceholder: { el:'Σημείωση συνεδρίας (π.χ. βαφή 6.3 + 7.1)...', en:'Session note (e.g. color 6.3 + 7.1)...' },
@@ -3345,7 +3348,14 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
   const saveIncome = () => {
     if(lines.length===0) return;
     let cid = clientId;
-    if(!cid && showNew && cq.trim()){
+    if(!cid && cq.trim()){
+      // 29/08 fix — πριν, αν πληκτρολογούσες όνομα και πατούσες Καταχώρηση χωρίς να
+      // διαλέξεις πρόταση, το όνομα χανόταν σιωπηλά (καμία σύνδεση πελάτη, κανένα μήνυμα).
+      // ΕΠΙΤΗΔΕΣ δεν κάνουμε auto-match σε ίδιο όνομα εδώ — δύο πραγματικοί πελάτες μπορεί να
+      // λέγονται ολόιδια (π.χ. δύο «Ειρήνη Οικονόμου» άσχετες μεταξύ τους, απόφαση Ανδρέα
+      // 29/08), και το να κολλήσουμε λάθος ιστορικό σε λάθος άνθρωπο είναι πολύ χειρότερο από
+      // ένα αβλαβές διπλότυπο. Αν δεν έχεις πατήσει ρητά πάνω σε πρόταση, φτιάχνουμε πάντα
+      // ΝΕΟ πελάτη με το γραμμένο όνομα — ποτέ δεν μαντεύουμε ποιον εννοούσες.
       cid = onAddClient({name:cq.trim(), phone:newPhone.trim(), patronym:''});
     }
     const useSplit = tipSplitOn && tipSplitIds.length>=2;
@@ -3481,11 +3491,25 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
                 </button>
               ))}
             </div>}
-            {cq.trim().length>=2 && sugg.length===0 && !showNew && (
-              <button onClick={()=>setShowNew(true)} className="text-xs font-bold mt-1" style={{color:'var(--accent-600)'}}>{t('newClientPrefix')} «{cq.trim()}» {t('savePromptSuffix')}</button>
+            {/* 29/08 fix — πριν, το κουμπί "Νέος πελάτης" εξαφανιζόταν μόλις υπήρχε έστω μία πρόταση
+                ομώνυμου πελάτη, χωρίς κανένα ρητό τρόπο να πεις "όχι, είναι άλλος άνθρωπος". Τώρα
+                μένει ΠΑΝΤΑ ορατό όσο υπάρχει γραμμένο όνομα — με διαφορετική ετικέτα όταν υπάρχουν
+                ήδη προτάσεις, ώστε να είναι ρητό ότι πρόκειται για διαφορετικό άτομο. */}
+            {cq.trim().length>=2 && !showNew && (
+              <button onClick={()=>setShowNew(true)} className="text-xs font-bold mt-1" style={{color:'var(--accent-600)'}}>
+                {sugg.length>0 ? t('newClientDifferentPersonPrefix') : `${t('newClientPrefix')} «${cq.trim()}» ${t('savePromptSuffix')}`}
+              </button>
             )}
             {showNew && (
               <input type="tel" value={newPhone} onChange={e=>setNewPhone(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 mt-2 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            )}
+            {/* 29/08 fix — αν ο χρήστης απλά γράψει όνομα και πατήσει Καταχώρηση χωρίς να διαλέξει
+                τίποτα (ούτε πρόταση, ούτε το κουμπάκι από πάνω), το saveIncome φτιάχνει ΝΕΟ πελάτη
+                σιωπηλά (σκόπιμα ασφαλές default, βλ. σχόλιο εκεί) — αλλά "σιωπηλά" σήμαινε ότι ο
+                χρήστης δεν το έβλεπε πουθενά πριν πατήσει. Αυτό εδώ το κάνει ρητό, χωρίς popup που
+                μπλοκάρει τη ροή. */}
+            {cq.trim().length>=2 && !showNew && sugg.length>0 && (
+              <p className="text-[11px] mt-1.5" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientAutoHint')}</p>
             )}
           </React.Fragment>)}
         </div>
@@ -3800,7 +3824,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
    icon στο header για Master. ΠΛΗΡΗΣ πρόσβαση ιστορικού/χρωματολογίας
    για ΟΛΟΥΣ. Στατιστικά αξίας πελάτη: Master + Ρεσεψιόν ΜΟΝΟ. */
 
-const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,onUpdateNote,onDeleteClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
+const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,onUpdateNote,onDeleteClient,onUpdateClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
   const canStats = operator.role===ROLE.MASTER || operator.role===ROLE.RECEPTION;
   const isMaster = operator.role===ROLE.MASTER;
   const [selVisitId,setSelVisitId] = useState(null);
@@ -3823,6 +3847,10 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   const yearVisits = hist.filter(v=>v.date>=`${CUR_Y}-01-01`).length;
   const [editing,setEditing] = useState(null); // visitId
   const [draft,setDraft] = useState('');
+  /* 29/08 fix — edit επαφής (τηλέφωνο/πατρώνυμο), ΟΧΙ όνομα (βλ. σχόλιο στο updateClient) */
+  const [editingInfo,setEditingInfo] = useState(false);
+  const [phoneDraft,setPhoneDraft] = useState(client.phone||'');
+  const [patronymDraft,setPatronymDraft] = useState(client.patronym||'');
 
   /* Καλείται ως συνάρτηση — ΟΧΙ <NoteBlock/> — για να μη χάνει focus το textarea */
   const NoteBlock = ({v,big}) => (
@@ -3844,18 +3872,40 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   return (
     <div className="px-4 pt-4 safe-pb">
       <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold mb-3" style={{color:'var(--accent-600)'}}><Ic n="back" s={16}/> {t('navClients')}</button>
-      <div className="card p-4 mb-3 flex items-start justify-between gap-2">
-        <div className="min-w-0">
-          <p className="text-xl font-black" style={{color:'var(--text)'}}>{client.name}</p>
-          <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{[client.phone,client.patronym&&`${t('patronymPrefix')} ${client.patronym}`].filter(Boolean).join(' · ')||'—'}</p>
-        </div>
-        {canDelete && (
-          hasAnyVisit
-            ? <span title={t('clientDeleteBlockedTitleAttr')} className="text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{background:'var(--soft)',color:'var(--text-dim)'}}>🔒 {t('clientDeleteBlockedLabel')}</span>
-            : <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDeleteClient(client.id); }}
-                title={t('hardDeleteTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
-                <Ic n="trash" s={14} c="#dc2626"/>
+      <div className="card p-4 mb-3">
+        <div className="flex items-start justify-between gap-2">
+          <div className="min-w-0">
+            <p className="text-xl font-black" style={{color:'var(--text)'}}>{client.name}</p>
+            {!editingInfo && <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{[client.phone,client.patronym&&`${t('patronymPrefix')} ${client.patronym}`].filter(Boolean).join(' · ')||'—'}</p>}
+          </div>
+          <div className="flex items-center gap-1 flex-shrink-0">
+            {onUpdateClient && !editingInfo && (
+              <button onClick={()=>{setPhoneDraft(client.phone||'');setPatronymDraft(client.patronym||'');setEditingInfo(true);}}
+                title={t('editClientInfoTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'var(--soft)'}}>
+                <span className="text-sm">✏️</span>
               </button>
+            )}
+            {canDelete && (
+              hasAnyVisit
+                ? <span title={t('clientDeleteBlockedTitleAttr')} className="text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{background:'var(--soft)',color:'var(--text-dim)'}}>🔒 {t('clientDeleteBlockedLabel')}</span>
+                : <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDeleteClient(client.id); }}
+                    title={t('hardDeleteTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
+                    <Ic n="trash" s={14} c="#dc2626"/>
+                  </button>
+            )}
+          </div>
+        </div>
+        {/* 29/08 fix — δεν υπήρχε τρόπος να προστεθεί/διορθωθεί τηλέφωνο ή πατρώνυμο μετά την 1η
+            καταχώρηση (αναφορά Ανδρέα). Το ΟΝΟΜΑ σκόπιμα δεν επεξεργάζεται εδώ. */}
+        {editingInfo && (
+          <div className="mt-3 space-y-2">
+            <input type="tel" value={phoneDraft} onChange={e=>setPhoneDraft(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            <input type="text" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            <div className="flex gap-2">
+              <button onClick={()=>{onUpdateClient(client.id,{phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}} className="flex-1 py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+              <button onClick={()=>setEditingInfo(false)} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
+            </div>
+          </div>
         )}
       </div>
 
@@ -3932,7 +3982,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   );
 };
 
-const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote,onDeleteClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
+const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote,onDeleteClient,onUpdateClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
   const [q,setQ] = useState('');
   const [selId,setSelId] = useState(null);
   const [onlyInactive,setOnlyInactive] = useState(false);
@@ -3940,7 +3990,7 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
   /* Επιτυχής διαγραφή → γύρνα στη λίστα (ο επιλεγμένος πελάτης δεν υπάρχει πια) */
   const handleDeleteClient = onDeleteClient ? (id=>{ const res=onDeleteClient(id); if(res?.ok) setSelId(null); return res; }) : null;
   if(sel) return <ClientCard client={sel} visits={visits} clients={clients} staff={staff} operator={operator} settings={settings} zmap={zmap}
-    onBack={()=>setSelId(null)} onUpdateNote={onUpdateNote} onDeleteClient={handleDeleteClient}
+    onBack={()=>setSelId(null)} onUpdateNote={onUpdateNote} onDeleteClient={handleDeleteClient} onUpdateClient={onUpdateClient}
     onEditVisit={onEditVisit} onSoftDelete={onSoftDelete} onHardDeleteVisit={onHardDeleteVisit}/>;
 
   /* Αδράνεια πελάτη (spec §1ε) — όριο από τις Ρυθμίσεις. Χωρίς επίσκεψη ακόμα ≠ αδρανής (είναι νέος). */
@@ -5661,6 +5711,10 @@ const App = () => {
   };
   const addExpense = e => setExpenses(es=>[e,...es]);
   const addClient = c => { const id=uid(); setClients(cs=>[...cs,{...c,id,created:today()}]); return id; };
+  /* 29/08 fix — δεν υπήρχε ΚΑΝΕΝΑΣ τρόπος να προστεθεί/διορθωθεί τηλέφωνο ή πατρώνυμο πελάτη
+     μετά την 1η καταχώρηση (αναφορά Ανδρέα). Σκόπιμα ΔΕΝ επιτρέπουμε εδώ αλλαγή ΟΝΟΜΑΤΟΣ — αυτό
+     ξαναναοίγει το θέμα ομώνυμων πελατών (βλ. σχόλιο στο saveIncome), θέλει ξεχωριστή απόφαση. */
+  const updateClient = (id,patch) => setClients(cs=>cs.map(c=>c.id===id?{...c,...patch}:c));
   /* Κατάλογος: upsert — νέο id αν δεν υπάρχει. Deactivate αντί delete. */
   const saveService = svc => setServices(ss => svc.id ? ss.map(s=>s.id===svc.id?svc:s) : [...ss,{...svc,id:uid(),active:true}]);
   const saveProduct = p => setProducts(ps => p.id ? ps.map(x=>x.id===p.id?p:x) : [...ps,{...p,id:uid(),active:true}]);
@@ -5820,7 +5874,7 @@ const App = () => {
             onHardDeleteVisit={hardDeleteVisit} onHardDeleteExpense={hardDeleteExpense}/>)}
 
       {tab==='clients' && <ClientsScreen operator={operator} clients={clients} visits={visits} staff={staff} settings={settings} zmap={zmap}
-        onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null}
+        onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null} onUpdateClient={updateClient}
         onEditVisit={editVisit} onSoftDelete={softDelete} onHardDeleteVisit={hardDeleteVisit}/>}
 
       {tab==='rep' && isMaster && <ReportsScreen sub={repSub} setSub={setRepSub} visits={visits} expenses={expenses}
