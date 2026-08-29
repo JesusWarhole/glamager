@@ -188,6 +188,15 @@ function useFirebaseState(path, seed, enabled){
   const stateRef = useRef(seed);
   useEffect(()=>{
     if(!enabled) return;
+    /* 29/08 (multi-tenant client step, fix μετά το πρώτο demo-shop test): αυτό το effect τρέχει
+       ξανά κάθε φορά που αλλάζει το `path` (π.χ. αλλαγή tenantId μέσα στο ίδιο session — sign out
+       από ένα μαγαζί και sign in σε άλλο, ΧΩΡΙΣ full page reload). ΠΡΙΝ, το `state` κρατούσε την
+       ΠΑΛΙΑ τιμή (του προηγούμενου path) μέχρι να απαντήσει ο νέος listener — δηλαδή για μια
+       στιγμή, δεδομένα ΑΛΛΟΥ tenant ήταν ακόμα «ζωντανά» στη μνήμη. Reset σε seed εδώ, πριν καν
+       ανοίξει ο νέος listener, ώστε να ΜΗΝ υπάρχει ποτέ στιγμή όπου δεδομένα λάθος μαγαζιού
+       εμφανίζονται σαν έγκυρα (affects ΟΛΑ τα useFirebaseState paths, όχι μόνο το staff/login). */
+    stateRef.current = seed;
+    setState(seed);
     const r = fbDb.ref(path);
     /* _seeded/<path>: flag ξεχωριστό από τα ίδια τα δεδομένα — λύνει bug όπου το άδειασμα μιας
        λίστας (π.χ. wipeDemoData όταν η μόνη εγγραφή ήταν demo) ξανάφερνε αυτόματα το seed.
@@ -5382,14 +5391,25 @@ const App = () => {
   },[staff]);
   /* Δεύτερη γραμμή του παλιού ελέγχου «άγνωστο email»: τρέχει ΑΦΟΥ έχει ήδη φορτώσει έστω το
      seed του staff (άρα καμία circular εξάρτηση), σημειώνει σφάλμα + σε αποσυνδέει αν το
-     συνδεδεμένο email δεν αντιστοιχεί σε καμία ενεργή εγγραφή προσωπικού. */
+     συνδεδεμένο email δεν αντιστοιχεί σε καμία ενεργή εγγραφή προσωπικού.
+     29/08 (multi-tenant client step, fix μετά το πρώτο demo-shop test): ΠΡΙΝ, το effect έτρεχε
+     αμέσως μόλις άλλαζε το fbUser — αλλά το πραγματικό `staff` του tenant χρειάζεται δύο
+     ασύγχρονα βήματα (tenantId claim, μετά RTDB read) για να φορτώσει· μέχρι τότε το `staff`
+     state είναι ακόμα στο αρχικό seed (DEFAULT_STAFF, που έχει ΜΟΝΟ τα 5 emails του Hair
+     Corner). Για λογαριασμούς Hair Corner ο έλεγχος περνούσε "τυχαία" σωστά· για ΚΑΘΕ άλλο
+     tenant (π.χ. demo-shop) απέρριπτε λανθασμένα, επειδή έτρεχε πριν προλάβει να φορτώσει το
+     σωστό staff. Διόρθωση: περιμένουμε (α) `dataReady` (ξέρουμε το tenantId) ΚΑΙ (β) το `staff`
+     να έχει πλέον διαφορετική reference από το αρχικό `DEFAULT_STAFF` seed — δηλαδή να έχει
+     όντως έρθει έστω μία φορά πραγματική τιμή από το Firebase γι' αυτό το tenant, όχι απλά η
+     αρχική προεπιλογή. */
   useEffect(()=>{
-    if(!fbUser) return;
+    if(!fbUser || !dataReady) return;
+    if(staff === DEFAULT_STAFF) return; // ακόμα δεν έχει έρθει η πραγματική λίστα του tenant
     if(!authAccounts[(fbUser.email||'').toLowerCase()]){
       setAuthErr(t('loginNotFound'));
       fbAuth.signOut();
     }
-  },[fbUser, authAccounts]);
+  },[fbUser, dataReady, staff, authAccounts]);
   const [visits,setVisits] = useFirebaseState(tPath('visits'), DEMO_VISITS, dataReady);
   const [expenses,setExpenses] = useFirebaseState(tPath('expenses'), DEMO_EXPENSES, dataReady);
   const [clients,setClients] = useFirebaseState(tPath('clients'), DEMO_CLIENTS, dataReady);
