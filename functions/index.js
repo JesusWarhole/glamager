@@ -17,16 +17,24 @@
 
    ΠΟΤΕ ΤΡΕΧΕΙ: χειροκίνητο κουμπί στις Ρυθμίσεις (Master-only), όχι αυτόματο σε κάθε staff edit.
 
-   ΑΣΦΑΛΕΙΑ: μόνο συνδεδεμένος χρήστης με email έναν από τους δύο hardcoded Masters μπορεί να το καλέσει.
-
    28/08 (Phase 3, Step 3 — πρώτο πραγματικό code change, βλ. phase3-step1-architecture.md
    στο Project): προστέθηκε tenantId claim δίπλα στο role — θεμέλιο για tenant isolation.
-   Τα Security Rules ΔΕΝ το ελέγχουν ακόμα σε αυτό το βήμα (ξεχωριστό, επόμενο βήμα,
-   περιμένει δικό του approval). Προστέθηκε επίσης χειρισμός για ανενεργό (`active:false`)
-   προσωπικό: αντί να αφαιρεθεί απλά μια πληροφορία από τον λογαριασμό, ο ίδιος ο
-   Firebase Auth λογαριασμός κλειδώνεται (`disabled:true`) — ξεκάθαρο "δεν μπαίνει
-   πουθενά πια", όχι "δεν έχει ετικέτα μαγαζιού". Πλήρως αναστρέψιμο: αν το άτομο
-   ξαναγίνει active και ξανατρέξει το sync, ξεκλειδώνεται κανονικά. */
+   Προστέθηκε επίσης χειρισμός για ανενεργό (`active:false`) προσωπικό: αντί να αφαιρεθεί
+   απλά μια πληροφορία από τον λογαριασμό, ο ίδιος ο Firebase Auth λογαριασμός κλειδώνεται
+   (`disabled:true`) — ξεκάθαρο "δεν μπαίνει πουθενά πια", όχι "δεν έχει ετικέτα μαγαζιού".
+   Πλήρως αναστρέψιμο: αν το άτομο ξαναγίνει active και ξανατρέξει το sync, ξεκλειδώνεται
+   κανονικά.
+
+   29/08 (multi-tenant client step, μετά το Phase 3): αφαιρέθηκαν τα καρφωμένα MASTER_EMAILS
+   και TENANT_ID — η function δεν "ξέρει" πια ότι υπάρχει μόνο το Hair Corner. Αντ' αυτού
+   διαβάζει το ΔΙΚΟ ΤΟΥ claim του καλούντος (`request.auth.token.role`/`tenantId`, το ίδιο
+   claim που ΗΔΗ έχει από προηγούμενο sync ή χειροκίνητο αρχικό setup) και συγχρονίζει ΜΟΝΟ
+   το προσωπικό ΤΟΥ ΔΙΚΟΥ ΤΟΥ μαγαζιού — ποτέ άλλου tenant, ό,τι κι αν του ζητηθεί. Αυτό
+   σημαίνει ότι ΚΑΘΕ μελλοντικός Master οποιουδήποτε μαγαζιού μπορεί να χρησιμοποιήσει το
+   ίδιο κουμπί χωρίς καμία αλλαγή εδώ. Ρητό όριο (βλ. phase3-step1-architecture.md):
+   αυτή η function ΣΥΓΧΡΟΝΙΖΕΙ προσωπικό που ήδη ανήκει σε tenant — ΔΕΝ φτιάχνει τον πρώτο
+   Master ενός ολότελα νέου μαγαζιού (αυτός δεν έχει ακόμα κανένα claim να διαβαστεί εδώ),
+   αυτό παραμένει χειροκίνητο αρχικό βήμα, ίδιο μοτίβο με το αρχικό setup του Hair Corner. */
 
 const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
@@ -35,16 +43,14 @@ const admin = require("firebase-admin");
 admin.initializeApp();
 setGlobalOptions({ region: "europe-west1", maxInstances: 2 });
 
-const MASTER_EMAILS = ["antreas@haircorner.gr", "sofia@haircorner.gr"];
-const TENANT_ID = "hair-corner";
-
 exports.syncStaffClaims = onCall(async (request) => {
-  const callerEmail = (request.auth && request.auth.token && request.auth.token.email || "").toLowerCase();
-  if (!request.auth || !MASTER_EMAILS.includes(callerEmail)) {
-    throw new HttpsError("permission-denied", "Μόνο Master μπορεί να συγχρονίσει δικαιώματα.");
+  const callerRole = request.auth && request.auth.token && request.auth.token.role;
+  const callerTenantId = request.auth && request.auth.token && request.auth.token.tenantId;
+  if (!request.auth || callerRole !== "master" || !callerTenantId) {
+    throw new HttpsError("permission-denied", "Μόνο ο Master ενός συγκεκριμένου μαγαζιού μπορεί να συγχρονίσει τα δικαιώματά του.");
   }
 
-  const snap = await admin.database().ref(`tenants/${TENANT_ID}/staff`).once("value");
+  const snap = await admin.database().ref(`tenants/${callerTenantId}/staff`).once("value");
   const staff = snap.val() || {};
   const entries = Object.values(staff).filter((s) => s && s.email && s.role != null);
 
@@ -56,7 +62,7 @@ exports.syncStaffClaims = onCall(async (request) => {
       const userRecord = await admin.auth().getUserByEmail(email);
       if (isActive) {
         await admin.auth().updateUser(userRecord.uid, { disabled: false });
-        await admin.auth().setCustomUserClaims(userRecord.uid, { role: person.role, tenantId: TENANT_ID });
+        await admin.auth().setCustomUserClaims(userRecord.uid, { role: person.role, tenantId: callerTenantId });
       } else {
         await admin.auth().updateUser(userRecord.uid, { disabled: true });
         await admin.auth().setCustomUserClaims(userRecord.uid, { role: person.role });

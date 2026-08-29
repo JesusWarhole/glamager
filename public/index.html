@@ -168,14 +168,14 @@ const fbDb = firebase.database();
 const fbFunctions = firebase.app().functions('europe-west1'); // ίδιο region με τη Cloud Function (functions/index.js)
 
 /* ── Multi-tenant θεμέλιο (27/08/2026, Phase 2) ─────────────────────────────
-   Πριν: bare paths στο RTDB (/visits, /staff, κ.λπ.) — ένα μαγαζί, καμία δομή
-   για δεύτερο. Τώρα: όλα τα δεδομένα ζουν κάτω από /tenants/{TENANT_ID}/...
-   Το Hair Corner είναι σήμερα ο μοναδικός tenant, hardcoded — θα γίνει δυναμικό
-   (από membership/URL/κ.λπ.) στο Phase 3 όταν μπει το πραγματικό auth/invite flow.
-   Το `_seeded/` flag ΠΑΡΑΜΕΝΕΙ top-level, εκτός tenants/ — είναι εσωτερικό
-   bookkeeping του ίδιου του hook (useFirebaseState), όχι δεδομένα μαγαζιού. */
-const TENANT_ID = 'hair-corner';
-const tPath = p => `tenants/${TENANT_ID}/${p}`;
+   Όλα τα δεδομένα ζουν κάτω από /tenants/{tenantId}/...
+   29/08/2026 (multi-tenant client, μετά το Phase 3): το tenantId ΔΕΝ είναι πια
+   καρφωμένη σταθερά εδώ — διαβάζεται δυναμικά μέσα στο App component από το
+   custom claim του ίδιου του συνδεδεμένου λογαριασμού (το ίδιο claim που ήδη
+   ελέγχουν τα Security Rules). Βλ. μέσα στο App: fetchClaims effect + το τοπικό
+   tPath εκεί. Το `_seeded/` flag ΠΑΡΑΜΕΝΕΙ top-level, εκτός tenants/ — είναι
+   εσωτερικό bookkeeping του ίδιου του hook (useFirebaseState), όχι δεδομένα
+   μαγαζιού. */
 
 /* ── useFirebaseState: useState-like hook αλλά backed από RTDB path, live μεταξύ συσκευών.
    - enabled=false (π.χ. πριν το login): ΔΕΝ ανοίγει listener καθόλου — μηδέν reads χωρίς auth.
@@ -283,6 +283,9 @@ const STRINGS = {
   loginNotFound: { el:'Αυτό το email δεν έχει πρόσβαση στο Glamager',   en:'This email has no access to Glamager' },
   loginGeneric:  { el:'Κάτι πήγε στραβά, δοκίμασε ξανά',                en:'Something went wrong, try again' },
   loadingApp:    { el:'Φόρτωση…',                                       en:'Loading…' },
+  noTenantTitle:   { el:'Δεν έχεις ανατεθεί σε μαγαζί',                  en:'No shop assigned yet' },
+  noTenantBody:    { el:'Ο λογαριασμός σου δεν είναι ακόμα συνδεδεμένος με κάποιο μαγαζί. Επικοινώνησε με τον/την Master σου.', en:'Your account isn\'t linked to a shop yet. Contact your Master.' },
+  noTenantSignOut: { el:'Αποσύνδεση',                                    en:'Sign out' },
   changePwTitle:      { el:'Αλλαγή κωδικού',                            en:'Change password' },
   changePwCurrentPh:  { el:'Τρέχων κωδικός',                            en:'Current password' },
   changePwNewPh:      { el:'Νέος κωδικός',                              en:'New password' },
@@ -1898,6 +1901,22 @@ const LoginScreen = ({shopName, busy, err, onLogin}) => {
     </div>
   );
 };
+
+/* ── NoTenantScreen (29/08/2026, multi-tenant client) — ο συνδεδεμένος λογαριασμός είναι
+   έγκυρο Firebase Auth session αλλά ΔΕΝ έχει (ακόμα) tenantId claim, άρα δεν ξέρουμε ποιο
+   μαγαζί να ανοίξουμε. ΔΕΝ κάνει fallback πουθενά — μόνο ενημερώνει + επιτρέπει αποσύνδεση.
+   Βλ. App: εμφανίζεται ΜΕΤΑ το claimsReady, ΜΟΝΟ αν tenantId λείπει. */
+const NoTenantScreen = ({onSignOut}) => (
+  <div className="min-h-screen hero flex flex-col items-center justify-center px-6 text-center">
+    <BrandMark s={64}/>
+    <h1 className="text-2xl font-black text-white mt-5">{t('noTenantTitle')}</h1>
+    <p className="text-white/70 text-sm mt-2 max-w-xs">{t('noTenantBody')}</p>
+    <button onClick={onSignOut} className="rounded-2xl py-3 px-6 font-black text-sm mt-6"
+      style={{background:'white',color:'var(--accent-600)'}}>
+      {t('noTenantSignOut')}
+    </button>
+  </div>
+);
 
 /* ── OperatorPicker — καθημερινή ταυτότητα: tap όνομα + 4ψήφιο PIN. ΔΕΝ αγγίζει το Firebase
    session (αυτό έγινε ήδη μία φορά στο LoginScreen, μένει ζωντανό στο παρασκήνιο). Το PIN
@@ -5310,12 +5329,35 @@ const App = () => {
      ΟΧΙ το καθημερινό κλείδωμα — αυτό το κάνει το lockNow (βλ. παρακάτω), χωρίς signOut. */
   const fullSignOut = () => { fbAuth.signOut(); };
 
-  /* Live Firebase RTDB state — ενεργοποιείται μόλις υπάρχει έγκυρο Firebase session (authed),
-     ΑΝΕΞΑΡΤΗΤΑ από το αν έχει διαλέξει ήδη κάποιος το όνομά του (operator). Πριν το login
-     κρατάει τα seed/demo δεδομένα τοπικά αλλά ΔΕΝ ανοίγει κανένα listener. */
+  /* ── tenantId claim (29/08/2026, multi-tenant client) ──────────────────────────────────
+     Μετά το fbUser, μαθαίνουμε ΚΑΙ σε ποιο μαγαζί ανήκει — διαβάζοντας το ίδιο custom claim
+     {role, tenantId} που ήδη ελέγχουν τα Security Rules (Phase 3). ΔΕΝ κάνουμε forced token
+     refresh εδώ (getIdTokenResult() απλό) — standing πρακτική είναι sign-out/in μετά από
+     αλλαγή claims (ίδιο με Phase 3 Checkpoint #2), άρα το cached token είναι ήδη σωστό στην
+     κανονική ροή χρήσης. claimsReady=true σημαίνει "ξέρουμε πια το αποτέλεσμα" — είτε βρέθηκε
+     tenantId είτε όχι· tenantId=null (με claimsReady true) είναι ρητά ΔΙΑΦΟΡΕΤΙΚΗ κατάσταση
+     από "ακόμα φορτώνει". ── */
+  const [tenantId,setTenantId] = useState(null);
+  const [claimsReady,setClaimsReady] = useState(false);
+  useEffect(()=>{
+    if(!fbUser){ setTenantId(null); setClaimsReady(false); return; }
+    let cancelled = false;
+    fbUser.getIdTokenResult()
+      .then(res=>{ if(cancelled) return; setTenantId(res.claims.tenantId || null); setClaimsReady(true); })
+      .catch(()=>{ if(cancelled) return; setTenantId(null); setClaimsReady(true); });
+    return ()=>{ cancelled = true; };
+  },[fbUser]);
+
+  /* Live Firebase RTDB state — ενεργοποιείται ΜΟΝΟ όταν υπάρχει ΚΑΙ έγκυρο Firebase session
+     ΚΑΙ γνωστό tenantId (dataReady), ΑΝΕΞΑΡΤΗΤΑ από το αν έχει διαλέξει ήδη κάποιος το όνομά
+     του (operator). Πριν από αυτό κρατάει τα seed/demo δεδομένα τοπικά αλλά ΔΕΝ ανοίγει κανένα
+     listener — ΚΑΙ tPath() επιστρέφει null όσο δεν ξέρουμε tenantId, άρα δεν υπάρχει κανένα
+     σενάριο όπου διαβάζουμε/γράφουμε σε λάθος (ή προεπιλεγμένο) μαγαζί. */
   const authed = authReady && !!fbUser;
-  const [pins,setPins] = useFirebaseState(tPath('pins'), DEFAULT_PINS, authed);
-  const [staff,setStaff] = useFirebaseState(tPath('staff'), DEFAULT_STAFF, authed);
+  const dataReady = authed && claimsReady && !!tenantId;
+  const tPath = p => tenantId ? `tenants/${tenantId}/${p}` : null;
+  const [pins,setPins] = useFirebaseState(tPath('pins'), DEFAULT_PINS, dataReady);
+  const [staff,setStaff] = useFirebaseState(tPath('staff'), DEFAULT_STAFF, dataReady);
   /* staffOnly: Ρεσεψιόν+Προσωπικό χωρίς Masters — χρησιμοποιείται ΜΟΝΟ πλέον για πρόγραμμα/άδειες
      (schedule-eligibility), ΟΧΙ για attribution υπηρεσιών — βλ. serviceStaff παρακάτω για αυτό. */
   const staffOnly = useMemo(()=>staff.filter(s=>s.role!==ROLE.MASTER),[staff]);
@@ -5348,23 +5390,23 @@ const App = () => {
       fbAuth.signOut();
     }
   },[fbUser, authAccounts]);
-  const [visits,setVisits] = useFirebaseState(tPath('visits'), DEMO_VISITS, authed);
-  const [expenses,setExpenses] = useFirebaseState(tPath('expenses'), DEMO_EXPENSES, authed);
-  const [clients,setClients] = useFirebaseState(tPath('clients'), DEMO_CLIENTS, authed);
-  const [services,setServices] = useFirebaseState(tPath('services'), DEMO_SERVICES, authed);
-  const [products,setProducts] = useFirebaseState(tPath('products'), DEMO_PRODUCTS, authed);
+  const [visits,setVisits] = useFirebaseState(tPath('visits'), DEMO_VISITS, dataReady);
+  const [expenses,setExpenses] = useFirebaseState(tPath('expenses'), DEMO_EXPENSES, dataReady);
+  const [clients,setClients] = useFirebaseState(tPath('clients'), DEMO_CLIENTS, dataReady);
+  const [services,setServices] = useFirebaseState(tPath('services'), DEMO_SERVICES, dataReady);
+  const [products,setProducts] = useFirebaseState(tPath('products'), DEMO_PRODUCTS, dataReady);
   const [catalogOpen,setCatalogOpen] = useState(false);
   const [templatePickerOpen,setTemplatePickerOpen] = useState(false);
-  const [schedData,setSchedData] = useFirebaseState(tPath('schedData'), DEMO_SCHED, authed);
-  const [leaveReqs,setLeaveReqs] = useFirebaseState(tPath('leaveReqs'), DEMO_LEAVE_REQS, authed);
-  const [zmap,setZmap] = useFirebaseState(tPath('zmap'), {}, authed);
+  const [schedData,setSchedData] = useFirebaseState(tPath('schedData'), DEMO_SCHED, dataReady);
+  const [leaveReqs,setLeaveReqs] = useFirebaseState(tPath('leaveReqs'), DEMO_LEAVE_REQS, dataReady);
+  const [zmap,setZmap] = useFirebaseState(tPath('zmap'), {}, dataReady);
   const [selVisit,setSelVisit] = useState(null);
   /* Kudos — seed ένα για demo (η πρώτη φορά μόνο, μετά είναι ό,τι υπάρχει στο Firebase) */
-  const [kudos,setKudos] = useFirebaseState(tPath('kudos'), [{id:'k1', empId:'s3', date:TODAY_ISO, msg:'Τέλεια δουλειά με τη δύσκολη βαφή χθες — η πελάτισσα έφυγε χαρούμενη!'}], authed);
+  const [kudos,setKudos] = useFirebaseState(tPath('kudos'), [{id:'k1', empId:'s3', date:TODAY_ISO, msg:'Τέλεια δουλειά με τη δύσκολη βαφή χθες — η πελάτισσα έφυγε χαρούμενη!'}], dataReady);
   /* Ρυθμίσεις καταστήματος (spec §1α) */
-  const [settings,setSettingsState] = useFirebaseState(tPath('settings'), DEMO_SETTINGS, authed);
-  const [expCats,setExpCats] = useFirebaseState(tPath('expCats'), EXP_CATS, authed);
-  const [fixedExpenses,setFixedExpenses] = useFirebaseState(tPath('fixedExpenses'), DEMO_FIXED_EXPENSES, authed);
+  const [settings,setSettingsState] = useFirebaseState(tPath('settings'), DEMO_SETTINGS, dataReady);
+  const [expCats,setExpCats] = useFirebaseState(tPath('expCats'), EXP_CATS, dataReady);
+  const [fixedExpenses,setFixedExpenses] = useFirebaseState(tPath('fixedExpenses'), DEMO_FIXED_EXPENSES, dataReady);
   const [expCatsOpen,setExpCatsOpen] = useState(false);
   const [fixedExpOpen,setFixedExpOpen] = useState(false);
   const [staffManagerOpen,setStaffManagerOpen] = useState(false);
@@ -5666,6 +5708,21 @@ const App = () => {
   }
   if(!fbUser){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<LoginScreen shopName={settings.shopName} busy={authBusy} err={authErr} onLogin={doLogin}/></React.Fragment>;
+  }
+  /* 29/08/2026 (multi-tenant client): ανάμεσα σε "συνδεδεμένος" και "διάλεξε operator" —
+     πρέπει πρώτα να ξέρουμε ΠΟΙΟ μαγαζί ανοίγουμε. claimsReady=false = ακόμα διαβάζουμε το
+     claim (σύντομο, ένα μόνο network round-trip)· tenantId=null ΜΕΤΑ το claimsReady = ο
+     λογαριασμός δεν έχει ανατεθεί σε κανένα μαγαζί — ΔΕΝ γίνεται ποτέ fallback σε άλλο tenant. */
+  if(!claimsReady){
+    return (
+      <div className="min-h-screen hero flex items-center justify-center">
+        {settings.testMode && <TestBanner/>}
+        <p className="text-white/80 text-sm font-semibold">{t('loadingApp')}</p>
+      </div>
+    );
+  }
+  if(!tenantId){
+    return <React.Fragment>{settings.testMode && <TestBanner/>}<NoTenantScreen onSignOut={fullSignOut}/></React.Fragment>;
   }
   if(!operator){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
