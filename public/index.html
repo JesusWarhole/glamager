@@ -491,6 +491,13 @@ const STRINGS = {
   postedNeverLabel:    { el:'ποτέ δεν έχει ανέβει',                      en:'never posted before' },
   postedLastLabel:     { el:'τελευταία',                                 en:'last' },
   noClientLabel:       { el:'Χωρίς πελάτη',                              en:'No client' },
+  photoTabPending:     { el:'Εκκρεμείς',                               en:'Pending' },
+  photoTabHistory:     { el:'Ιστορικό',                                en:'History' },
+  postedHistoryHint:   { el:'Φωτογραφίες που έχουν ήδη ανέβει — πιο πρόσφατες πρώτα.', en:'Photos already posted — most recent first.' },
+  postedHistoryEmpty:  { el:'Καμία ανεβασμένη φωτογραφία ακόμα.',       en:'No posted photos yet.' },
+  visitDatePrefixLabel:{ el:'Επίσκεψη',                                 en:'Visit' },
+  postedOnPrefixLabel: { el:'Ανέβηκε',                                  en:'Posted' },
+  undoPostedBtn:       { el:'↺ Αναίρεση',                               en:'↺ Undo' },
   expenseAmountLabel: { el:'Ποσό (τελικό, όπως στο τιμολόγιο)',         en:'Amount (final, as on the invoice)' },
   categoryLabel:      { el:'Κατηγορία',                                 en:'Category' },
   noteOptionalPlaceholder: { el:'Σημείωση (προαιρετικό)...',            en:'Note (optional)...' },
@@ -4573,13 +4580,29 @@ const FinReports = ({visits,expenses,staff,clients}) => {
 /* Ουρά "Εκκρεμείς φωτογραφίες" (26/08) — επισκέψεις με photo=true που δεν έχουν ακόμα posted=true,
    παλιότερες πρώτα. Δίπλα σε κάθε πελάτη: πόσες φορές έχει ήδη ανέβει + πότε τελευταία, ώστε να
    μη ξαναδείχνει κανείς πάντα τους ίδιους 2-3 πελάτες — κριτήριο ΠΕΛΑΤΗΣ, ρητή απόφαση Ανδρέα. */
-const PendingPhotosQueue = ({visits,clients,onMarkPosted}) => {
+const PendingPhotosQueue = ({visits,clients,onMarkPosted,onUnmarkPosted}) => {
+  /* 29/08 fix (αίτημα Ανδρέα) — πριν, μόλις πατούσες "Ανέβηκε" η εγγραφή εξαφανιζόταν
+     ΟΡΙΣΤΙΚΑ από αυτόν τον τομέα, χωρίς κανένα ίχνος πουθενά εδώ (η ίδια η επίσκεψη έμενε
+     άθικτη στο ιστορικό πελάτη, αλλά αυτό δεν ήταν αρκετό — ο λόγος που θες το ιστορικό εδώ
+     είναι για να βρίσκεις ΓΥΡΩ σε ποια ημερομηνία έγινε η επίσκεψη, ώστε να εντοπίσεις την
+     ανάρτηση στο Instagram). Προστέθηκε 2ο tab "Ιστορικό" (ήδη ανεβασμένα, πιο πρόσφατα
+     πρώτα) + "↺ Αναίρεση" για τυχόν λάθος κλικ. */
+  const [view,setView] = useState('pending'); // 'pending' | 'history'
   const clientName = id => id ? (clients.find(c=>c.id===id)?.name || t('noClientLabel')) : t('noClientLabel');
+  const svcNamesOf = v => v.lines.filter(l=>l.kind!=='product').map(l=>l.name).join(', ') || v.lines.map(l=>l.name).join(', ');
 
   const pending = useMemo(()=>{
     return visits
       .filter(v=>v.photo && !v.posted && !isDel(v))
       .sort((a,b)=>(a.date+a.time).localeCompare(b.date+b.time)); // παλιότερο πρώτο
+  },[visits]);
+
+  /* Ιστορικό — πιο πρόσφατα ΑΝΕΒΑΣΜΕΝΑ πρώτα (postedAt), όχι επίσκεψης· αυτό μόλις έκανες,
+     θες να το βλέπεις πρώτο. Fallback σε v.date για παλιές εγγραφές χωρίς postedAt. */
+  const history = useMemo(()=>{
+    return visits
+      .filter(v=>v.photo && v.posted && !isDel(v))
+      .sort((a,b)=>(b.postedAt||b.date).localeCompare(a.postedAt||a.date));
   },[visits]);
 
   const clientStatsOf = clientId => {
@@ -4590,41 +4613,74 @@ const PendingPhotosQueue = ({visits,clients,onMarkPosted}) => {
     return {count:posted.length, last};
   };
 
-  if(pending.length===0) return (
-    <div className="flex flex-col items-center justify-center py-16">
-      <p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('pendingPhotosEmpty')}</p>
-    </div>
-  );
-
   return (
     <div>
-      <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pendingPhotosHint')}</p>
-      <div className="space-y-2">
-        {pending.map(v=>{
-          const stats = clientStatsOf(v.clientId);
-          const svcNames = v.lines.filter(l=>l.kind!=='product').map(l=>l.name).join(', ') || v.lines.map(l=>l.name).join(', ');
-          return (
-            <div key={v.id} className="card px-4 py-3">
-              <div className="flex items-start justify-between gap-2 mb-1">
-                <p className="text-sm font-bold" style={{color:'var(--text)'}}>{clientName(v.clientId)}</p>
-                <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{fmtD(v.date)}</p>
-              </div>
-              <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNames}</p>
-              <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>
-                {stats.count===0 ? t('postedNeverLabel') : `×${stats.count} ${t('postedCountLabel')} · ${t('postedLastLabel')} ${fmtD(stats.last)}`}
-              </p>
-              <button onClick={()=>onMarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>
-                {t('markPostedBtn')}
-              </button>
-            </div>
-          );
-        })}
+      <div className="rounded-2xl p-1 flex mb-3" style={{background:'var(--soft)'}}>
+        <button onClick={()=>setView('pending')} className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${view==='pending'?'text-white shadow':''}`} style={view==='pending'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
+          {t('photoTabPending')}{pending.length>0?` (${pending.length})`:''}
+        </button>
+        <button onClick={()=>setView('history')} className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${view==='history'?'text-white shadow':''}`} style={view==='history'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
+          {t('photoTabHistory')}
+        </button>
       </div>
+
+      {view==='pending' ? (
+        pending.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('pendingPhotosEmpty')}</p>
+          </div>
+        ) : (<React.Fragment>
+          <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pendingPhotosHint')}</p>
+          <div className="space-y-2">
+            {pending.map(v=>{
+              const stats = clientStatsOf(v.clientId);
+              return (
+                <div key={v.id} className="card px-4 py-3">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <p className="text-sm font-bold" style={{color:'var(--text)'}}>{clientName(v.clientId)}</p>
+                    <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{fmtD(v.date)}</p>
+                  </div>
+                  <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNamesOf(v)}</p>
+                  <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>
+                    {stats.count===0 ? t('postedNeverLabel') : `×${stats.count} ${t('postedCountLabel')} · ${t('postedLastLabel')} ${fmtD(stats.last)}`}
+                  </p>
+                  <button onClick={()=>onMarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>
+                    {t('markPostedBtn')}
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        </React.Fragment>)
+      ) : (
+        history.length===0 ? (
+          <div className="flex flex-col items-center justify-center py-16">
+            <p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('postedHistoryEmpty')}</p>
+          </div>
+        ) : (<React.Fragment>
+          <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('postedHistoryHint')}</p>
+          <div className="space-y-2">
+            {history.map(v=>(
+              <div key={v.id} className="card px-4 py-3">
+                <div className="flex items-start justify-between gap-2 mb-1">
+                  <p className="text-sm font-bold" style={{color:'var(--text)'}}>{clientName(v.clientId)}</p>
+                  <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{t('visitDatePrefixLabel')}: {fmtD(v.date)}</p>
+                </div>
+                <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNamesOf(v)}</p>
+                <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>{t('postedOnPrefixLabel')}: {fmtD(v.postedAt||v.date)}</p>
+                <button onClick={()=>onUnmarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black" style={{background:'var(--soft)',color:'var(--text-dim)'}}>
+                  {t('undoPostedBtn')}
+                </button>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>)
+      )}
     </div>
   );
 };
 
-const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,schedData,leaveReqs,kudos,onSaveDay,onApprove,onDecline,onDeleteLeaveReq,onDeleteKudos,onMarkPosted}) => {
+const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,schedData,leaveReqs,kudos,onSaveDay,onApprove,onDecline,onDeleteLeaveReq,onDeleteKudos,onMarkPosted,onUnmarkPosted}) => {
   const pending = leaveReqs.filter(r=>r.status==='pending').length;
   const pendingPhotos = visits.filter(v=>v.photo && !v.posted && !isDel(v)).length;
   return (
@@ -4643,7 +4699,7 @@ const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,sched
         <LeaveRequests leaveReqs={leaveReqs} staff={staffOnly} onApprove={onApprove} onDecline={onDecline} onDelete={onDeleteLeaveReq}/>
         <KudosManager kudos={kudos} staff={staffOnly} onDelete={onDeleteKudos}/>
       </React.Fragment>)}
-      {sub==='photos' && <PendingPhotosQueue visits={visits} clients={clients} onMarkPosted={onMarkPosted}/>}
+      {sub==='photos' && <PendingPhotosQueue visits={visits} clients={clients} onMarkPosted={onMarkPosted} onUnmarkPosted={onUnmarkPosted}/>}
     </div>
   );
 };
@@ -5753,6 +5809,8 @@ const App = () => {
   /* Φωτό → Ανέβηκε (26/08): ελαφρύ update, ίδιο πνεύμα με το updateVisitNote — καμία ανάγκη
      για πλήρες audit trail σε ένα λειτουργικό flag για social media, δεν είναι οικονομικό στοιχείο. */
   const markPosted = id => setVisits(vs=>vs.map(v=>v.id===id?{...v,posted:true,postedAt:today()}:v));
+  /* 29/08 fix — undo για το "Ανέβηκε" (αίτημα Ανδρέα, για λάθος κλικ) */
+  const unmarkPosted = id => setVisits(vs=>vs.map(v=>v.id===id?{...v,posted:false,postedAt:null}:v));
 
   /* Hard delete Ταμείου/εξόδων (31/07) — ΑΥΣΤΗΡΑ περιορισμένο, ΔΕΝ είναι σαν το «διόρθωση
      δοκιμαστικών» των αδειών/kudos/πελατών. Λόγος: ένα οικονομικό στοιχείο (έσοδο/έξοδο) που
@@ -5880,7 +5938,7 @@ const App = () => {
       {tab==='rep' && isMaster && <ReportsScreen sub={repSub} setSub={setRepSub} visits={visits} expenses={expenses}
         staff={serviceStaff} staffOnly={staffOnly} clients={clients} schedData={schedData} leaveReqs={leaveReqs} kudos={kudos}
         onSaveDay={(empId,dk,entry)=>writeSched(empId,dk,entry)} onApprove={approveReq} onDecline={declineReq}
-        onDeleteLeaveReq={deleteLeaveReq} onDeleteKudos={deleteKudos} onMarkPosted={markPosted}/>}
+        onDeleteLeaveReq={deleteLeaveReq} onDeleteKudos={deleteKudos} onMarkPosted={markPosted} onUnmarkPosted={unmarkPosted}/>}
 
       {tab==='z' && isMaster && <ZScreen visits={visits} expenses={expenses} staff={serviceStaff} zmap={zmap} onSaveZ={saveZ} onBack={()=>setTab('home')}/>}
       </div>
