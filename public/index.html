@@ -292,6 +292,11 @@ const STRINGS = {
   masterPinSub:  { el:'ΦΠΑ, στατιστικά, Ζ, πρόγραμμα, ρυθμίσεις',       en:'VAT, stats, Z-report, schedule, settings' },
   wrongCode:     { el:'Λάθος κωδικός',                                  en:'Wrong code' },
   backBtn:       { el:'← Πίσω',                                         en:'← Back' },
+  forgotPinLink: { el:'Ξέχασα το PIN',                                  en:'Forgot PIN' },
+  forgotPinNewTitle:    { el:'Όρισε νέο PIN',                           en:'Set a new PIN' },
+  forgotPinConfirmTitle:{ el:'Ξαναγράψε το για επιβεβαίωση',            en:'Re-enter to confirm' },
+  forgotPinMismatch:    { el:'Δεν ταιριάζουν — δοκίμασε ξανά',          en:"Don't match — try again" },
+  forgotPinCancelBtn:   { el:'Άκυρο',                                   en:'Cancel' },
   loginEmailPh:  { el:'Email',                                          en:'Email' },
   loginPassPh:   { el:'Κωδικός',                                        en:'Password' },
   loginBtn:      { el:'Είσοδος',                                        en:'Log in' },
@@ -1949,14 +1954,41 @@ const NoTenantScreen = ({onSignOut}) => (
   </div>
 );
 
+/* ── DigitPad — μοιρασμένο 4ψήφιο πληκτρολόγιο, το χρησιμοποιούν και το κανονικό PIN login
+   ΚΑΙ η ροή "Ξέχασα το PIN" παρακάτω, ώστε να μην υπάρχουν δύο αντίγραφα του ίδιου grid. */
+const DigitPad = ({onDigit,onErase}) => (
+  <div className="grid grid-cols-3 gap-4">
+    {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((b,i)=>(
+      b===''?<div key={i}/>:b==='⌫'
+        ?<button key={i} className="pin-btn" onClick={onErase}>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
+          </button>
+        :<button key={i} className="pin-btn" onClick={()=>onDigit(b)}>{b}</button>
+    ))}
+  </div>
+);
+
 /* ── OperatorPicker — καθημερινή ταυτότητα: tap όνομα + 4ψήφιο PIN. ΔΕΝ αγγίζει το Firebase
    session (αυτό έγινε ήδη μία φορά στο LoginScreen, μένει ζωντανό στο παρασκήνιο). Το PIN
-   είναι καθαρά attribution/UX, όχι security boundary — αυτό εξασφαλίζεται από το login πριν. */
-const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
+   είναι καθαρά attribution/UX, όχι security boundary — αυτό εξασφαλίζεται από το login πριν.
+   29/08/2026 (pre-second-shop fix #2): πριν, αν κάποιος ξεχνούσε το PIN του δεν υπήρχε ΚΑΜΙΑ
+   διέξοδος μέσα από την εφαρμογή — το reset PIN ζει στο StaffManager, που ανοίγει μόνο ΑΦΟΥ
+   έχεις ήδη μπει ως Master. Σε μαγαζί με ΕΝΑ μόνο Master (π.χ. μονο-ιδιοκτήτης σαλόνι), forgot
+   PIN = μόνιμο κλείδωμα έξω, μόνο χειροκίνητο fix στη Firebase DB. Λύση: self-reset — αλλά
+   ΜΟΝΟ για τον εαυτό σου (who.id===myId), ΠΟΤΕ για άλλο όνομα της λίστας. Αυτό κρατάει άθικτο
+   το υπάρχον μοντέλο ασφάλειας (το πραγματικό gate είναι το Firebase login πριν, το PIN είναι
+   απλά attribution) — δεν ανοίγει τρύπα να μπει κανείς ως "Demo Master" απλά πατώντας το όνομα
+   και κάνοντας reset σε PIN που δεν είναι δικό του. */
+const OperatorPicker = ({shopName, staff, pins, onPick, myId, onForgotPin}) => {
   const [who,setWho] = useState(null);
   const [pin,setPin] = useState('');
   const [err,setErr] = useState(false);
   const [shk,setShk] = useState(false);
+  const [forgot,setForgot] = useState(false);
+  const [fStage,setFStage] = useState('enter'); // 'enter' | 'confirm'
+  const [fPin1,setFPin1] = useState('');
+  const [fPin2,setFPin2] = useState('');
+  const [fErr,setFErr] = useState(false);
 
   /* Σειρά εμφάνισης — ψυχολογικά, ΟΧΙ ιεραρχικά: πρώτα ο ίδιος/η ίδια που μόλις έκανε login,
      μετά το υπόλοιπο προσωπικό (κατ.2), μετά ρεσεψιόν (κατ.1), Master πάντα τελευταίος/α.
@@ -1984,7 +2016,29 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
     }
   };
 
-  const backToPicker = () => { setWho(null); setPin(''); setErr(false); };
+  const backToPicker = () => { setWho(null); setPin(''); setErr(false); setForgot(false); setFStage('enter'); setFPin1(''); setFPin2(''); setFErr(false); };
+
+  const startForgot = () => { setForgot(true); setFStage('enter'); setFPin1(''); setFPin2(''); setFErr(false); setErr(false); setPin(''); };
+  const cancelForgot = () => { setForgot(false); setFStage('enter'); setFPin1(''); setFPin2(''); setFErr(false); };
+
+  const pressForgot = d => {
+    const cur = fStage==='enter' ? fPin1 : fPin2;
+    if(cur.length>=4) return;
+    const n = cur+d;
+    if(fStage==='enter'){
+      setFPin1(n);
+      if(n.length===4) setTimeout(()=>setFStage('confirm'),150);
+    } else {
+      setFPin2(n);
+      if(n.length===4){
+        setTimeout(()=>{
+          if(n===fPin1){ onForgotPin(who.id,n); onPick(who); }
+          else { setFErr(true); setFPin1(''); setFPin2(''); setFStage('enter'); setTimeout(()=>setFErr(false),1200); }
+        },150);
+      }
+    }
+  };
+  const eraseForgot = () => { if(fStage==='enter') setFPin1(p=>p.slice(0,-1)); else setFPin2(p=>p.slice(0,-1)); };
 
   if(!who){
     return (
@@ -2012,6 +2066,24 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
     );
   }
 
+  if(forgot){
+    return (
+      <div className="min-h-screen hero flex flex-col items-center justify-center px-6">
+        <div className="text-center mb-10">
+          <BrandMark s={64}/>
+          <h1 className="text-2xl font-black text-white mt-4">{who.name}</h1>
+          <p className="text-white/70 text-xs mt-1">{fStage==='enter' ? t('forgotPinNewTitle') : t('forgotPinConfirmTitle')}</p>
+        </div>
+        <div className="flex gap-5 mb-10">
+          {[0,1,2,3].map(i=><div key={i} className={`pin-dot ${(fStage==='enter'?fPin1:fPin2).length>i?(fErr?'err':'on'):''}`}/>)}
+        </div>
+        <DigitPad onDigit={pressForgot} onErase={eraseForgot}/>
+        {fErr && <p className="text-red-200 text-sm mt-6 fade">{t('forgotPinMismatch')}</p>}
+        <button onClick={cancelForgot} className="text-white/60 text-xs font-semibold mt-8 underline">{t('forgotPinCancelBtn')}</button>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen hero flex flex-col items-center justify-center px-6">
       <div className="text-center mb-10">
@@ -2020,17 +2092,12 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId}) => {
         <p className="text-white/70 text-xs mt-1">{roleLabel(who.role)}</p>
       </div>
       <div className={`flex gap-5 mb-10 ${shk?'shake':''}`}>{[0,1,2,3].map(i=><div key={i} className={`pin-dot ${pin.length>i?(err?'err':'on'):''}`}/>)}</div>
-      <div className="grid grid-cols-3 gap-4">
-        {['1','2','3','4','5','6','7','8','9','','0','⌫'].map((b,i)=>(
-          b===''?<div key={i}/>:b==='⌫'
-            ?<button key={i} className="pin-btn" onClick={()=>setPin(p=>p.slice(0,-1))}>
-                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round"><path d="M21 4H8l-7 8 7 8h13a2 2 0 002-2V6a2 2 0 00-2-2z"/><line x1="18" y1="9" x2="12" y2="15"/><line x1="12" y1="9" x2="18" y2="15"/></svg>
-              </button>
-            :<button key={i} className="pin-btn" onClick={()=>press(b)}>{b}</button>
-        ))}
-      </div>
+      <DigitPad onDigit={press} onErase={()=>setPin(p=>p.slice(0,-1))}/>
       {err && <p className="text-red-200 text-sm mt-6 fade">{t('wrongCode')}</p>}
-      <button onClick={backToPicker} className="text-white/60 text-xs font-semibold mt-8 underline">{t('backBtn')}</button>
+      {who.id===myId && !err && (
+        <button onClick={startForgot} className="text-white/60 text-xs font-semibold mt-6 underline">{t('forgotPinLink')}</button>
+      )}
+      <button onClick={backToPicker} className="text-white/60 text-xs font-semibold mt-3 underline">{t('backBtn')}</button>
     </div>
   );
 };
@@ -5745,6 +5812,13 @@ const App = () => {
     setPins(p=>({...p,[operator.id]:newPin}));
   };
 
+  /* "Ξέχασα το PIN" (29/08/2026, fix #2) — reset ΧΩΡΙΣ να ξέρεις το παλιό PIN, ΧΩΡΙΣ να είσαι
+     ήδη Master. Ασφαλές επειδή το OperatorPicker καλεί αυτό ΜΟΝΟ όταν who.id===myId (βλ. σχόλιο
+     εκεί) — δηλαδή μόνο για τον λογαριασμό με τον οποίο είναι ήδη συνδεδεμένη η ίδια η συσκευή
+     στο Firebase. targetId περνιέται ρητά (όχι πάντα operator.id, αφού operator δεν έχει οριστεί
+     ακόμα σε αυτό το σημείο του flow). */
+  const resetForgottenPin = (targetId,newPin) => { setPins(p=>({...p,[targetId]:newPin})); };
+
   /* Auto-lock: login ως ΤΑΥΤΟΤΗΤΑ ΧΕΙΡΙΣΤΗ + μηχανισμός handoff (spec §8) — διάρκεια από Ρυθμίσεις */
   useEffect(()=>{
     if(!operator) return;
@@ -5887,7 +5961,7 @@ const App = () => {
   }
   if(!operator){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
-      myId={authAccounts[(fbUser.email||'').toLowerCase()]?.id}/></React.Fragment>;
+      myId={authAccounts[(fbUser.email||'').toLowerCase()]?.id} onForgotPin={resetForgottenPin}/></React.Fragment>;
   }
 
   const isMaster = operator.role===ROLE.MASTER;
