@@ -1,5 +1,5 @@
 # GLAMAGER — CURRENT HANDOFF
-## Authoritative Project State — 27 August 2026 (ενημέρωση: photo-toggle shift + 2 follow-up fixes)
+## Authoritative Project State — 29 August 2026 (ενημέρωση: demo-shop stress test + fixes #1-#3 + final checklist GO)
 
 ## 0. CURRENT STATE
 Project: Glamager
@@ -7,113 +7,133 @@ Repository: `JesusWarhole/glamager`
 Branch: `main`
 
 Current phase:
-**Phase 2 — Tenant Model: COMPLETE**
+**Phase 3 (Auth/Memberships/Roles): COMPLETE.** Multi-tenant client Step 1 (δυναμική επίλυση tenant): COMPLETE + verified.
 
-Πιο πρόσφατο shift (Claude, 27/08):
-**Photo toggle στο VisitEditor + 2 follow-up fixes — LIVE, deployed, tested από τον Ανδρέα. CLOSED.**
-Βλ. πλήρες debrief: `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`
+Πιο πρόσφατο shift (Claude, 29/08):
+**Demo-shop live stress test + fixes #1-#3 + Τελικό Demo Shop Checklist — LIVE, deployed, tested. Αποτέλεσμα: GO για πρώτο πραγματικό δεύτερο μαγαζί (Maria Hair Studio). CLOSED.**
 
 Next phase:
-**Phase 3 — Auth / Memberships / Roles: WAITING FOR EXPLICIT APPROVAL FROM ANDREAS**
+**#5 — Πρώτο πραγματικό δεύτερο μαγαζί (Maria Hair Studio): Firebase account + tenant setup, βήμα-βήμα, χωρίς να αγγιχτεί το Hair Corner. WAITING FOR ANDREAS "πάμε Maria".**
 
-No Phase 3 implementation should begin until Andreas explicitly approves it.
+Συμφωνία Ανδρέα/Marv 29/08: καμία άλλη τεχνική αλλαγή στον κώδικα πριν στηθεί η Maria Hair Studio, εκτός αν εμφανιστεί πραγματικό blocker.
 
 ---
 
-## 1. LATEST SHIFT — PHOTO TOGGLE + 2 FOLLOW-UP FIXES (Claude, 27/08)
+## 1. LATEST SHIFT — DEMO-SHOP STRESS TEST + FIXES #1-#3 + FINAL CHECKLIST (Claude, 29/08)
 
-### Μέρος Α — Photo toggle στο VisitEditor (LIVE)
-Το "📷 Φωτό" flag μπορούσε πριν να μπει μόνο στο checkout (AddScreen). Προστέθηκε δυνατότητα ενεργοποίησης/απενεργοποίησης και σε ήδη αποθηκευμένη επίσκεψη, μέσω του Master's `VisitEditor`. Live, επιβεβαιωμένο με πραγματικό testing από τον Ανδρέα (audit log καταγράφει σωστά).
+### Μέρος Α — Export verification (Βήμα 1 του πλάνου)
+Ανοίχτηκαν πραγματικά τα 3 CSV exports (Λίστα Παραγγελίας, Κατάλογος, Export CSV λογιστή) μέσω monkey-patch του `URL.createObjectURL` — όχι μόνο "το κουμπί φαίνεται να δουλεύει". Και τα 3 σωστά ως μηχανισμός. Δύο μη-μπλοκάροντα ευρήματα (stock:0 seed data, ορφανά staffId Τάνια/Λάουρα σε παλιά seed visits — βλ. §9 Known Issues).
 
-### Μέρος Β — 2 follow-up fixes (βρέθηκαν κατά το live testing, εκκρεμεί upload)
+### Μέρος Β — Fix #1: σιωπηλή απώλεια πελάτη σε ομώνυμο (commit `5da6769`)
+`saveIncome` δεν κάνει πια auto-match σε ίδιο όνομα· χωρίς ρητό tap πάνω σε πρόταση, φτιάχνεται ΠΑΝΤΑ νέος πελάτης. + κουμπί "➕ Νέος πελάτης" πάντα ορατό + edit τηλεφώνου/πατρώνυμου στην κάρτα πελάτη.
 
-**Β1. False-positive "Tip → άλλος υπάλληλος" στο audit log**
-Root cause: το Firebase RTDB διαγράφει field όταν του γράφεις `null` (δεν το αποθηκεύει). Το `VisitEditor`/`AddScreen` γράφουν `tipStaffId: null` όταν δεν υπάρχει tip → στο επόμενο read γίνεται `undefined`, όχι `null`. Το `diffVisit` συνέκρινε με strict `!==` χωρίς normalization → `undefined !== null` πάντα αληθές → ψεύτικη γραμμή σε ΚΑΘΕ edit επίσκεψης χωρίς tip. Fix: `(b.tipStaffId||null)!==(a.tipStaffId||null)`.
+### Μέρος Γ — Fix #2: Master PIN self-reset (commit `17c3283`)
+Νέο "Ξέχασα το PIN" link στο `OperatorPicker`, scoped ΜΟΝΟ σε `who.id===myId` (δεν επιτρέπει reset σε PIN άλλου). Ροή: όνομα → forgot → νέο 4ψήφιο ×2 → auto-login. Κοινό `DigitPad` component. Tested live από Ανδρέα.
 
-**Β2. Πλήρες edit επίσκεψης από το Πελατολόγιο**
-Πριν: το ιστορικό επισκέψεων στο `ClientCard` ήταν αμιγώς read-only (μόνο η σημείωση επεξεργάσιμη), καμία πρόσβαση στο Φωτό. Τώρα: κάθε κάρτα επίσκεψης (Master only) ανοίγει το ίδιο `VisitDetail`/`VisitEditor` που ήδη χρησιμοποιείται στο Ταμείο/Αρχική — καμία διπλή υλοποίηση, ίδιο component. Wiring: `ClientCard`/`ClientsScreen`/App-level πήραν τα απαραίτητα νέα props (`clients`, `zmap`, `onEditVisit`, `onSoftDelete`, `onHardDeleteVisit`).
+### Μέρος Δ — Fix #3: production build step, όχι πια runtime Babel (commit `0cdcbd9`)
+`public/index.src.html` = νέα πηγή JSX (babel-standalone tag + `<script type="text/babel">`, εκεί γίνονται μελλοντικές αλλαγές). `public/index.html` = generated build artifact πλέον, `scripts/build.js` (esbuild, JSX-only transform, όχι bundling). Build τρέχει ΚΑΙ στο CI (`npm ci && npm run build` πριν το `firebase-hosting-merge.yml` deploy step) — deployed αρχείο ποτέ δεν κινδυνεύει να μείνει stale. Καμία λειτουργική αλλαγή· μετρημένη βελτίωση ~20x στο πρώτο fresh-fetch άνοιγμα (1037ms→50ms). Επηρεάζει ΚΑΙ το Hair Corner (ίδιος κώδικας/site) — γι' αυτό αποφασίστηκε να διορθωθεί πριν το launch της 01/09, όχι να μείνει για μετά.
+
+### Μέρος Ε — Τελικό Demo Shop Checklist (Βήμα 4 του πλάνου)
+Πλήρης κατηγοριοποίηση 🟢/🟡/🔴 όλων των ευρημάτων (stress test + broader roadmap: multi-tenant, security rules, backups, billing) με φίλτρο «θα δημιουργήσει πραγματικό πρόβλημα σε κομμώτρια που πληρώνει €9,99/μήνα;». **0 ευρήματα στο 🔴. GO** για πρώτο πραγματικό δεύτερο μαγαζί, με όρο ίδιου επιπέδου εμπιστοσύνης/κλίμακας με το Hair Corner (γνωστός κόσμος, όχι ακόμα άγνωστος online πελάτης, πληρωμή εκτός εφαρμογής προς το παρόν). Πλήρες doc: Claude Project `claude/demo-shop-final-checklist-29-08-2026.md`.
 
 ### Status
-Μέρος Α: **live, deployed, tested ✅**
-Μέρος Β: **live, deployed, tested ✅** — ο Ανδρέας επιβεβαίωσε live: audit log καθαρό (χωρίς ψεύτικο "Tip → άλλος υπάλληλος"), edit επίσκεψης δουλεύει κανονικά από το Πελατολόγιο.
+Όλα τα παραπάνω: **live, deployed, tested ✅.**
 
 **Αυτό το shift θεωρείται πλήρως CLOSED.**
 
 ---
 
-## 2. COMPLETED (ιστορικό) — FIREBASE SECURITY ROTATION
+## 2. PHASE 3 — AUTH / MEMBERSHIPS / ROLES (ολοκληρώθηκε 28-29/08, πριν από αυτό το shift)
 
-Η προηγούμενη ανοιχτή εκκρεμότητα rotation του Firebase service-account credential έχει ολοκληρωθεί και παραμένει **CLOSED**.
+STATUS: COMPLETE
 
-### Verified
-- Νέο Firebase Admin SDK private key για `glamager-hair-corner`, διαφορετικό Key ID από το παλιό.
-- Τοπικό test: `FINAL LOCAL KEY TEST: SUCCESS`, `Users API accessible: true`.
-- Παλιό key revoked/deleted.
-- GitHub Actions χρησιμοποιεί ξεχωριστό Secret (`FIREBASE_SERVICE_ACCOUNT_GLAMAGER_HAIR_CORNER`) — δεν επηρεάστηκε.
-- Deploy re-run μετά το rotation: `build_and_deploy` — Success.
+Implemented:
+- Custom claims `{role, tenantId}` σε όλους τους λογαριασμούς (Checkpoint #1 ✅ verified 28/08).
+- `database.rules.json`: `tenants/$tenantId/...` wildcard + `auth.token.tenantId===$tenantId` σε κάθε path (Checkpoint #2 ✅ verified 28/08).
+- Client-side δυναμική επίλυση tenant (`tenantId`/`claimsReady` state, αφαίρεση του hardcoded `TENANT_ID='hair-corner'`) — verified με ξεχωριστό `demo-shop` test tenant, ΟΧΙ τους 5 πραγματικούς λογαριασμούς Hair Corner.
+- 4 bugs βρέθηκαν+διορθώθηκαν κατά το testing (race condition auth-check ×2 γύρους, malformed staff data, PIN-assignment usability gap) — όλα verified με retest, ΚΑΙ στις δύο κατευθύνσεις tenant-switch.
+- Firebase Backups: ενεργά (daily).
 
-### Credential rule (ισχύει πάντα)
-`firebase-key.json` παραμένει local-only, ποτέ σε Git/ChatGPT/Claude/screenshots.
+Not implemented (ρητά εκτός MVP scope, P2):
+- Self-service signup/invite, multi-tenant-per-user, instant/automatic revoke, re-point μηχανισμός.
 
----
+## 3. FILES CHANGED (σύνολο 29/08, fixes #1-#3)
 
-## 3. GITHUB ACTIONS
+- `public/index.src.html` — νέο (πηγή JSX, πρώην `index.html`), edits: saveIncome/AddScreen (fix #1), OperatorPicker/DigitPad (fix #2).
+- `public/index.html` — πλέον generated build artifact (fix #3), ΟΧΙ πια hand-edited.
+- `scripts/build.js` — νέο, esbuild JSX-only transform + sanity checks.
+- `package.json`/`package-lock.json` — νέα, repo root, `npm run build`.
+- `.github/workflows/firebase-hosting-merge.yml` — προστέθηκε `setup-node` + `npm ci` + `npm run build` πριν το deploy step.
+- `.github/workflows/firebase-hosting-pull-request.yml` — ίδιες προσθήκες.
 
-Workflows: `.github/workflows/firebase-hosting-merge.yml`, `.github/workflows/firebase-hosting-pull-request.yml`
-Secret: `secrets.FIREBASE_SERVICE_ACCOUNT_GLAMAGER_HAIR_CORNER`
-Deployment pipeline λειτουργικό (τελευταίο επιβεβαιωμένο run: #42, attempt #2 — Success).
+## 4. ARCHITECTURE DECISIONS
 
----
+- **Build step αντί για runtime Babel, esbuild JSX-only (όχι bundling):** επειδή η εφαρμογή δεν έχει ΚΑΝΕΝΑ import/ES module — μόνο JSX transform χρειαζόταν, όχι πλήρες bundler. Alternative που απορρίφθηκε: Vite/React πλήρες rewrite (ήδη P3, "τελευταίο" — ασύμβατο με το "μικρό, χαμηλού ρίσκου fix τώρα" goal).
+- **Source/artifact split (`index.src.html`/`index.html`):** κρατάει το "ένα deployed HTML αρχείο" μοντέλο που προτιμά ο Ανδρέας, μόνο μετατοπίζει ΠΟΤΕ γίνεται η μεταγλώττιση (browser runtime → CI build time).
+- **Forgot-PIN scoped σε `who.id===myId` μόνο:** ασφαλέστερο από "self-reset για όλους" (αρχική επιλογή Ανδρέα) — αποτρέπει reset σε PIN άλλου, κρατάει το PIN=attribution/Firebase=security μοντέλο άθικτο.
+- **Όχι auto-match ομώνυμου πελάτη:** ρητή απόφαση Ανδρέα — merge λάθος ιστορικού σε λάθος άνθρωπο χειρότερο από αβλαβές διπλότυπο.
 
-## 4. KNOWN ISSUES / SEPARATE MAINTENANCE
-GitHub Actions δείχνει προειδοποίηση Node.js 20 deprecation. Δεν μπλοκάρει το deployment. Ξεχωριστό maintenance task, όχι επείγον.
+## 5. DATABASE / FIREBASE
+Καμία αλλαγή σε `database.rules.json` σε αυτό το shift (ήδη σωστό από Phase 3). Καμία αλλαγή σε Functions. Data model (whole-array `.set()`) αμετάβλητο — γνωστό, αποδεκτό ρίσκο (βλ. §9).
 
----
+## 6. BUSINESS LOGIC
+Fix #1 αλλάζει συμπεριφορά αποθήκευσης πελάτη (βλ. §Μέρος Β). Fix #2/#3 καμία αλλαγή σε business logic — μόνο auth-recovery UX και build pipeline.
 
-## 5. FILE / GIT STATE
-- `public/index.html`: Β1+Β2 uploaded και live, μαζί με το ήδη live Μέρος Α.
-- `firebase-key.json`: καλυμμένο από `.gitignore`, local only.
-- Pre-existing untracked files (αμετάβλητα): `functions/package-lock.json`, `glamager.zip`.
+## 7. UI / UX
+Νέο "Ξέχασα το PIN" link + DigitPad reset flow (fix #2). AddScreen: πάντα ορατό "Νέος πελάτης" + ℹ️ hint (fix #1). Fix #3: μηδέν ορατή αλλαγή UI, μόνο ταχύτητα.
 
----
+## 8. TESTING
+### Automated
+- `node --check` σε κάθε build output (fix #3) — καθαρό.
+- esbuild transform sanity checks (0 αναφορές babel-standalone, `ReactDOM.createRoot` υπάρχει) — καθαρά.
 
-## 6. ARCHITECTURE / PROJECT RULES (αυθεντικοί, δεν αλλάζουν)
-- Soft-delete + audit trail σε visits/expenses (μόνη εξαίρεση: στενά scoped `hardDeleteVisit/Expense`, ίδια μέρα πριν Ζ)
-- `servesClients` καθορίζει attribution eligibility, ΟΧΙ ο ρόλος — Reception ποτέ επιλογή "ποιος εξυπηρέτησε"
-- Προσωπικό (κατ.2) ποτέ δεν βλέπει tips/σύνολα συναδέλφων
-- Καμία αλλαγή/deploy χωρίς ρητή έγκριση Ανδρέα πριν, ανά session
-- `firebase-key.json`: local-only, ποτέ σε AI/chat/upload
+### Manual
+- Fix #1: 3× reproduction πριν το fix, verified μετά.
+- Fix #2: live test από τον ίδιο τον Ανδρέα (localhost) — reset 9999→9999, login OK.
+- Fix #3: live regression (login/PIN/Home/δεδομένα) πριν commit· Performance API A/B με cache-busting μετά το deploy — 1037ms→50ms fresh-fetch.
+- Exports: 3/3 verified ανοίγοντας πραγματικά Blob περιεχόμενα.
 
-Do not weaken or bypass these rules.
+### Devices tested
+Desktop (localhost, Ανδρέας) + production (glamager-hair-corner.web.app, browser automation).
 
----
+## 9. KNOWN ISSUES
 
-## 7. NEXT RECOMMENDED WORK
+| Issue | Severity | Reproduction | Suggested next step |
+|---|---|---|---|
+| Whole-array `.set()` write pattern — θεωρητικό ρίσκο σε ταυτόχρονη εγγραφή 2 συσκευών | Χαμηλή (καμία πραγματική επίπτωση μέχρι σήμερα) | Δύο συσκευές γράφουν το ίδιο path ταυτόχρονα | Per-record data model (P0 #5 στο roadmap, όχι επείγον) |
+| Ορφανά staffId (Τάνια/Λάουρα) σε 11 γραμμές παλιών seed visits — export δείχνει κενό "Υπάλληλος" | Χαμηλή, seed-only artifact | Export ledger CSV | Μελλοντικό: exports να δείχνουν "(πρώην υπάλληλος)" αντί κενό |
+| Browser autofill γεμίζει ξένα στοιχεία στη φόρμα νέου προσωπικού | Μεσαία (πρακτική παγίδα, όχι bug Glamager) | Δημιουργία νέου ατόμου σε browser με αποθηκευμένο Contact Info | `autocomplete="off"` στα πεδία Όνομα/Email |
+| `auth != null` γενικό rule σε visits/expenses/clients/pins (όχι per-role) | Χαμηλή, ίδιο αποδεκτό ρίσκο με Hair Corner | — | Μελλοντικό: αυστηρότερα rules όταν ανοίξει σε αγνώστους |
 
-### P0 — NEXT
-1. **Firebase Backups tab** — ΑΚΟΜΑ δεν έχει ενεργοποιηθεί (Firebase Console → Realtime Database → Backups → Get started). Χρειάζεται πριν την πραγματική έναρξη Σεπτεμβρίου — βλ. περιστατικό 27/08 (`resetPreLaunch` άδειασε nodes, δεν υπήρχε backup δίχτυ). Σημείωση: το `reference/GLAMAGER_ROADMAP.md` έχει αυτό το item σημειωμένο `[x]` αλλά η δική του περιγραφή λέει ρητά "ΑΚΟΜΑ δεν έχει γίνει" — ασυνέπεια στο checkbox, θέλει διόρθωση.
+## 10. NOT IMPLEMENTED
+- Per-record data model, offline/multi-device sync, Stripe/συνδρομές, self-service onboarding νέου μαγαζιού — ρητά εκτός scope, δεν είναι blockers για πρώτο πραγματικό δεύτερο μαγαζί (βλ. Τελικό Checklist 🟡).
+
+## 11. RISKS / WARNINGS
+- `public/index.html` ΔΕΝ επεξεργάζεται πια με το χέρι — μόνο `public/index.src.html`, μετά `npm run build`.
+- Καμία αλλαγή/deploy χωρίς ρητή έγκριση Ανδρέα πριν, ανά session — standing rule.
+- `firebase-key.json` rotation: επιβεβαιωμένο COMPLETE/CLOSED (βλ. προηγούμενο handoff) — δεν χρειάζεται να ξαναρωτηθεί.
+
+## 12. NEXT RECOMMENDED TASKS
+
+### P0
+1. **#5 — Maria Hair Studio setup**: Firebase account + tenant setup, βήμα-βήμα, ΧΩΡΙΣ να αγγιχτεί το Hair Corner. Ίδιο μοτίβο με το demo-shop setup (νέος λογαριασμός, claims, αρχικό staff seed) — αλλά πραγματικό δεύτερο tenant, όχι test. **WAITING FOR ΑΝΔΡΕΑ "πάμε Maria".**
 
 ### P1
-**Phase 3: Auth / Memberships / Roles**
-Status: **BLOCKED / WAITING FOR ANDREAS APPROVAL**
-Πριν implementation: inspect repo, διάβασε τα current docs, μην υποθέσεις αρχιτεκτονική, παρουσίασε scope+risks, περίμενε ρητή έγκριση.
+- Καμία άλλη τεχνική αλλαγή πριν το #5, εκτός αν εμφανιστεί πραγματικό blocker (συμφωνία Ανδρέα/Marv 29/08).
 
 ### P2
-- GitHub Actions Node.js 20 deprecation cleanup — ξεχωριστό maintenance task.
-- `reference/SESSION_DECISIONS.md`: το αντίγραφο στο Claude Project έχει μια καταχώρηση (υιοθέτηση Shift Handoff Protocol) που δεν έχει ποτέ ανέβει στο ζωντανό repo (567 γραμμές live vs 578 στο Project). Μικρό, μη-μπλοκάρον, αλλά καλό να κλείσει κάποια στιγμή για συνέπεια.
+- Ό,τι είναι 🟡 στο Τελικό Checklist (per-record model, Stripe, self-service onboarding, stricter rules) — μόνο όταν ανοίξουμε σε εντελώς αγνώστους πελάτες.
 
----
+## 13. DO NOT CHANGE
+- `public/index.html` δεν πειράζεται με το χέρι πια — μόνο `.src.html` + build.
+- Forgot-PIN παραμένει scoped σε `who.id===myId` — ΟΧΙ "για όλους".
+- `database.rules.json` tenant isolation (Phase 3) — αμετάβλητο, verified 2 checkpoints.
+- Soft-delete + audit trail, `servesClients` attribution model — standing rules, αμετάβλητα.
 
-## 8. HANDOFF INSTRUCTION FOR NEXT AGENT
+## 14. GIT
+Ending commit: `0cdcbd9` (fix #3, GitHub Actions run ✅ Success 37s, verified με cache-busted fetch).
+Branch: `main`.
+Push status: pushed από τον Ανδρέα, deployed.
 
-**Read this file first.**
-
-Treat this document as the authoritative current project state.
-
-- Phase 2 (tenant model): COMPLETE.
-- Firebase credential rotation: COMPLETE and CLOSED — μην το ξανανοίξεις χωρίς νέο συγκεκριμένο security issue.
-- Photo toggle στο VisitEditor + 2 follow-up fixes: LIVE, tested, CLOSED (βλ. section 1, ή το πλήρες `reference/HANDOFF/2026-08-27-photo-toggle-visiteditor.md`).
-- Phase 3 (Auth/Memberships/Roles): επόμενο βήμα, ΔΕΝ έχει ξεκινήσει, ΔΕΝ έχει έγκριση — περίμενε ρητό σήμα από τον Ανδρέα.
-- Firebase Backups tab: ΑΚΟΜΑ δεν έχει ενεργοποιηθεί, χρειάζεται πριν Σεπτέμβριο (βλ. section 7, P0).
-
-Καμία αλλαγή κώδικα/deploy χωρίς ρητή έγκριση Ανδρέα.
+## 15. HANDOFF
+Phase 3 + multi-tenant client resolution: COMPLETE. Demo-shop πλήρως stress-tested, 3 σοβαρά bugs βρέθηκαν+διορθώθηκαν (#1 client-loss, #2 Master lockout, #3 slow reload), 3/3 exports verified, Τελικό Checklist έδωσε GO με 0 blockers. Επόμενο βήμα: #5, πρώτο πραγματικό δεύτερο tenant (Maria Hair Studio) — δεν έχει ξεκινήσει, περιμένει ρητό "πάμε Maria" από τον Ανδρέα. Καμία άλλη τεχνική αλλαγή μέχρι τότε εκτός αν εμφανιστεί πραγματικό blocker (συμφωνημένο με Marv). Όταν ξεκινήσει το #5: ίδιο μοτίβο με demo-shop setup, βήμα-βήμα, ξεχωριστός λογαριασμός/claims/seed — ΠΟΤΕ να μην αγγιχτούν τα δεδομένα/λογαριασμοί Hair Corner.
