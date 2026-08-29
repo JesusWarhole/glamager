@@ -1,0 +1,12 @@
+{
+  "name": "glamager-build",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Build step for public/index.html (fix #3, 29/08/2026) — μεταγλωττίζει το JSX του public/index.src.html με esbuild, ΜΙΑ φορά στο build/deploy, αντί ο browser να το κάνει σε κάθε άνοιγμα με babel-standalone.",
+  "scripts": {
+    "build": "node scripts/build.js"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.2"
+  }
+}
