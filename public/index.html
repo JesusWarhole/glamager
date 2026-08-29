@@ -186,17 +186,25 @@ const fbFunctions = firebase.app().functions('europe-west1'); // ίδιο region
 function useFirebaseState(path, seed, enabled){
   const [state,setState] = useState(seed);
   const stateRef = useRef(seed);
+  const pathRef = useRef(path);
+  /* 29/08β (fix του "1η απόπειρα login αποτυγχάνει, 2η πετυχαίνει" μετά από αλλαγή tenant μέσα
+     στο ίδιο tab): το προηγούμενο fix έκανε reset σε seed ΜΕΣΑ σε useEffect — δηλαδή ΜΕΤΑ το
+     render, ένα "γύρο" αργότερα από άλλα effects (π.χ. το "unknown email → sign out" guard στο
+     App) που διαβάζουν αυτό το state ΣΤΟ ΙΔΙΟ render pass όπου άλλαξε το path. Αυτά έβλεπαν ακόμα
+     την ΠΑΛΙΑ (προηγούμενου tenant) τιμή. Εδώ κάνουμε reset ΣΥΓΧΡΟΝΑ, μέσα στο ίδιο render (όχι σε
+     effect) — επίσημο React pattern "adjusting state during rendering": αν το path άλλαξε σε
+     σχέση με το προηγούμενο render, το setState εδώ κάνει τον React να ξανατρέξει αμέσως το
+     component με τη νέα τιμή, ΠΡΙΝ προλάβει να τρέξει οποιοδήποτε άλλο effect. Έτσι δεν υπάρχει
+     πια περιθώριο κανένα άλλο effect να δει ποτέ δεδομένα ΑΛΛΟΥ tenant. */
+  let effectiveState = state;
+  if(path !== pathRef.current){
+    pathRef.current = path;
+    stateRef.current = seed;
+    effectiveState = seed;
+    setState(seed);
+  }
   useEffect(()=>{
     if(!enabled) return;
-    /* 29/08 (multi-tenant client step, fix μετά το πρώτο demo-shop test): αυτό το effect τρέχει
-       ξανά κάθε φορά που αλλάζει το `path` (π.χ. αλλαγή tenantId μέσα στο ίδιο session — sign out
-       από ένα μαγαζί και sign in σε άλλο, ΧΩΡΙΣ full page reload). ΠΡΙΝ, το `state` κρατούσε την
-       ΠΑΛΙΑ τιμή (του προηγούμενου path) μέχρι να απαντήσει ο νέος listener — δηλαδή για μια
-       στιγμή, δεδομένα ΑΛΛΟΥ tenant ήταν ακόμα «ζωντανά» στη μνήμη. Reset σε seed εδώ, πριν καν
-       ανοίξει ο νέος listener, ώστε να ΜΗΝ υπάρχει ποτέ στιγμή όπου δεδομένα λάθος μαγαζιού
-       εμφανίζονται σαν έγκυρα (affects ΟΛΑ τα useFirebaseState paths, όχι μόνο το staff/login). */
-    stateRef.current = seed;
-    setState(seed);
     const r = fbDb.ref(path);
     /* _seeded/<path>: flag ξεχωριστό από τα ίδια τα δεδομένα — λύνει bug όπου το άδειασμα μιας
        λίστας (π.χ. wipeDemoData όταν η μόνη εγγραφή ήταν demo) ξανάφερνε αυτόματα το seed.
@@ -237,7 +245,7 @@ function useFirebaseState(path, seed, enabled){
     fbDb.ref('_seeded/'+path).set(true);
     return fbDb.ref(path).set(next===undefined ? null : next);
   },[path, enabled]);
-  return [state, write];
+  return [effectiveState, write];
 }
 
 /* ══════════════════════════════════════════════════════════════
@@ -578,6 +586,10 @@ const STRINGS = {
   hiredLabel:        { el:'Ημ/νία πρόσληψης',                           en:'Hire date' },
   leaveTotalLabel:   { el:'Μέρες άδειας/έτος',                          en:'Leave days/year' },
   staffAddNoLoginHint: { el:'Αυτό δημιουργεί μόνο το προφίλ μέσα στην εφαρμογή. Για να μπορεί να συνδεθεί, φτιάξε του λογαριασμό (email+κωδικός) στο Firebase Console με το ΙΔΙΟ email.', en:'This only creates the profile inside the app. For them to be able to log in, create a login account (email+password) in the Firebase Console with the SAME email.' },
+  staffPinLabel:       { el:'PIN (4 ψηφία)',                              en:'PIN (4 digits)' },
+  staffPinNewHint:     { el:'Χρειάζεται για να μπορεί να επιλέξει το όνομά του καθημερινά — χωρίς PIN δεν μπορεί να μπει.', en:"Needed so they can pick their name daily — without a PIN they can't get in." },
+  staffPinExistingHint:{ el:'Άσε το κενό για να μείνει το ίδιο. Γράψε νέο μόνο αν θες να το αλλάξεις (π.χ. το ξέχασε).', en:"Leave blank to keep it the same. Enter a new one only to change it (e.g. they forgot it)." },
+  staffPinRequired:    { el:'Χρειάζεται PIN 4 ψηφίων για να μπορεί να συνδεθεί.', en:'A 4-digit PIN is needed so they can sign in.' },
   businessLabel:     { el:'Επιχείρηση',                                  en:'Business' },
   shopNameLabel:     { el:'Όνομα μαγαζιού',                              en:'Shop name' },
   currencyLabel:     { el:'Νόμισμα',                                     en:'Currency' },
@@ -4852,15 +4864,25 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
    άδειο αντί να επινοήσουμε ψεύτικο έτος — ο Master το συμπληρώνει μία φορά με το πραγματικό. */
 const birthdayInputValue = b => (b && b.length>5) ? b : '';
 
-const StaffManager = ({staff,onSave,onClose}) => {
+const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
   const [edit,setEdit] = useState(null);
-  const blank = () => ({ id:null, name:'', email:'', role:ROLE.STAFF, servesClients:true, active:true, birthday:null, hired:'', leaveTotal:20, schedule:DEF_SCHEDULE });
-  const startEdit = p => setEdit({...p});
+  /* pin: ΤΟΠΙΚΟ, μεταβατικό πεδίο του φόρμας — ΔΕΝ αποθηκεύεται μέσα στο profile (staff record).
+     29/08: προστέθηκε μετά από πραγματικό μπλοκάρισμα στο demo-shop test — νέο άτομο χωρίς PIN
+     δεν μπορούσε ΠΟΤΕ να μπει (το OperatorPicker ελέγχει PIN ανά id, και κανένα νέο id δεν έχει
+     ποτέ entry στο pins). Τώρα: υποχρεωτικό PIN για ΝΕΟ άτομο (blocks Save), προαιρετικό reset
+     για υπάρχον (Master το βλέπει κενό εξ ορισμού — δεν εμφανίζει ποτέ το πραγματικό PIN — και
+     γράφει μόνο αν πληκτρολογήσει κάτι, π.χ. κάποιος το ξέχασε). */
+  const blank = () => ({ id:null, name:'', email:'', role:ROLE.STAFF, servesClients:true, active:true, birthday:null, hired:'', leaveTotal:20, schedule:DEF_SCHEDULE, pin:'' });
+  const startEdit = p => setEdit({...p, pin:''});
   const set = (k,v) => setEdit(e=>({...e,[k]:v}));
-  const canSave = edit && edit.name?.trim() && edit.email?.trim();
+  const pinOk = edit && (edit.id ? (edit.pin==='' || edit.pin.length===4) : edit.pin?.length===4);
+  const canSave = edit && edit.name?.trim() && edit.email?.trim() && pinOk;
   const save = async () => {
     try{
-      await onSave({...edit, name:edit.name.trim(), email:edit.email.trim().toLowerCase(), leaveTotal:parseInt(edit.leaveTotal)||0, hired:edit.hired||null, servesClients: edit.servesClients ?? edit.role===ROLE.STAFF, active: edit.active ?? true});
+      const finalId = edit.id || uid();
+      const { pin, ...profile } = edit;
+      await onSave({...profile, id:finalId, name:edit.name.trim(), email:edit.email.trim().toLowerCase(), leaveTotal:parseInt(edit.leaveTotal)||0, hired:edit.hired||null, servesClients: edit.servesClients ?? edit.role===ROLE.STAFF, active: edit.active ?? true});
+      if(pin && pin.length===4) onSetPin(finalId, pin);
       setEdit(null);
     }catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
   };
@@ -4879,6 +4901,10 @@ const StaffManager = ({staff,onSave,onClose}) => {
             <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newStaffLabel')}</p>
             <div className="mb-3"><CInput label={t('nameLabel')} value={edit.name} onChange={v=>set('name',v)}/></div>
             <div className="mb-3"><CInput label="Email" value={edit.email} onChange={v=>set('email',v)} type="email"/></div>
+            <div className="mb-3">
+              <CInput label={t('staffPinLabel')} value={edit.pin} onChange={v=>set('pin', v.replace(/\D/g,'').slice(0,4))}/>
+              <p className="text-[11px] mt-1" style={{color:'var(--text-dim)'}}>{edit.id ? t('staffPinExistingHint') : t('staffPinNewHint')}</p>
+            </div>
             <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffRoleFieldLabel')}</p>
             <div className="flex gap-2 flex-wrap mb-3">
               {[[ROLE.RECEPTION,t('roleReception')],[ROLE.STAFF,t('roleStaff')],[ROLE.MASTER,t('roleMaster')]].map(([v,l])=>(
@@ -5467,7 +5493,10 @@ const App = () => {
      μέχρι να χτιστεί μελλοντικό Cloud Function invite flow. Καμία delete/deactivate ακόμα σκόπιμα
      — ιστορικό attribution (visits/expenses) εξαρτάται από αυτά τα id, θέλει πιο προσεκτικό
      σχεδιασμό σε ξεχωριστό πέρασμα. */
-  const saveStaffMember = p => setStaff(list => p.id ? list.map(x=>x.id===p.id?p:x) : [...list,{...p,id:uid()}]);
+  /* 29/08: το StaffManager δίνει πλέον ΠΑΝΤΑ έτοιμο p.id (το παράγει το ίδιο πριν καλέσει εδώ,
+     ώστε να μπορεί να γράψει ΚΑΙ το PIN στο ίδιο id) — γι' αυτό ο έλεγχος "νέο ή υπάρχον" έγινε
+     "υπάρχει ήδη στη λίστα" αντί για "έχει id", ώστε ένα ολότελα νέο άτομο να προστίθεται σωστά. */
+  const saveStaffMember = p => setStaff(list => list.some(x=>x.id===p.id) ? list.map(x=>x.id===p.id?p:x) : [...list, p]);
 
   /* Καθαρισμός demo δεδομένων — one-off οικιακή δουλειά, ΟΧΙ γενικό hard-delete εργαλείο.
      Τα demo seed records (v1-v8, e1, c1-c4, k1, lr1 + οι δοκιμαστικές sick/leave μέρες) έχουν
@@ -5827,7 +5856,7 @@ const App = () => {
       )}
 
       {staffManagerOpen && isMaster && (
-        <StaffManager staff={staff} onSave={saveStaffMember} onClose={()=>setStaffManagerOpen(false)}/>
+        <StaffManager staff={staff} onSave={saveStaffMember} onSetPin={(id,pin)=>setPins(p=>({...p,[id]:pin}))} onClose={()=>setStaffManagerOpen(false)}/>
       )}
 
       {showSettings && (
