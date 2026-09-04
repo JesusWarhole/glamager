@@ -347,7 +347,7 @@ const STRINGS = {
   /* «Διόρθωση δοκιμαστικών» (31/07) — Master hard delete για άδειες/kudos/πελάτες χωρίς επισκέψεις. */
   hardDeleteConfirm:  { el:'Οριστική διαγραφή — δεν αναιρείται. Σίγουρα;', en:'Permanent deletion — cannot be undone. Are you sure?' },
   hardDeleteTitleAttr:{ el:'Οριστική διαγραφή',                          en:'Permanently delete' },
-  editClientInfoTitleAttr:{ el:'Επεξεργασία τηλεφώνου/πατρώνυμου',        en:'Edit phone/patronym' },
+  editClientInfoTitleAttr:{ el:'Επεξεργασία ονόματος/τηλεφώνου/πατρώνυμου', en:'Edit name/phone/patronym' },
   kudosManagerTitle:  { el:'Kudos — ιστορικό',                           en:'Kudos — history' },
   kudosManagerEmpty:  { el:'Δεν υπάρχουν kudos ακόμα.',                  en:'No kudos yet.' },
   clientDeleteBlockedLabel: { el:'Έχει επισκέψεις',                      en:'Has visits' },
@@ -484,6 +484,9 @@ const STRINGS = {
   newClientAutoHint:  { el:'Αν δεν διαλέξεις κάποιον παραπάνω, θα καταχωρηθεί ΝΕΟΣ πελάτης με αυτό το όνομα.', en:'If you don\'t pick someone above, a NEW client will be created with this name.' },
   savePromptSuffix:   { el:'— αποθήκευση;',                             en:'— save?' },
   phoneOptionalPlaceholder: { el:'Τηλέφωνο (προαιρετικό)...',           en:'Phone (optional)...' },
+  clientNamePlaceholder: { el:'Ονοματεπώνυμο',                          en:'Full name' },
+  clientNameLabel:    { el:'Όνομα',                                     en:'Name' },
+  phoneLabel:          { el:'Τηλέφωνο',                                  en:'Phone' },
   sessionNotePlaceholder: { el:'Σημείωση συνεδρίας (π.χ. βαφή 6.3 + 7.1)...', en:'Session note (e.g. color 6.3 + 7.1)...' },
   photoToggleLabel:    { el:'📷 Φωτό',                                   en:'📷 Photo' },
   photoToggleHint:     { el:'Βγήκε φωτογραφία σε αυτή την επίσκεψη',     en:'A photo was taken during this visit' },
@@ -1801,6 +1804,14 @@ const diffVisit = (b,a) => {
       if(bl.staffId!==al.staffId) out.push(`${al.name}: ${t('auditStaffChangedLabel')}`);
     }
   }
+  return out;
+};
+/* 04/09 — audit trail στοιχείων πελάτη (όνομα/τηλέφωνο/πατρώνυμο), ίδιο πνεύμα με diffVisit/diffExpense */
+const diffClient = (b,a) => {
+  const out = [];
+  if((b.name||'')!==(a.name||'')) out.push(`${t('clientNameLabel')}: ${b.name||'—'} → ${a.name||'—'}`);
+  if((b.phone||'')!==(a.phone||'')) out.push(`${t('phoneLabel')}: ${b.phone||'—'} → ${a.phone||'—'}`);
+  if((b.patronym||'')!==(a.patronym||'')) out.push(`${t('patronymPrefix')}: ${b.patronym||'—'} → ${a.patronym||'—'}`);
   return out;
 };
 const diffExpense = (b,a) => {
@@ -3921,8 +3932,12 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   const yearVisits = hist.filter(v=>v.date>=`${CUR_Y}-01-01`).length;
   const [editing,setEditing] = useState(null); // visitId
   const [draft,setDraft] = useState('');
-  /* 29/08 fix — edit επαφής (τηλέφωνο/πατρώνυμο), ΟΧΙ όνομα (βλ. σχόλιο στο updateClient) */
+  /* 29/08 fix — edit επαφής (τηλέφωνο/πατρώνυμο). 04/09: προστέθηκε και το όνομα
+     (αίτημα Ανδρέα — τυπογραφικά λάθη στο κινητό είναι συχνά). Το clientId ΔΕΝ αλλάζει ποτέ,
+     άρα καμία σχέση με το παλιό θέμα ομωνύμων στο auto-match κατά την καταχώρηση — εδώ ο
+     Master διορθώνει ρητά ΣΥΓΚΕΚΡΙΜΕΝη ήδη ανοιγμένη καρτέλα, καμία ασάφεια ταυτότητας. */
   const [editingInfo,setEditingInfo] = useState(false);
+  const [nameDraft,setNameDraft] = useState(client.name||'');
   const [phoneDraft,setPhoneDraft] = useState(client.phone||'');
   const [patronymDraft,setPatronymDraft] = useState(client.patronym||'');
 
@@ -3954,7 +3969,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
           </div>
           <div className="flex items-center gap-1 flex-shrink-0">
             {onUpdateClient && !editingInfo && (
-              <button onClick={()=>{setPhoneDraft(client.phone||'');setPatronymDraft(client.patronym||'');setEditingInfo(true);}}
+              <button onClick={()=>{setNameDraft(client.name||'');setPhoneDraft(client.phone||'');setPatronymDraft(client.patronym||'');setEditingInfo(true);}}
                 title={t('editClientInfoTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'var(--soft)'}}>
                 <span className="text-sm">✏️</span>
               </button>
@@ -3970,17 +3985,22 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
           </div>
         </div>
         {/* 29/08 fix — δεν υπήρχε τρόπος να προστεθεί/διορθωθεί τηλέφωνο ή πατρώνυμο μετά την 1η
-            καταχώρηση (αναφορά Ανδρέα). Το ΟΝΟΜΑ σκόπιμα δεν επεξεργάζεται εδώ. */}
+            καταχώρηση (αναφορά Ανδρέα). 04/09 — προστέθηκε και το όνομα (βλ. σχόλιο πάνω στο
+            state). Κενό όνομα δεν επιτρέπεται να σωθεί (canSaveInfo). */}
         {editingInfo && (
           <div className="mt-3 space-y-2">
+            <input type="text" value={nameDraft} onChange={e=>setNameDraft(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <input type="tel" value={phoneDraft} onChange={e=>setPhoneDraft(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <input type="text" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <div className="flex gap-2">
-              <button onClick={()=>{onUpdateClient(client.id,{phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}} className="flex-1 py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+              <button onClick={()=>{const n=nameDraft.trim(); if(!n) return; onUpdateClient(client.id,{name:n,phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}}
+                disabled={!nameDraft.trim()} className="flex-1 py-2 rounded-xl text-xs font-black text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
               <button onClick={()=>setEditingInfo(false)} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
             </div>
           </div>
         )}
+        {/* 04/09 — audit trail στοιχείων επαφής, Master-only, ίδιο component με visits/expenses */}
+        {isMaster && <AuditLog audit={client.audit} staff={staff}/>}
       </div>
 
       {/* Τελευταία επίσκεψη + σημείωση — πάνω-πάνω, μεγάλο: ο «μπούσουλας».
@@ -5842,9 +5862,19 @@ const App = () => {
   const addExpense = e => setExpenses(es=>[e,...es]);
   const addClient = c => { const id=uid(); setClients(cs=>[...cs,{...c,id,created:today()}]); return id; };
   /* 29/08 fix — δεν υπήρχε ΚΑΝΕΝΑΣ τρόπος να προστεθεί/διορθωθεί τηλέφωνο ή πατρώνυμο πελάτη
-     μετά την 1η καταχώρηση (αναφορά Ανδρέα). Σκόπιμα ΔΕΝ επιτρέπουμε εδώ αλλαγή ΟΝΟΜΑΤΟΣ — αυτό
-     ξαναναοίγει το θέμα ομώνυμων πελατών (βλ. σχόλιο στο saveIncome), θέλει ξεχωριστή απόφαση. */
-  const updateClient = (id,patch) => setClients(cs=>cs.map(c=>c.id===id?{...c,...patch}:c));
+     μετά την 1η καταχώρηση (αναφορά Ανδρέα). 04/09 — επεκτάθηκε ρητά και σε ΟΝΟΜΑ (βλ. ClientCard):
+     εδώ ο Master διορθώνει ΣΥΓΚΕΚΡΙΜΕΝΗ ήδη ανοιγμένη καρτέλα (π.χ. τυπογραφικό από κινητό),
+     καμία σχέση με το θέμα ομώνυμων του saveIncome που αφορά auto-match ΚΑΤΑ την καταχώρηση —
+     το clientId δεν αλλάζει ποτέ εδώ, άρα δεν υπάρχει κίνδυνος merge/απώλειας ιστορικού. */
+  /* 04/09 — προστέθηκε audit trail (diffClient), ίδιο πατρόν με editVisit/editExpense.
+     Αν δεν άλλαξε τίποτα ουσιαστικό, δεν γράφεται άδεια εγγραφή στο ιστορικό. */
+  const updateClient = (id,patch) => setClients(cs=>cs.map(c=>{
+    if(c.id!==id) return c;
+    const at = today()+' '+nowTime();
+    const changes = diffClient(c,{...c,...patch});
+    if(changes.length===0) return c;
+    return {...c, ...patch, audit:[...(c.audit||[]),{id:uid(),by:operator.id,at,action:'edit',changes}]};
+  }));
   /* Κατάλογος: upsert — νέο id αν δεν υπάρχει. Deactivate αντί delete. */
   const saveService = svc => setServices(ss => svc.id ? ss.map(s=>s.id===svc.id?svc:s) : [...ss,{...svc,id:uid(),active:true}]);
   const saveProduct = p => setProducts(ps => p.id ? ps.map(x=>x.id===p.id?p:x) : [...ps,{...p,id:uid(),active:true}]);
