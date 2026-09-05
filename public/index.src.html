@@ -452,6 +452,7 @@ const STRINGS = {
   otherCatLabel:      { el:'Άλλο',                                      en:'Other' },
   nothingLabel:       { el:'Τίποτα',                                    en:'Nothing' },
   productsResaleLabel:{ el:'Προϊόντα (μεταπώληση)',                     en:'Products (resale)' },
+  resaleCatChipLabel: { el:'Μεταπώληση',                                 en:'Resale' },
   stockLabel:         { el:'απόθεμα',                                   en:'stock' },
   freeItemLabel:      { el:'Ελεύθερο είδος',                            en:'Custom item' },
   namePlaceholder:    { el:'Όνομα...',                                  en:'Name...' },
@@ -1262,6 +1263,9 @@ const milestonesToday = (visits,clients,t) => {
 /* ── ΚΑΤΑΛΟΓΟΣ (user-defined, πλήρες CRUD, deactivate αντί delete — spec §5)
    Κατηγορία υπηρεσίας: ομαδοποίηση της λίστας tap στο + (chips φίλτρο). */
 const SERVICE_CATS = ['Κούρεμα','Βαφείο','Styling','Περιποίηση','Νύχια','Άλλο'];
+/* 05/09 — virtual κατηγορία ώστε η "Μεταπώληση" να μπει σαν chip ισότιμη με τις υπηρεσίες
+   (αίτημα Ανδρέα), αντί να είναι πάντα ορατή ξεχωριστή ενότητα ανεξάρτητα από το φίλτρο. */
+const RESALE_CAT = '__resale__';
 /* Fixed system taxonomy (δεν είναι free-text — ο Master διαλέγει από αυτά τα 6, δεν προσθέτει νέα) →
    ασφαλές να μεταφραστεί, ΣΕ ΑΝΤΙΘΕΣΗ με τα EXP_CATS (πραγματικά free-text CRUD, βλ. SESSION_DECISIONS.md) */
 const SERVICE_CATS_EN = { 'Κούρεμα':'Haircut', 'Βαφείο':'Color', 'Styling':'Styling', 'Περιποίηση':'Treatment', 'Νύχια':'Nails', 'Άλλο':'Other' };
@@ -2993,35 +2997,46 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
           <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={15} c="var(--text-dim)"/></button>
         </div>
 
-        {/* Chips κατηγοριών υπηρεσιών */}
+        {/* Chips κατηγοριών — 05/09: προστέθηκε "Μεταπώληση" σαν ισότιμη κατηγορία δίπλα
+            στις υπηρεσίες (αίτημα Ανδρέα), αντί να είναι πάντα ορατή ξεχωριστή ενότητα. */}
         <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
           <button onClick={()=>setCat('all')} className={`chip ${cat==='all'?'on':''}`}>{t('allLabel')}</button>
           {cats.map(c=><button key={c} onClick={()=>setCat(c)} className={`chip ${cat===c?'on':''}`}>{catLabel(c)}</button>)}
+          <button onClick={()=>setCat(RESALE_CAT)} className={`chip ${cat===RESALE_CAT?'on':''}`}>{t('resaleCatChipLabel')}</button>
         </div>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} {cat!=='all'?`— ${catLabel(cat)}`:''}</p>
-        <div className="space-y-1.5 mb-4">
-          {sv.map(s=>(
-            <button key={s.id} onClick={()=>setPending({name:s.name,price:s.price,dur:s.dur,vat:s.vat,kind:'service',catalogId:s.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
-              <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{itemLabel(s)}{(freq[s.name]||0)>1?<span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded-md font-black" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>★</span>:null}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{catLabel(s.cat||'Άλλο')} · {s.dur}′ · {t('vatAbbrev')} {s.vat}%</p></div>
-              <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(s.price)}</p>
-            </button>
-          ))}
-          {sv.length===0&&<p className="text-xs py-2 text-center" style={{color:'var(--text-dim)'}}>{t('nothingLabel')}</p>}
-        </div>
+        {cat!==RESALE_CAT && (
+          <>
+            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} {cat!=='all'?`— ${catLabel(cat)}`:''}</p>
+            <div className="space-y-1.5 mb-4">
+              {sv.map(s=>(
+                <button key={s.id} onClick={()=>setPending({name:s.name,price:s.price,dur:s.dur,vat:s.vat,kind:'service',catalogId:s.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
+                  <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{itemLabel(s)}{(freq[s.name]||0)>1?<span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded-md font-black" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>★</span>:null}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{catLabel(s.cat||'Άλλο')} · {s.dur}′ · {t('vatAbbrev')} {s.vat}%</p></div>
+                  <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(s.price)}</p>
+                </button>
+              ))}
+              {sv.length===0&&<p className="text-xs py-2 text-center" style={{color:'var(--text-dim)'}}>{t('nothingLabel')}</p>}
+            </div>
+          </>
+        )}
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsResaleLabel')}</p>
-        <div className="space-y-1.5 mb-4">
-          {pr.map(p=>(
-            <button key={p.id} onClick={()=>setPending({name:p.name,price:p.price,dur:0,vat:p.vat,kind:'product',productId:p.id,catalogId:p.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{itemLabel(p)}</p>
-                <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {p.vat}%{p.stock!=null?` · ${t('stockLabel')} ${p.stock}`:''}{p.stock!=null&&p.stock<=p.low?' ⚠️':''}</p>
-              </div>
-              <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(p.price)}</p>
-            </button>
-          ))}
-        </div>
+        {(cat==='all'||cat===RESALE_CAT) && (
+          <>
+            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsResaleLabel')}</p>
+            <div className="space-y-1.5 mb-4">
+              {pr.map(p=>(
+                <button key={p.id} onClick={()=>setPending({name:p.name,price:p.price,dur:0,vat:p.vat,kind:'product',productId:p.id,catalogId:p.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{itemLabel(p)}</p>
+                    <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {p.vat}%{p.stock!=null?` · ${t('stockLabel')} ${p.stock}`:''}{p.stock!=null&&p.stock<=p.low?' ⚠️':''}</p>
+                  </div>
+                  <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(p.price)}</p>
+                </button>
+              ))}
+              {pr.length===0&&<p className="text-xs py-2 text-center" style={{color:'var(--text-dim)'}}>{t('nothingLabel')}</p>}
+            </div>
+          </>
+        )}
 
         {/* Ελεύθερο είδος — εκτός καταλόγου, μηδέν επιβάρυνση καταλόγου */}
         <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('freeItemLabel')}</p>
