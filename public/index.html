@@ -192,8 +192,9 @@ function useFirebaseState(path, seed, enabled) {
           }
         });
       } else {
-        stateRef.current = val;
-        setState(val);
+        const clean = Array.isArray(val) ? val.filter(Boolean) : val;
+        stateRef.current = clean;
+        setState(clean);
       }
     };
     r.on("value", handler);

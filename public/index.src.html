@@ -227,8 +227,16 @@ function useFirebaseState(path, seed, enabled){
           }
         });
       } else {
-        stateRef.current = val;
-        setState(val);
+        /* 05/09 fix — αν τα δεδομένα σε αυτό το path είναι πίνακας (visits/expenses/clients κλπ),
+           μια χειροκίνητη διαγραφή ΜΙΑΣ θέσης μέσα από το Firebase Console αφήνει «τρύπα» εκεί
+           (το Firebase RTDB αναπαριστά αραιούς αριθμητικούς πίνακες με undefined slot στο κενό
+           αντί να μαζέψει τις θέσεις). Ένα undefined μέσα στη λίστα έσπαγε οποιοδήποτε .find/.map
+           προσπαθούσε να διαβάσει x.id πάνω του (real bug, αναφορά Ανδρέα 05/09 — "Cannot read
+           properties of undefined"). Το φιλτράρουμε εδώ, ΜΙΑ φορά, στην πηγή — προστατεύει όλα τα
+           paths ταυτόχρονα, ό,τι κι αν προκαλέσει ξανά τέτοιο κενό στο μέλλον. */
+        const clean = Array.isArray(val) ? val.filter(Boolean) : val;
+        stateRef.current = clean;
+        setState(clean);
       }
     };
     r.on('value', handler);
