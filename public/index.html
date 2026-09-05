@@ -3294,7 +3294,7 @@ const ClientsScreen = ({ operator, clients, visits, staff, settings, zmap, onUpd
     const lastVisit = ((_a = h[0]) == null ? void 0 : _a.date) || null;
     const daysSince = lastVisit ? Math.floor((new Date(todayIso) - new Date(lastVisit)) / 864e5) : null;
     return { ...c, lastVisit, daysSince, inactive: daysSince != null && daysSince >= inactiveThreshold };
-  }).filter((c) => !nq || norm(c.name).includes(nq)).filter((c) => !onlyInactive || c.inactive).sort((a, b) => (b.lastVisit || "").localeCompare(a.lastVisit || ""));
+  }).filter((c) => !nq || norm(c.name).includes(nq)).filter((c) => !onlyInactive || c.inactive).sort((a, b) => (a.name || "").localeCompare(b.name || "", "el", { sensitivity: "base" }));
   const inactiveCount = clients.filter((c) => {
     const h = visits.filter((v) => v.clientId === c.id && !isDel(v));
     if (h.length === 0) return false;

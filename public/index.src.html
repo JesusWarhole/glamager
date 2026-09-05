@@ -4100,7 +4100,9 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
     })
     .filter(c=>!nq||norm(c.name).includes(nq))
     .filter(c=>!onlyInactive || c.inactive)
-    .sort((a,b)=>(b.lastVisit||'').localeCompare(a.lastVisit||''));
+    /* 04/09 — αίτημα Ανδρέα: αλφαβητική σειρά αντί για "πιο πρόσφατη επίσκεψη πρώτα".
+       localeCompare με 'el' locale ώστε να ταξινομεί σωστά ελληνικούς τόνους/πεζά-κεφαλαία. */
+    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
   const inactiveCount = clients.filter(c=>{
     const h=visits.filter(v=>v.clientId===c.id&&!isDel(v));
     if(h.length===0) return false;
