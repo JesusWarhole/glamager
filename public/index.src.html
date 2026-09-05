@@ -590,6 +590,11 @@ const STRINGS = {
   testModeToggleLabel:  { el:'Ενεργό TEST MODE',                        en:'TEST MODE active' },
   testModeToggleHint:   { el:'Εμφανίζει πορτοκαλί ταμπέλα σε ΟΛΕΣ τις οθόνες, σε όλους — ειδοποιεί ότι ό,τι καταχωρείται τώρα μπορεί να διαγραφεί.', en:'Shows an orange banner on ALL screens, for everyone — warns that anything entered now may get deleted.' },
   testModeSectionHint:  { el:'Άναψέ το πριν δοκιμάσετε τη ροή στο πραγματικό μαγαζί, σβήσ\' το όταν είστε έτοιμοι για κανονική χρήση. Δουλεύει μαζί με την «Επαναφορά πριν την έναρξη» παρακάτω.', en:'Turn it on before testing the real flow in the shop, turn it off when ready for normal use. Works together with "Reset before launch" below.' },
+  clearTestEntriesBtn:      { el:'Καθαρισμός δοκιμαστικών εγγραφών',      en:'Clear test entries' },
+  clearTestEntriesHint:     { el:'Σβήνει ΜΟΝΟ ό,τι μπήκε όσο ήταν αναμμένο το TEST MODE (επισκέψεις, έξοδα, πελάτες) — τα υπόλοιπα δεδομένα δεν πειράζονται καθόλου. Ό,τι είναι σημερινό και πριν το Ζ σβήνεται οριστικά· ό,τι είναι από κλειδωμένη μέρα μένει ως διαγραμμένο στο ιστορικό (δεν μπορεί να σβηστεί οριστικά, με σχεδιασμό).', en:'Deletes ONLY what was entered while TEST MODE was on (visits, expenses, clients) — nothing else is touched. Anything from today, before close, is permanently removed; anything from an already-closed day stays marked deleted in history (cannot be permanently erased, by design).' },
+  clearTestEntriesConfirm:  { el:'Σίγουρα; Θα σβηστούν όλες οι εγγραφές που μπήκαν με ενεργό TEST MODE.', en:'Are you sure? All entries made while TEST MODE was active will be removed.' },
+  clearTestEntriesBusyBtn:  { el:'Καθαρισμός…',                            en:'Clearing…' },
+  clearTestEntriesDoneMsg:  { el:'✅ Καθαρίστηκαν οι δοκιμαστικές εγγραφές.', en:'✅ Test entries cleared.' },
   syncClaimsTitle:      { el:'Συγχρονισμός δικαιωμάτων',                  en:'Sync permissions' },
   syncClaimsHint:       { el:'Πάτα το μετά από κάθε πρόσληψη, αλλαγή ρόλου ή αποχώρηση προσωπικού — ενημερώνει τα δικαιώματα πρόσβασης ώστε να ταιριάζουν με το τι λέει η λίστα Προσωπικού. Δεν αγγίζει email/κωδικό/PIN κανενός.', en:'Tap this after any hire, role change, or departure — updates access permissions to match what the Staff list says. Does not touch anyone\'s email/password/PIN.' },
   syncClaimsBtn:        { el:'Συγχρονισμός τώρα',                        en:'Sync now' },
@@ -3944,7 +3949,10 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   /* Hard delete πελάτη (31/07) — ΜΟΝΟ αν δεν έχει ΚΑΜΙΑ επίσκεψη πουθενά, ούτε soft-deleted
      (γι' αυτό ελέγχουμε το ακατέργαστο `visits`, όχι το φιλτραρισμένο `hist`) — αλλιώς μια παλιά
      επίσκεψη θα έμενε με ορφανό clientId. */
-  const hasAnyVisit = visits.some(v=>v.clientId===client.id);
+  /* 05/09 fix — αυτό ξεχάστηκε την πρώτη φορά (deleteClient διορθώθηκε, αλλά αυτό το ξεχωριστό
+     UI-level check έμεινε στο παλιό "οποιαδήποτε επίσκεψη", μπλοκάροντας ακόμα το κουμπί ενώ το
+     deleteClient θα το επέτρεπε). Πρέπει να ταιριάζει ΑΚΡΙΒΩΣ με τη λογική του deleteClient. */
+  const hasAnyVisit = visits.some(v=>v.clientId===client.id && !isDel(v));
   const canDelete = operator.role===ROLE.MASTER && !!onDeleteClient;
   const last = hist[0];
   /* Αδράνεια πελάτη (spec §1ε) — όριο από τις Ρυθμίσεις, καθαρά πληροφοριακό */
@@ -5332,12 +5340,13 @@ const PinChangeCard = ({onChangePin}) => {
   );
 };
 
-const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch, onSyncClaims}) => {
+const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch, onClearTestEntries, onSyncClaims}) => {
   const [wiped,setWiped] = useState(false);
   const [wiping,setWiping] = useState(false);
   const [resetConfirmText,setResetConfirmText] = useState('');
   const [resetting,setResetting] = useState(false);
   const [resetDone,setResetDone] = useState(false);
+  const [clearingTest,setClearingTest] = useState(false);
   const [syncBusy,setSyncBusy] = useState(false);
   const [syncResult,setSyncResult] = useState(null);
   const set = async (k,v) => {
@@ -5486,7 +5495,24 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
             <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:settings.testMode?'translateX(24px)':'none'}}/>
           </button>
         </div>
-        <p className="text-xs mb-5" style={{color:'var(--text-dim)'}}>{t('testModeSectionHint')}</p>
+        <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('testModeSectionHint')}</p>
+        {onClearTestEntries && (
+          <div className="rounded-xl px-3 py-3 mb-5" style={{background:'var(--soft)'}}>
+            <p className="text-[11px] mb-2" style={{color:'var(--text-dim)'}}>{t('clearTestEntriesHint')}</p>
+            <button onClick={async ()=>{
+                if(clearingTest) return;
+                if(!window.confirm(t('clearTestEntriesConfirm'))) return;
+                setClearingTest(true);
+                await onClearTestEntries();
+                setClearingTest(false);
+                window.alert(t('clearTestEntriesDoneMsg'));
+              }}
+              disabled={clearingTest}
+              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'#f59e0b'}}>
+              🧪 {clearingTest ? t('clearTestEntriesBusyBtn') : t('clearTestEntriesBtn')}
+            </button>
+          </div>
+        )}
       </React.Fragment>)}
 
       {isMaster && onSyncClaims && (<React.Fragment>
@@ -5861,6 +5887,43 @@ const App = () => {
     }
   };
 
+  /* «Καθάρισμα δοκιμαστικών» (05/09, αίτημα Ανδρέα) — ΔΕΝ είναι το ίδιο με το resetPreLaunch
+     πιο πάνω (που σβήνει ΤΑ ΠΑΝΤΑ αδιακρίτως). Αυτό πιάνει ΜΟΝΟ ό,τι έχει testEntry:true, δηλαδή
+     ό,τι μπήκε όσο ήταν αναμμένο το TEST MODE — τα πραγματικά δεδομένα μένουν εντελώς άθικτα.
+     Σέβεται ΑΠΟΛΥΤΑ τους ίδιους κανόνες με το χειροκίνητο "Οριστική διαγραφή" (απόφαση Ανδρέα
+     31/07): οριστική διαγραφή ΜΟΝΟ για σημερινές μη-Ζ-κλειδωμένες εγγραφές· ό,τι είναι από
+     προηγούμενη Ζ-κλειδωμένη μέρα μπαίνει σε soft-delete και ΜΕΝΕΙ ΕΤΣΙ για πάντα (καμία εξαίρεση,
+     ούτε καν εδώ) — καμία δοκιμή δεν πρέπει ποτέ να ανοίξει πόρτα για οριστική διαγραφή κλειδωμένου
+     τζίρου. Πελάτες με testEntry:true διαγράφονται μόνο αν δεν τους έχει μείνει καμία ενεργή
+     (μη διαγραμμένη) επίσκεψη μετά το παραπάνω καθάρισμα — ίδια λογική με το deleteClient. */
+  const clearTestEntries = () => {
+    const at = today()+' '+nowTime();
+    const todayIso = today();
+    setVisits(vs=>vs.reduce((acc,v)=>{
+      if(!v.testEntry) { acc.push(v); return acc; }
+      const eligible = v.date===todayIso && !zmap[v.date];
+      if(eligible) return acc; // οριστική διαγραφή — δεν μπαίνει καν στη νέα λίστα
+      if(isDel(v)) { acc.push(v); return acc; } // ήδη soft-deleted, μένει όπως είναι
+      acc.push({...v, deleted:{by:operator.id,at}, audit:[...(v.audit||[]),{id:uid(),by:operator.id,at,action:'delete',changes:[]}]});
+      return acc;
+    },[]));
+    setExpenses(es=>es.reduce((acc,e)=>{
+      if(!e.testEntry) { acc.push(e); return acc; }
+      const eligible = e.date===todayIso && !zmap[e.date];
+      if(eligible) return acc;
+      if(isDel(e)) { acc.push(e); return acc; }
+      acc.push({...e, deleted:{by:operator.id,at}, audit:[...(e.audit||[]),{id:uid(),by:operator.id,at,action:'delete',changes:[]}]});
+      return acc;
+    },[]));
+    /* Ποιοι πελάτες θα έχουν ΑΚΟΜΑ ενεργή επίσκεψη μετά το παραπάνω καθάρισμα — υπολογίζεται εδώ
+       (πάνω στο τρέχον `visits` από closure) γιατί το setVisits από πάνω είναι async. */
+    const stillActiveClientIds = new Set(
+      visits.filter(v=>!v.testEntry && !isDel(v)).map(v=>v.clientId)
+    );
+    setClients(cs=>cs.filter(c=>!c.testEntry || stillActiveClientIds.has(c.id)));
+    return { ok:true };
+  };
+
   /* Master-only: καλεί την Cloud Function `syncStaffClaims` (functions/index.js) — διαβάζει το
      `staff` node και βάζει custom claim {role} στον αντίστοιχο Firebase Auth λογαριασμό κάθε
      ατόμου. Χειροκίνητο κουμπί (SettingsSheet), όχι αυτόματο σε κάθε staff edit — βλ. σχόλιο
@@ -5932,16 +5995,19 @@ const App = () => {
   },[operator, lockNow, settings.autoLockMinutes]);
 
   /* ── Handlers (μελλοντικά: Firebase writes + Security Rules server-side) ── */
+  /* 05/09 — αίτημα Ανδρέα: κάθε νέα εγγραφή σημαδεύεται με testEntry όποτε είναι αναμμένο το
+     TEST MODE τη στιγμή της δημιουργίας, ώστε να μπορούν να καθαριστούν όλες μαζί με ένα κουμπί
+     (βλ. clearTestEntries πιο κάτω), αντί να ψάχνει κανείς μία-μία. */
   const addVisit = v => {
-    setVisits(vs=>[v,...vs]);
+    setVisits(vs=>[{...v, testEntry:!!settings.testMode}, ...vs]);
     /* light απόθεμα: κάθε πώληση μειώνει αυτόματα — κανένα έξτρα tap */
     setProducts(ps=>ps.map(p=>{
       const sold = v.lines.filter(l=>l.productId===p.id).length;
       return sold>0 && p.stock!=null ? {...p, stock:Math.max(0,p.stock-sold)} : p;
     }));
   };
-  const addExpense = e => setExpenses(es=>[e,...es]);
-  const addClient = c => { const id=uid(); setClients(cs=>[...cs,{...c,id,created:today()}]); return id; };
+  const addExpense = e => setExpenses(es=>[{...e, testEntry:!!settings.testMode}, ...es]);
+  const addClient = c => { const id=uid(); setClients(cs=>[...cs,{...c,id,created:today(),testEntry:!!settings.testMode}]); return id; };
   /* 29/08 fix — δεν υπήρχε ΚΑΝΕΝΑΣ τρόπος να προστεθεί/διορθωθεί τηλέφωνο ή πατρώνυμο πελάτη
      μετά την 1η καταχώρηση (αναφορά Ανδρέα). 04/09 — επεκτάθηκε ρητά και σε ΟΝΟΜΑ (βλ. ClientCard):
      εδώ ο Master διορθώνει ΣΥΓΚΕΚΡΙΜΕΝΗ ήδη ανοιγμένη καρτέλα (π.χ. τυπογραφικό από κινητό),
@@ -6165,7 +6231,7 @@ const App = () => {
           onOpenTemplates={isMaster?()=>{setShowSettings(false);setTemplatePickerOpen(true);}:null}
           onOpenStaffManager={isMaster?()=>{setShowSettings(false);setStaffManagerOpen(true);}:null}
           onChangePassword={changePassword} onChangePin={changePin}
-          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch} onSyncClaims={syncStaffClaims}/>
+          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch} onClearTestEntries={clearTestEntries} onSyncClaims={syncStaffClaims}/>
       )}
     </div>
   );
