@@ -1280,11 +1280,12 @@ const puLabel = code => t(PU_KEYS[code]||'otherCatLabel');
 const DEMO_SERVICES = [
   { id:'sv1', name:'Κούρεμα γυναικείο',   name_en:"Women's Haircut",     dur:60,  price:25, vat:24, cat:'Κούρεμα',    active:true },
   { id:'sv2', name:'Κούρεμα ανδρικό',     name_en:"Men's Haircut",       dur:30,  price:15, vat:24, cat:'Κούρεμα',    active:true },
+  { id:'sv2b',name:'Κούρεμα/Χτένισμα',    name_en:'Haircut/Blow-dry',    dur:75,  price:35, vat:24, cat:'Κούρεμα',    active:true },
   { id:'sv3', name:'Βαφή ρίζα',           name_en:'Root Color',          dur:90,  price:40, vat:24, cat:'Βαφείο',     active:true },
   { id:'sv3b',name:'Βαφή',                name_en:'Color',                dur:90,  price:50, vat:24, cat:'Βαφείο',     active:true },
   { id:'sv4', name:'Ανταύγειες',          name_en:'Highlights',          dur:180, price:95, vat:24, cat:'Βαφείο',     active:true },
   { id:'sv4b',name:'Μπαλαγιάζ',           name_en:'Balayage',            dur:180, price:95, vat:24, cat:'Βαφείο',     active:true },
-  { id:'sv5', name:'Χτένισμα',            name_en:'Blow-dry / Styling',  dur:40,  price:18, vat:24, cat:'Styling',    active:true },
+  { id:'sv5', name:'Χτένισμα',            name_en:'Blow-dry / Styling',  dur:40,  price:17, vat:24, cat:'Styling',    active:true },
   { id:'sv6', name:'Θεραπεία ενυδάτωσης', name_en:'Hydration Treatment', dur:30,  price:22, vat:24, cat:'Περιποίηση', active:true },
   { id:'sv7', name:'Μανικιούρ',           name_en:'Manicure',            dur:45,  price:20, vat:24, cat:'Νύχια',      active:true },
 ];
@@ -1462,11 +1463,12 @@ const CATALOG_TEMPLATES = [
     services: [
       { name:'Κούρεμα γυναικείο',    name_en:"Women's Haircut",     dur:60,  price:25, vat:24, cat:'Κούρεμα' },
       { name:'Κούρεμα ανδρικό',      name_en:"Men's Haircut",       dur:30,  price:15, vat:24, cat:'Κούρεμα' },
+      { name:'Κούρεμα/Χτένισμα',    name_en:'Haircut/Blow-dry',    dur:75,  price:35, vat:24, cat:'Κούρεμα' },
       { name:'Βαφή ρίζα',            name_en:'Root Color',          dur:90,  price:40, vat:24, cat:'Βαφείο' },
       { name:'Βαφή',                 name_en:'Color',               dur:90,  price:50, vat:24, cat:'Βαφείο' },
       { name:'Ανταύγειες',           name_en:'Highlights',          dur:180, price:95, vat:24, cat:'Βαφείο' },
       { name:'Μπαλαγιάζ',            name_en:'Balayage',            dur:180, price:95, vat:24, cat:'Βαφείο' },
-      { name:'Χτένισμα',             name_en:'Blow-dry / Styling',  dur:40,  price:18, vat:24, cat:'Styling' },
+      { name:'Χτένισμα',             name_en:'Blow-dry / Styling',  dur:40,  price:17, vat:24, cat:'Styling' },
       { name:'Θεραπεία ενυδάτωσης',  name_en:'Hydration Treatment', dur:30,  price:22, vat:24, cat:'Περιποίηση' },
       { name:'Μανικιούρ',            name_en:'Manicure',            dur:45,  price:20, vat:24, cat:'Νύχια' },
     ],
@@ -1476,11 +1478,12 @@ const CATALOG_TEMPLATES = [
     services: [
       { name:'Κούρεμα γυναικείο',    name_en:"Women's Haircut",     dur:60,  price:25, vat:24, cat:'Κούρεμα' },
       { name:'Κούρεμα ανδρικό',      name_en:"Men's Haircut",       dur:30,  price:15, vat:24, cat:'Κούρεμα' },
+      { name:'Κούρεμα/Χτένισμα',    name_en:'Haircut/Blow-dry',    dur:75,  price:35, vat:24, cat:'Κούρεμα' },
       { name:'Βαφή ρίζα',            name_en:'Root Color',          dur:90,  price:40, vat:24, cat:'Βαφείο' },
       { name:'Βαφή',                 name_en:'Color',               dur:90,  price:50, vat:24, cat:'Βαφείο' },
       { name:'Ανταύγειες',           name_en:'Highlights',          dur:180, price:95, vat:24, cat:'Βαφείο' },
       { name:'Μπαλαγιάζ',            name_en:'Balayage',            dur:180, price:95, vat:24, cat:'Βαφείο' },
-      { name:'Χτένισμα',             name_en:'Blow-dry / Styling',  dur:40,  price:18, vat:24, cat:'Styling' },
+      { name:'Χτένισμα',             name_en:'Blow-dry / Styling',  dur:40,  price:17, vat:24, cat:'Styling' },
       { name:'Θεραπεία ενυδάτωσης',  name_en:'Hydration Treatment', dur:30,  price:22, vat:24, cat:'Περιποίηση' },
     ],
     products: PAUL_MITCHELL_PRODUCTS },
@@ -3421,9 +3424,11 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
 
   const clientSel = clientId ? clients.find(c=>c.id===clientId) : null;
   const sugg = useMemo(()=>{
-    if(clientSel || cq.trim().length<2) return [];
+    /* 05/09 — αίτημα Ανδρέα: prefix match (ξεκινάει με) αντί για "περιέχει οπουδήποτε",
+       αλφαβητικά, χωρίς όριο 5 — πιο ξεκάθαρο αποτέλεσμα σαν λίστα επαφών. */
+    if(clientSel || cq.trim().length<1) return [];
     const nq = norm(cq.trim());
-    return clients.filter(c=>norm(c.name).includes(nq)).slice(0,5);
+    return clients.filter(c=>norm(c.name).startsWith(nq)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
   },[cq,clientId,clients]);
 
   /* Συχνότητα κατηγορίας εξόδου (ιστορικό) — τα πιο συχνά (καφές, λογαριασμοί κ.λπ.) πρώτα, ίδιο ★ πατρόν με τον κατάλογο */
@@ -3584,7 +3589,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
               <button onClick={()=>{setClientId(null);setCq('');}} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'var(--surface)'}}><Ic n="x" s={13} c="var(--text-dim)"/></button>
             </div>
           ) : (<React.Fragment>
-            <input type="text" value={cq} onChange={e=>{setCq(e.target.value);setShowNew(false);}} placeholder={t('fullNamePlaceholder')} className="w-full text-sm outline-none bg-transparent mb-1" style={{color:'var(--text)'}}/>
+            <input type="text" autoComplete="off" value={cq} onChange={e=>{setCq(e.target.value);setShowNew(false);}} placeholder={t('fullNamePlaceholder')} className="w-full text-sm outline-none bg-transparent mb-1" style={{color:'var(--text)'}}/>
             {sugg.length>0 && <div className="space-y-1 mt-1">
               {sugg.map(c=>(
                 <button key={c.id} onClick={()=>{setClientId(c.id);}} className="w-full text-left rounded-xl px-3 py-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
@@ -3597,7 +3602,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
                 ομώνυμου πελάτη, χωρίς κανένα ρητό τρόπο να πεις "όχι, είναι άλλος άνθρωπος". Τώρα
                 μένει ΠΑΝΤΑ ορατό όσο υπάρχει γραμμένο όνομα — με διαφορετική ετικέτα όταν υπάρχουν
                 ήδη προτάσεις, ώστε να είναι ρητό ότι πρόκειται για διαφορετικό άτομο. */}
-            {cq.trim().length>=2 && !showNew && (
+            {cq.trim().length>=1 && !showNew && (
               <button onClick={()=>setShowNew(true)} className="text-xs font-bold mt-1" style={{color:'var(--accent-600)'}}>
                 {sugg.length>0 ? t('newClientDifferentPersonPrefix') : `${t('newClientPrefix')} «${cq.trim()}» ${t('savePromptSuffix')}`}
               </button>
@@ -3613,7 +3618,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
                 σιωπηλά (σκόπιμα ασφαλές default, βλ. σχόλιο εκεί) — αλλά "σιωπηλά" σήμαινε ότι ο
                 χρήστης δεν το έβλεπε πουθενά πριν πατήσει. Αυτό εδώ το κάνει ρητό, χωρίς popup που
                 μπλοκάρει τη ροή. */}
-            {cq.trim().length>=2 && !showNew && sugg.length>0 && (
+            {cq.trim().length>=1 && !showNew && sugg.length>0 && (
               <p className="text-[11px] mt-1.5" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientAutoHint')}</p>
             )}
           </React.Fragment>)}
@@ -4009,9 +4014,9 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
             state). Κενό όνομα δεν επιτρέπεται να σωθεί (canSaveInfo). */}
         {editingInfo && (
           <div className="mt-3 space-y-2">
-            <input type="text" value={nameDraft} onChange={e=>setNameDraft(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            <input type="text" autoComplete="off" value={nameDraft} onChange={e=>setNameDraft(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <input type="tel" autoComplete="off" value={phoneDraft} onChange={e=>setPhoneDraft(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
-            <input type="text" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            <input type="text" autoComplete="off" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <div className="flex gap-2">
               <button onClick={()=>{const n=nameDraft.trim(); if(!n) return; onUpdateClient(client.id,{name:n,phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}}
                 disabled={!nameDraft.trim()} className="flex-1 py-2 rounded-xl text-xs font-black text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
@@ -4096,10 +4101,29 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
   );
 };
 
-const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote,onDeleteClient,onUpdateClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
+const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote,onDeleteClient,onUpdateClient,onAddClient,onEditVisit,onSoftDelete,onHardDeleteVisit}) => {
   const [q,setQ] = useState('');
   const [selId,setSelId] = useState(null);
   const [onlyInactive,setOnlyInactive] = useState(false);
+  /* 05/09 — αίτημα Ανδρέα: προσθήκη πελάτη απευθείας από το Πελατολόγιο, χωρίς να χρειάζεται
+     να περάσει πρώτα από την καταχώρηση επίσκεψης (+). */
+  const [showAdd,setShowAdd] = useState(false);
+  const [nName,setNName] = useState('');
+  const [nPhone,setNPhone] = useState('');
+  const [nPatr,setNPatr] = useState('');
+  const saveNewClient = () => {
+    const name = nName.trim(); if(!name) return;
+    onAddClient({name, phone:nPhone.trim(), patronym:nPatr.trim()});
+    setNName(''); setNPhone(''); setNPatr(''); setShowAdd(false);
+  };
+  /* 05/09 — ίδιο πνεύμα με το "sugg" στο καλάθι (AddScreen): προειδοποίηση αν υπάρχει ήδη
+     πελάτης με παρόμοιο όνομα, χωρίς να μπλοκάρει — απλά για να μην φτιαχτεί κατά λάθος διπλότυπο.
+     Prefix match, αλφαβητικά, χωρίς όριο 5 (ίδια λογική με sugg παραπάνω). */
+  const nSugg = useMemo(()=>{
+    if(nName.trim().length<1) return [];
+    const nq = norm(nName.trim());
+    return clients.filter(c=>norm(c.name).startsWith(nq)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
+  },[nName,clients]);
   const sel = clients.find(c=>c.id===selId);
   /* Επιτυχής διαγραφή → γύρνα στη λίστα (ο επιλεγμένος πελάτης δεν υπάρχει πια) */
   const handleDeleteClient = onDeleteClient ? (id=>{ const res=onDeleteClient(id); if(res?.ok) setSelId(null); return res; }) : null;
@@ -4133,11 +4157,40 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
   return (
     <div className="px-4 pt-4 safe-pb">
       {/* Search πάνω-πάνω — το χρειάζονται καθημερινά */}
-      <div className="flex items-center gap-2 rounded-2xl px-4 py-3 mb-2 border" style={{background:'var(--surface)',borderColor:'var(--border)'}}>
-        <Ic n="search" s={17} c="var(--text-dim)"/>
-        <input type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder={t('searchClientPlaceholder')} className="flex-1 text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
-        {q&&<button onClick={()=>setQ('')}><Ic n="x" s={14} c="var(--text-dim)"/></button>}
+      <div className="flex items-center gap-2 mb-2">
+        <div className="flex-1 flex items-center gap-2 rounded-2xl px-4 py-3 border" style={{background:'var(--surface)',borderColor:'var(--border)'}}>
+          <Ic n="search" s={17} c="var(--text-dim)"/>
+          <input type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder={t('searchClientPlaceholder')} className="flex-1 text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
+          {q&&<button onClick={()=>setQ('')}><Ic n="x" s={14} c="var(--text-dim)"/></button>}
+        </div>
+        {onAddClient && (
+          <button onClick={()=>setShowAdd(v=>!v)} title={t('newClientPrefix')} className="w-11 h-11 rounded-2xl flex items-center justify-center flex-shrink-0" style={{background: showAdd?'var(--accent-600)':'var(--accent-50)'}}>
+            <Ic n="plus" s={18} c={showAdd?'#fff':'var(--accent-600)'}/>
+          </button>
+        )}
       </div>
+      {showAdd && (
+        <div className="card p-4 mb-3 space-y-2">
+          <input type="text" autoComplete="off" autoFocus value={nName} onChange={e=>setNName(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+          {nSugg.length>0 && (
+            <div className="space-y-1">
+              <p className="text-[11px]" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientDifferentPersonPrefix')}</p>
+              {nSugg.map(c=>(
+                <button key={c.id} onClick={()=>{setShowAdd(false);setNName('');setNPhone('');setNPatr('');setSelId(c.id);}} className="w-full text-left rounded-xl px-3 py-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
+                  <p className="text-sm font-bold" style={{color:'var(--text)'}}>{c.name}</p>
+                  <p className="text-xs" style={{color:'var(--text-dim)'}}>{[c.phone,c.patronym].filter(Boolean).join(' · ')||'—'}</p>
+                </button>
+              ))}
+            </div>
+          )}
+          <input type="tel" autoComplete="off" value={nPhone} onChange={e=>setNPhone(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+          <input type="text" autoComplete="off" value={nPatr} onChange={e=>setNPatr(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+          <div className="flex gap-2">
+            <button onClick={saveNewClient} disabled={!nName.trim()} className="flex-1 py-2 rounded-xl text-xs font-black text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+            <button onClick={()=>{setShowAdd(false);setNName('');setNPhone('');setNPatr('');}} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
+          </div>
+        </div>
+      )}
       {inactiveCount>0 && (
         <button onClick={()=>setOnlyInactive(v=>!v)} className={`chip mb-3 ${onlyInactive?'on':''}`}>
           😴 {t('inactiveChipLabel')} ({inactiveCount}) · {t('moreThanLabel')} {inactiveThreshold} {t('dayCountPlural')}
@@ -5732,8 +5785,14 @@ const App = () => {
      του — αλλιώς η επίσκεψη θα έμενε με «ορφανό» clientId και θα έσπαγε το VisitDetail/CSV. */
   const deleteLeaveReq = id => setLeaveReqs(rs=>rs.filter(r=>r.id!==id));
   const deleteKudos = id => setKudos(ks=>ks.filter(k=>k.id!==id));
+  /* 05/09 — αίτημα Ανδρέα: πριν, ΚΑΘΕ επίσκεψη πάνω στον πελάτη μπλόκαρε τη διαγραφή, ακόμα κι αν
+     ήταν ήδη soft-deleted (π.χ. δοκιμαστική επίσκεψη που καθάρισε με "Οριστική διαγραφή"). Τώρα
+     μετράνε μόνο οι ΕΝΕΡΓΕΣ (μη διαγραμμένες) επισκέψεις — έτσι, αφού καθαρίσει κανείς τις
+     δοκιμαστικές επισκέψεις ενός πελάτη, μπορεί να διαγράψει και τον ίδιο τον πελάτη. Το ίδιο το
+     audit trail της (soft-deleted) επίσκεψης μένει ΠΑΝΤΑ στο Firebase, αμετάβλητο — απλά δεν
+     εμποδίζει πια τη διαγραφή του ονόματος από το Πελατολόγιο. */
   const deleteClient = id => {
-    if(visits.some(v=>v.clientId===id)) return { ok:false, reason:'hasVisits' };
+    if(visits.some(v=>v.clientId===id && !isDel(v))) return { ok:false, reason:'hasVisits' };
     setClients(cs=>cs.filter(c=>c.id!==id));
     return { ok:true };
   };
@@ -6058,7 +6117,7 @@ const App = () => {
             onHardDeleteVisit={hardDeleteVisit} onHardDeleteExpense={hardDeleteExpense}/>)}
 
       {tab==='clients' && <ClientsScreen operator={operator} clients={clients} visits={visits} staff={staff} settings={settings} zmap={zmap}
-        onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null} onUpdateClient={updateClient}
+        onUpdateNote={updateVisitNote} onDeleteClient={isMaster?deleteClient:null} onUpdateClient={updateClient} onAddClient={addClient}
         onEditVisit={editVisit} onSoftDelete={softDelete} onHardDeleteVisit={hardDeleteVisit}/>}
 
       {tab==='rep' && isMaster && <ReportsScreen sub={repSub} setSub={setRepSub} visits={visits} expenses={expenses}
