@@ -3183,7 +3183,9 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
   const [pendingImport,setPendingImport] = useState(null);
   const fileRef = useRef(null);
   const isSv = tab==='sv';
-  const list = isSv ? services : products;
+  /* 05/09 — αίτημα Ανδρέα: αλφαβητική σειρά στη λίστα Καταλόγου (υπηρεσίες + προϊόντα),
+     δεν υπήρχε κανένα sort πριν, έβγαινε με τη σειρά του Firebase. */
+  const list = [...(isSv ? services : products)].sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
 
   const blank = () => isSv
     ? { id:null, name:'', cat:SERVICE_CATS[0], price:'', dur:'', vat:vatServiceDefault, active:true }

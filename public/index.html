@@ -2796,7 +2796,7 @@ const CatalogManager = ({ services, products, onSaveService, onSaveProduct, onCl
   const [pendingImport, setPendingImport] = useState(null);
   const fileRef = useRef(null);
   const isSv = tab === "sv";
-  const list = isSv ? services : products;
+  const list = [...isSv ? services : products].sort((a, b) => (a.name || "").localeCompare(b.name || "", "el", { sensitivity: "base" }));
   const blank = () => isSv ? { id: null, name: "", cat: SERVICE_CATS[0], price: "", dur: "", vat: vatServiceDefault, active: true } : { id: null, name: "", use: "resale", price: "", vat: vatProductDefault, stock: "", low: 2, active: true };
   const startEdit = (item) => setEdit(JSON.parse(JSON.stringify(item)));
   const set = (k, v) => setEdit((e) => ({ ...e, [k]: v }));
