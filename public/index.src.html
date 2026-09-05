@@ -487,6 +487,8 @@ const STRINGS = {
   phoneOptionalPlaceholder: { el:'Τηλέφωνο (προαιρετικό)...',           en:'Phone (optional)...' },
   clientNamePlaceholder: { el:'Ονοματεπώνυμο',                          en:'Full name' },
   clientNameLabel:    { el:'Όνομα',                                     en:'Name' },
+  addLockedTitle:     { el:'Η μέρα έχει κλείσει',                        en:'Day is closed' },
+  addLockedHint:      { el:'Έχει τραβηχτεί Ζ για σήμερα — καμία νέα καταχώρηση δεν μπορεί να προστεθεί πια. Η αυριανή μέρα ξεκινάει καθαρή.', en:'Z has already been closed for today — no new entries can be added. Tomorrow starts fresh.' },
   phoneLabel:          { el:'Τηλέφωνο',                                  en:'Phone' },
   sessionNotePlaceholder: { el:'Σημείωση συνεδρίας (π.χ. βαφή 6.3 + 7.1)...', en:'Session note (e.g. color 6.3 + 7.1)...' },
   photoToggleLabel:    { el:'📷 Φωτό',                                   en:'📷 Photo' },
@@ -3395,7 +3397,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
 };
 
 /* Κύρια οθόνη καταχώρησης */
-const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onAddVisit,onAddExpense,onAddClient,onManageCatalog,go}) => {
+const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zmap,onAddVisit,onAddExpense,onAddClient,onManageCatalog,go}) => {
   /* 31/07: default attribution — ΜΟΝΟ αν ο χειριστής είναι ο ίδιος κατ.2 (STAFF, άρα σχεδόν
      σίγουρα μέσα στο serviceStaff `staff` param εδώ) δίνει default τον εαυτό του. Master ή
      Ρεσεψιόν δεν είναι εγγυημένα service-providers πια (βλ. servesClients) — default στον
@@ -3458,7 +3460,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
   }, [lines]);
 
   const saveIncome = () => {
-    if(lines.length===0) return;
+    if(zLocked || lines.length===0) return;
     let cid = clientId;
     if(!cid && cq.trim()){
       // 29/08 fix — πριν, αν πληκτρολογούσες όνομα και πατούσες Καταχώρηση χωρίς να
@@ -3481,12 +3483,28 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
   };
 
   const saveExpense = () => {
+    if(zLocked) return;
     const a = parseFloat(eAmt)||0;
     if(!(a>0)||!eCat) return;
     onAddExpense({ id:uid(), date:today(), time:nowTime(), cat:eCat, amt:a, note:eNote.trim(), enteredBy:operator.id, deleted:null, audit:[] });
     setDone(true);
     setTimeout(()=>{ setDone(false); setEAmt(''); setECat(''); setENote(''); go('reg'); },900);
   };
+
+  /* 05/09 — αίτημα Ανδρέα (πραγματικό κενό που εντόπισε): πριν, ΤΙΠΟΤΑ δεν εμπόδιζε νέα
+     καταχώρηση για μέρα που έχει ήδη κλειδώσει με Ζ. Αυτό δημιουργούσε αθόρυβα διαφορά στο
+     ήδη-δηλωμένο Ζ ποσό, αφού το ZScreen υπολογίζει sum ζωντανά από τα visits/expenses της
+     ημέρας, όχι από «παγωμένο» στιγμιότυπο τη στιγμή του κλεισίματος. Μπλοκάρισμα ρητό,
+     απόφαση Ανδρέα: μόλις κλειδώσει το Ζ, καμία νέα καταχώρηση πια για εκείνη τη μέρα. */
+  const zLocked = !!zmap[today()];
+
+  if(zLocked) return (
+    <div className="px-4 pt-16 safe-pb flex flex-col items-center text-center">
+      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{background:'#fef3c7'}}><span className="text-2xl">🔒</span></div>
+      <p className="text-lg font-black mb-1" style={{color:'var(--text)'}}>{t('addLockedTitle')}</p>
+      <p className="text-sm" style={{color:'var(--text-dim)'}}>{t('addLockedHint')}</p>
+    </div>
+  );
 
   if(done) return (
     <div className="flex flex-col items-center justify-center py-36 fade">
@@ -6172,7 +6190,7 @@ const App = () => {
           ΜΟΝΟ όπου χρειάζεται σωστή ΑΝΑΓΝΩΡΙΣΗ ονόματος ιστορικών εγγραφών (ClientsScreen/ClientCard,
           VisitDetail) — όχι για επιλογή. Πρόγραμμα/άδειες (staffmod/reqs) παραμένει staffOnly. */}
       {tab==='add' && <AddScreen operator={operator} staff={serviceStaff} services={services} products={products}
-        clients={clients} visits={visits} expenses={expenses} onAddVisit={addVisit} onAddExpense={addExpense} onAddClient={addClient}
+        clients={clients} visits={visits} expenses={expenses} zmap={zmap} onAddVisit={addVisit} onAddExpense={addExpense} onAddClient={addClient}
         onManageCatalog={()=>setCatalogOpen(true)} go={setTab}/>}
 
       {tab==='reg' && (operator.role===ROLE.STAFF
