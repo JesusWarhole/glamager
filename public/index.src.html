@@ -3603,7 +3603,10 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,onA
               </button>
             )}
             {showNew && (
-              <input type="tel" value={newPhone} onChange={e=>setNewPhone(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 mt-2 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+              /* 05/09 fix — αναφορά Ανδρέα: χωρίς autoComplete="off" σε type="tel", το iOS Safari
+                 εμφανίζει το δικό του "AutoFill Contact" toolbar πάνω από το πληκτρολόγιο και μπορεί
+                 να κολλήσει, καλύπτοντας γειτονικά πεδία (π.χ. τη σημείωση συνεδρίας). */
+              <input type="tel" autoComplete="off" value={newPhone} onChange={e=>setNewPhone(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 mt-2 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             )}
             {/* 29/08 fix — αν ο χρήστης απλά γράψει όνομα και πατήσει Καταχώρηση χωρίς να διαλέξει
                 τίποτα (ούτε πρόταση, ούτε το κουμπάκι από πάνω), το saveIncome φτιάχνει ΝΕΟ πελάτη
@@ -4007,7 +4010,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
         {editingInfo && (
           <div className="mt-3 space-y-2">
             <input type="text" value={nameDraft} onChange={e=>setNameDraft(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
-            <input type="tel" value={phoneDraft} onChange={e=>setPhoneDraft(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+            <input type="tel" autoComplete="off" value={phoneDraft} onChange={e=>setPhoneDraft(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <input type="text" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <div className="flex gap-2">
               <button onClick={()=>{const n=nameDraft.trim(); if(!n) return; onUpdateClient(client.id,{name:n,phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}}
