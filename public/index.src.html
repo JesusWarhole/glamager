@@ -596,6 +596,10 @@ const STRINGS = {
   activeStaffLabel:  { el:'Ενεργός/-ή',                                 en:'Active' },
   activeStaffHint:   { el:'Ανενεργός/-ή σημαίνει: δεν εμφανίζεται πια στο PIN ούτε σε νέες αναθέσεις — αλλά ΟΛΟ το ιστορικό (ποιος εξυπηρέτησε, πότε, τι) μένει για πάντα, μόνο το όνομα φαίνεται γκρι.', en:'Inactive means: no longer appears in PIN entry or new-work pickers — but ALL history (who served, when, what) stays forever, the name just shows greyed out.' },
   inactiveStaffBadge:{ el:'ανενεργός/-ή',                               en:'inactive' },
+  scheduleLabel:      { el:'Εβδομαδιαίο ωράριο',                        en:'Weekly schedule' },
+  scheduleHint:        { el:'Ισχύει από εδώ και πέρα, σε νέες μέρες στο ημερολόγιο — δεν αλλάζει ό,τι είναι ήδη καταχωρημένο.', en:'Applies going forward, to new calendar days — does not change what is already recorded.' },
+  workDayLabel:        { el:'Εργάσιμη',                                 en:'Working' },
+  dayOffLabel:         { el:'Ρεπό',                                     en:'Off' },
   testModeSectionLabel: { el:'Δοκιμαστική λειτουργία',                  en:'Test mode' },
   testModeToggleLabel:  { el:'Ενεργό TEST MODE',                        en:'TEST MODE active' },
   testModeToggleHint:   { el:'Εμφανίζει πορτοκαλί ταμπέλα σε ΟΛΕΣ τις οθόνες, σε όλους — ειδοποιεί ότι ό,τι καταχωρείται τώρα μπορεί να διαγραφεί.', en:'Shows an orange banner on ALL screens, for everyone — warns that anything entered now may get deleted.' },
@@ -5177,6 +5181,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
   const blank = () => ({ id:null, name:'', email:'', role:ROLE.STAFF, servesClients:true, active:true, birthday:null, hired:'', leaveTotal:20, schedule:DEF_SCHEDULE, pin:'' });
   const startEdit = p => setEdit({...p, pin:''});
   const set = (k,v) => setEdit(e=>({...e,[k]:v}));
+  const setSchedDay = (d,val) => setEdit(e=>({...e, schedule:{...(e.schedule||DEF_SCHEDULE), [d]:val}}));
   const pinOk = edit && (edit.id ? (edit.pin==='' || edit.pin.length===4) : edit.pin?.length===4);
   const canSave = edit && edit.name?.trim() && edit.email?.trim() && pinOk;
   const save = async () => {
@@ -5224,6 +5229,30 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
               <button onClick={()=>set('servesClients',!(edit.servesClients ?? edit.role===ROLE.STAFF))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.servesClients ?? edit.role===ROLE.STAFF)?'var(--accent-600)':'#d1d5db'}}>
                 <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.servesClients ?? edit.role===ROLE.STAFF)?'translateX(24px)':'none'}}/>
               </button>
+            </div>
+            {/* Εβδομαδιαίο ωράριο (08/09) — per-person recurring template, διαβάζεται από
+                getDefaultStatus/hoursForEntry (StaffCalendar). Αλλαγή εδώ ΔΕΝ αγγίζει ήδη
+                καταχωρημένες μέρες στο schedData — μόνο το default για νέες/μελλοντικές μέρες. */}
+            <div className="rounded-xl px-3 py-2.5 mb-3" style={{background:'var(--surface)'}}>
+              <p className="text-sm font-bold mb-0.5" style={{color:'var(--text)'}}>🗓️ {t('scheduleLabel')}</p>
+              <p className="text-[11px] mb-2.5" style={{color:'var(--text-dim)'}}>{t('scheduleHint')}</p>
+              <div className="space-y-1.5">
+                {[1,2,3,4,5,6,0].map(d=>{
+                  const sched = edit.schedule || DEF_SCHEDULE;
+                  const day = sched[d];
+                  return (
+                    <div key={d} className="flex items-center gap-2">
+                      <p className="text-xs font-bold w-9 flex-shrink-0" style={{color:'var(--text)'}}>{(LANG==='en'?DOW_EL_EN:DOW_EL)[d]}</p>
+                      <button onClick={()=>setSchedDay(d, day?null:{s:'10:00',e:'19:00'})} className={`chip ${day?'on':''}`}>{day?t('workDayLabel'):t('dayOffLabel')}</button>
+                      {day && (<>
+                        <input type="time" value={day.s} onChange={e=>setSchedDay(d,{...day,s:e.target.value})} className="rounded-lg px-2 py-1.5 text-xs font-bold outline-none border flex-1 min-w-0" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+                        <span className="text-xs" style={{color:'var(--text-dim)'}}>–</span>
+                        <input type="time" value={day.e} onChange={e=>setSchedDay(d,{...day,e:e.target.value})} className="rounded-lg px-2 py-1.5 text-xs font-bold outline-none border flex-1 min-w-0" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
+                      </>)}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
             {/* Ενεργός/Ανενεργός (25/08) — soft-deactivate, ΠΟΤΕ delete. Κρύβει το άτομο από
                 PIN/νέες αναθέσεις· όλο το ιστορικό μένει, απλά γκρι με ετικέτα όπου εμφανίζεται. */}
