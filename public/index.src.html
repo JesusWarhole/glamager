@@ -60,6 +60,8 @@
     @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .fade{animation:fadeIn .2s ease;}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    /* 09/09: online booking alert (βλ. BookingAlertStack) */
+    @keyframes bookingAlertPulse{0%,100%{box-shadow:0 6px 20px rgba(0,0,0,.18)}50%{box-shadow:0 6px 20px rgba(245,158,11,.55)}}
     ::-webkit-scrollbar{width:3px;}
     ::-webkit-scrollbar-thumb{background:var(--accent-100);border-radius:2px;}
     input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
@@ -1682,6 +1684,47 @@ const STATUSES = [
 const stMap = Object.fromEntries(STATUSES.map(s=>[s.id,s]));
 const stLabel = st => t(st.labelKey);
 
+/* ── 09/09: Alert ρεσεψιόν για νέα ONLINE ραντεβού από το Hair Corner booking app ──────
+   Andreas + Sofia αποφάσισαν (βλ. project docs) να μείνει το χειρόγραφο τετράδιο παράλληλα με
+   το online booking προς το παρόν, με ρίσκο διπλοκλεισίματος ανάμεσα στα δύο κανάλια. Λύση εδώ:
+   το booking app στέλνει ήδη real-time notifyTenant("new_booking", …) μέσω SSE (server.js) —
+   ανοίγουμε EventSource πάνω σε αυτό το stream και δείχνουμε ήχο+visual alert στην οθόνη που ήδη
+   κοιτάνε τα κορίτσια καθημερινά (Glamager), αντί για ξεχωριστή συσκευή. Ο ήχος είναι δύο τόνοι
+   φτιαγμένοι με WebAudio (όχι αρχείο ήχου) — bell-like "ντινγκ". Τα alerts μένουν στην οθόνη
+   (stack πάνω-δεξιά) μέχρι να πατηθεί "Το είδα ✓", και επιμένουν σε localStorage ώστε ένα
+   refresh να μην τα χάνει.
+   TODO: όταν κλειδώσει το hosting/subdomain του booking app (βλ. #booking TODO στο
+   hair-corner.html και εκκρεμές #6 στο project-status.md), ενημέρωσε το URL παρακάτω από
+   localhost στο πραγματικό https://book.haircorner.gr. ── */
+const HAIR_CORNER_BOOKING_STREAM_URL = "http://localhost:3000/api/tenants/hair-corner/admin/events";
+
+function minutesToClock(m){
+  if(m==null) return "";
+  const h = Math.floor(m/60), mm = m%60;
+  return String(h).padStart(2,"0")+":"+String(mm).padStart(2,"0");
+}
+
+function playBookingChime(){
+  try{
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if(!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const t0 = now + i*0.18;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.35, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, t0 + 0.5);
+      osc.connect(gain); gain.connect(ctx.destination);
+      osc.start(t0); osc.stop(t0 + 0.55);
+    });
+  }catch(_){ /* ήσυχη αποτυχία — ποτέ δεν μπλοκάρει το UI */ }
+}
+
 /* ── UTILITIES ── */
 const today    = () => new Date().toISOString().slice(0,10);
 const nowTime  = () => new Date().toTimeString().slice(0,5);
@@ -2150,6 +2193,37 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId, onForgotPin}) => {
 /* TEST MODE banner — καλείται σε ΟΛΑ τα top-level branches του App (login/operator picker/κύρια
    εφαρμογή) ώστε να είναι πάντα ορατό ανεξάρτητα από το πού βρίσκεται κανείς. */
 const TestBanner = () => <div className="test-banner">🧪 TEST MODE — {t('testModeBannerText')}</div>;
+
+/* 09/09: Alert stack για νέα ONLINE ραντεβού από το Hair Corner booking app (βλ. σχόλιο πάνω
+   από playBookingChime/HAIR_CORNER_BOOKING_STREAM_URL πιο πάνω στο αρχείο). Πάνω-δεξιά, πάνω
+   από όλα (z-index 80) ώστε να φαίνεται σε όποιο tab κι αν είναι ανοιχτό. Κάθε κάρτα σφύζει
+   (bookingAlertPulse) μέχρι να πατηθεί «Το είδα ✓» — στόχος να το προσέξει όποιος τυχαίνει να
+   είναι στον πάγκο, όχι μόνο συγκεκριμένο άτομο. */
+const BookingAlertStack = ({alerts, onDismiss}) => {
+  if(!alerts || !alerts.length) return null;
+  return (
+    <div style={{position:'fixed', top:12, right:12, zIndex:80, display:'flex', flexDirection:'column', gap:8, maxWidth:320, width:'calc(100% - 24px)'}}>
+      {alerts.map(a => (
+        <div key={a.id} style={{
+          background:'var(--surface)', color:'var(--text)', border:'2px solid #f59e0b',
+          borderRadius:12, padding:'10px 12px', animation:'bookingAlertPulse 1.4s ease-in-out infinite'
+        }}>
+          <div style={{display:'flex', alignItems:'center', gap:6, fontWeight:700, fontSize:13, color:'#f59e0b'}}>
+            🔔 Νέο online ραντεβού
+          </div>
+          <div style={{fontSize:13, marginTop:4, lineHeight:1.4, color:'var(--text)'}}>
+            <b>{a.name || 'Πελάτης'}</b>{a.phone ? ' · '+a.phone : ''}<br/>
+            {a.svc || ''}{a.date ? ' · '+a.date : ''}{a.start!=null ? ' · '+minutesToClock(a.start) : ''}
+          </div>
+          <button onClick={()=>onDismiss(a.id)} style={{
+            marginTop:8, width:'100%', padding:'6px 0', borderRadius:8, border:'none',
+            background:'#f59e0b', color:'#fff', fontWeight:700, fontSize:12.5, cursor:'pointer'
+          }}>Το είδα ✓ — γράφτηκε στο τετράδιο</button>
+        </div>
+      ))}
+    </div>
+  );
+};
 
 const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}) => (
   <div className="hdr fixed top-0 z-40" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
@@ -5675,6 +5749,16 @@ const App = () => {
   const [showSettings,setShowSettings] = useState(false);
   const lockTimer = useRef(null);
 
+  /* 09/09: booking alerts state — βλ. BookingAlertStack + σχόλιο πάνω από playBookingChime.
+     localStorage best-effort ώστε ένα refresh να μη χάνει alerts που δεν έχουν επιβεβαιωθεί. */
+  const [bookingAlerts, setBookingAlerts] = useState(()=>{
+    try{ return JSON.parse(localStorage.getItem("gl_bookingAlerts")||"[]"); }catch(_){ return []; }
+  });
+  useEffect(()=>{
+    try{ localStorage.setItem("gl_bookingAlerts", JSON.stringify(bookingAlerts)); }catch(_){}
+  },[bookingAlerts]);
+  const dismissBookingAlert = (id) => setBookingAlerts(list => list.filter(a=>a.id!==id));
+
   /* ── Firebase Auth: ΔΥΟ ξεχωριστά επίπεδα ταυτότητας, ΕΠΙΤΗΔΕΣ διαφορετικά:
      1) fbUser — το πραγματικό Firebase session (email/password). Γίνεται ΜΙΑ φορά ανά συσκευή
         και ΜΕΝΕΙ συνδεδεμένο επ' αόριστον (το Firebase το θυμάται μόνο του) — ΔΕΝ κάνει signOut
@@ -5740,6 +5824,28 @@ const App = () => {
   const authed = authReady && !!fbUser;
   const dataReady = authed && claimsReady && !!tenantId;
   const tPath = p => tenantId ? `tenants/${tenantId}/${p}` : null;
+
+  /* 09/09: EventSource στο SSE stream του Hair Corner booking app — βλ. εκτενές σχόλιο πάνω
+     από τη σταθερά HAIR_CORNER_BOOKING_STREAM_URL. Ανοίγει μόλις υπάρχει authed session (δεν
+     χρειάζεται operator picked, ώστε να πιάνει alerts ακόμα κι αν η οθόνη είναι σε lock/PIN
+     screen). Ο browser κάνει auto-reconnect μόνος του σε αποσύνδεση (native EventSource
+     behavior) — δεν χρειάζεται δικός μας retry-loop. Tenant-agnostic ΕΠΙΤΗΔΕΣ: αν αργότερα
+     αποκτήσει booking app κι άλλο μαγαζί, αρκεί το URL να γίνει per-tenant setting. */
+  useEffect(()=>{
+    if(!authed) return;
+    let es;
+    try{
+      es = new EventSource(HAIR_CORNER_BOOKING_STREAM_URL);
+      es.onmessage = (evt) => {
+        let data; try{ data = JSON.parse(evt.data); }catch(_){ return; }
+        if(data.type !== "new_booking") return;
+        setBookingAlerts(list => list.some(a=>a.bookingId===data.bookingId) ? list : [...list, {...data, id: uid(), receivedAt: Date.now()}]);
+        playBookingChime();
+      };
+    }catch(_){ /* π.χ. localhost μη διαθέσιμο ακόμα — σιωπηλή αποτυχία, δεν μπλοκάρει το app */ }
+    return () => { try{ es && es.close(); }catch(_){} };
+  },[authed]);
+
   const [pins,setPins] = useFirebaseState(tPath('pins'), DEFAULT_PINS, dataReady);
   const [staff,setStaff] = useFirebaseState(tPath('staff'), DEFAULT_STAFF, dataReady);
   /* staffOnly: Ρεσεψιόν+Προσωπικό χωρίς Masters — χρησιμοποιείται ΜΟΝΟ πλέον για πρόγραμμα/άδειες
@@ -6184,15 +6290,16 @@ const App = () => {
     return (
       <div className="min-h-screen hero flex items-center justify-center">
         {settings.testMode && <TestBanner/>}
+        <BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/>
         <p className="text-white/80 text-sm font-semibold">{t('loadingApp')}</p>
       </div>
     );
   }
   if(!tenantId){
-    return <React.Fragment>{settings.testMode && <TestBanner/>}<NoTenantScreen onSignOut={fullSignOut}/></React.Fragment>;
+    return <React.Fragment>{settings.testMode && <TestBanner/>}<BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/><NoTenantScreen onSignOut={fullSignOut}/></React.Fragment>;
   }
   if(!operator){
-    return <React.Fragment>{settings.testMode && <TestBanner/>}<OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
+    return <React.Fragment>{settings.testMode && <TestBanner/>}<BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/><OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
       myId={authAccounts[(fbUser.email||'').toLowerCase()]?.id} onForgotPin={resetForgottenPin}/></React.Fragment>;
   }
 
@@ -6204,6 +6311,7 @@ const App = () => {
 
   return (
     <div style={{minHeight:'100dvh',background:'var(--bg)'}}>
+      <BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/>
       <Header title={titles[tab]} sub={settings.shopName} operator={operator} testMode={settings.testMode}
         onSettings={()=>setShowSettings(true)}
         onLock={lockNow}

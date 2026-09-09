@@ -59,6 +59,8 @@
     @keyframes pop{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
     .fade{animation:fadeIn .2s ease;}
     @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+    /* 09/09: online booking alert (βλ. BookingAlertStack) */
+    @keyframes bookingAlertPulse{0%,100%{box-shadow:0 6px 20px rgba(0,0,0,.18)}50%{box-shadow:0 6px 20px rgba(245,158,11,.55)}}
     ::-webkit-scrollbar{width:3px;}
     ::-webkit-scrollbar-thumb{background:var(--accent-100);border-radius:2px;}
     input[type=number]::-webkit-inner-spin-button{-webkit-appearance:none;}
@@ -1962,6 +1964,35 @@ const STATUSES = [
 ];
 const stMap = Object.fromEntries(STATUSES.map((s) => [s.id, s]));
 const stLabel = (st) => t(st.labelKey);
+const HAIR_CORNER_BOOKING_STREAM_URL = "http://localhost:3000/api/tenants/hair-corner/admin/events";
+function minutesToClock(m) {
+  if (m == null) return "";
+  const h = Math.floor(m / 60), mm = m % 60;
+  return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0");
+}
+function playBookingChime() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const now = ctx.currentTime;
+    [880, 1320].forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = "sine";
+      osc.frequency.value = freq;
+      const t0 = now + i * 0.18;
+      gain.gain.setValueAtTime(0, t0);
+      gain.gain.linearRampToValueAtTime(0.35, t0 + 0.02);
+      gain.gain.exponentialRampToValueAtTime(1e-3, t0 + 0.5);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(t0);
+      osc.stop(t0 + 0.55);
+    });
+  } catch (_) {
+  }
+}
 const today = () => (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
 const nowTime = () => (/* @__PURE__ */ new Date()).toTimeString().slice(0, 5);
 const uid = () => "x" + Date.now() + Math.random().toString(36).slice(2, 6);
@@ -2381,6 +2412,28 @@ const OperatorPicker = ({ shopName, staff, pins, onPick, myId, onForgotPin }) =>
   return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-10" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 64 }), /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-black text-white mt-4" }, who.name), /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-xs mt-1" }, roleLabel(who.role))), /* @__PURE__ */ React.createElement("div", { className: `flex gap-5 mb-10 ${shk ? "shake" : ""}` }, [0, 1, 2, 3].map((i) => /* @__PURE__ */ React.createElement("div", { key: i, className: `pin-dot ${pin.length > i ? err ? "err" : "on" : ""}` }))), /* @__PURE__ */ React.createElement(DigitPad, { onDigit: press, onErase: () => setPin((p) => p.slice(0, -1)) }), err && /* @__PURE__ */ React.createElement("p", { className: "text-red-200 text-sm mt-6 fade" }, t("wrongCode")), who.id === myId && !err && /* @__PURE__ */ React.createElement("button", { onClick: startForgot, className: "text-white/60 text-xs font-semibold mt-6 underline" }, t("forgotPinLink")), /* @__PURE__ */ React.createElement("button", { onClick: backToPicker, className: "text-white/60 text-xs font-semibold mt-3 underline" }, t("backBtn")));
 };
 const TestBanner = () => /* @__PURE__ */ React.createElement("div", { className: "test-banner" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText"));
+const BookingAlertStack = ({ alerts, onDismiss }) => {
+  if (!alerts || !alerts.length) return null;
+  return /* @__PURE__ */ React.createElement("div", { style: { position: "fixed", top: 12, right: 12, zIndex: 80, display: "flex", flexDirection: "column", gap: 8, maxWidth: 320, width: "calc(100% - 24px)" } }, alerts.map((a) => /* @__PURE__ */ React.createElement("div", { key: a.id, style: {
+    background: "var(--surface)",
+    color: "var(--text)",
+    border: "2px solid #f59e0b",
+    borderRadius: 12,
+    padding: "10px 12px",
+    animation: "bookingAlertPulse 1.4s ease-in-out infinite"
+  } }, /* @__PURE__ */ React.createElement("div", { style: { display: "flex", alignItems: "center", gap: 6, fontWeight: 700, fontSize: 13, color: "#f59e0b" } }, "\u{1F514} \u039D\u03AD\u03BF online \u03C1\u03B1\u03BD\u03C4\u03B5\u03B2\u03BF\u03CD"), /* @__PURE__ */ React.createElement("div", { style: { fontSize: 13, marginTop: 4, lineHeight: 1.4, color: "var(--text)" } }, /* @__PURE__ */ React.createElement("b", null, a.name || "\u03A0\u03B5\u03BB\u03AC\u03C4\u03B7\u03C2"), a.phone ? " \xB7 " + a.phone : "", /* @__PURE__ */ React.createElement("br", null), a.svc || "", a.date ? " \xB7 " + a.date : "", a.start != null ? " \xB7 " + minutesToClock(a.start) : ""), /* @__PURE__ */ React.createElement("button", { onClick: () => onDismiss(a.id), style: {
+    marginTop: 8,
+    width: "100%",
+    padding: "6px 0",
+    borderRadius: 8,
+    border: "none",
+    background: "#f59e0b",
+    color: "#fff",
+    fontWeight: 700,
+    fontSize: 12.5,
+    cursor: "pointer"
+  } }, "\u03A4\u03BF \u03B5\u03AF\u03B4\u03B1 \u2713 \u2014 \u03B3\u03C1\u03AC\u03C6\u03C4\u03B7\u03BA\u03B5 \u03C3\u03C4\u03BF \u03C4\u03B5\u03C4\u03C1\u03AC\u03B4\u03B9\u03BF"))));
+};
 const Header = ({ title, sub, operator, onSettings, onClients, onBack, onLock, testMode }) => /* @__PURE__ */ React.createElement("div", { className: "hdr fixed top-0 z-40", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640 } }, testMode && /* @__PURE__ */ React.createElement("div", { className: "test-banner-inline" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText")), /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-11 pb-4 flex items-center gap-3" }, onBack ? /* @__PURE__ */ React.createElement("button", { onClick: onBack, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 18, c: "white" })) : /* @__PURE__ */ React.createElement(BrandMark, { s: 36 }), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("h1", { className: "text-base font-black text-white truncate" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-xs mt-0.5 truncate" }, sub)), operator && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1 flex-shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-white text-xs font-bold" }, operator.name)), onClients && /* @__PURE__ */ React.createElement("button", { onClick: onClients, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "users", s: 18, c: "white" })), onLock && /* @__PURE__ */ React.createElement("button", { onClick: onLock, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "lock", s: 17, c: "white" })), onSettings && /* @__PURE__ */ React.createElement("button", { onClick: onSettings, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "gear", s: 18, c: "white" }))));
 const Nav = ({ active, go, operator, pendingCount }) => {
   const isMaster = operator.role === ROLE.MASTER;
@@ -4127,6 +4180,20 @@ const App = () => {
   const [repSub, setRepSub] = useState("fin");
   const [showSettings, setShowSettings] = useState(false);
   const lockTimer = useRef(null);
+  const [bookingAlerts, setBookingAlerts] = useState(() => {
+    try {
+      return JSON.parse(localStorage.getItem("gl_bookingAlerts") || "[]");
+    } catch (_) {
+      return [];
+    }
+  });
+  useEffect(() => {
+    try {
+      localStorage.setItem("gl_bookingAlerts", JSON.stringify(bookingAlerts));
+    } catch (_) {
+    }
+  }, [bookingAlerts]);
+  const dismissBookingAlert = (id) => setBookingAlerts((list) => list.filter((a) => a.id !== id));
   const [fbUser, setFbUser] = useState(null);
   const [authReady, setAuthReady] = useState(false);
   const [authBusy, setAuthBusy] = useState(false);
@@ -4167,6 +4234,31 @@ const App = () => {
   const authed = authReady && !!fbUser;
   const dataReady = authed && claimsReady && !!tenantId;
   const tPath = (p) => tenantId ? `tenants/${tenantId}/${p}` : null;
+  useEffect(() => {
+    if (!authed) return;
+    let es;
+    try {
+      es = new EventSource(HAIR_CORNER_BOOKING_STREAM_URL);
+      es.onmessage = (evt) => {
+        let data;
+        try {
+          data = JSON.parse(evt.data);
+        } catch (_) {
+          return;
+        }
+        if (data.type !== "new_booking") return;
+        setBookingAlerts((list) => list.some((a) => a.bookingId === data.bookingId) ? list : [...list, { ...data, id: uid(), receivedAt: Date.now() }]);
+        playBookingChime();
+      };
+    } catch (_) {
+    }
+    return () => {
+      try {
+        es && es.close();
+      } catch (_) {
+      }
+    };
+  }, [authed]);
   const [pins, setPins] = useFirebaseState(tPath("pins"), DEFAULT_PINS, dataReady);
   const [staff, setStaff] = useFirebaseState(tPath("staff"), DEFAULT_STAFF, dataReady);
   const staffOnly = useMemo(() => staff.filter((s) => s.role !== ROLE.MASTER), [staff]);
@@ -4489,13 +4581,13 @@ const App = () => {
     return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(LoginScreen, { shopName: settings.shopName, busy: authBusy, err: authErr, onLogin: doLogin }));
   }
   if (!claimsReady) {
-    return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex items-center justify-center" }, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-sm font-semibold" }, t("loadingApp")));
+    return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex items-center justify-center" }, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-sm font-semibold" }, t("loadingApp")));
   }
   if (!tenantId) {
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(NoTenantScreen, { onSignOut: fullSignOut }));
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement(NoTenantScreen, { onSignOut: fullSignOut }));
   }
   if (!operator) {
-    return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(
+    return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement(
       OperatorPicker,
       {
         shopName: settings.shopName,
@@ -4511,7 +4603,7 @@ const App = () => {
   const pendingCount = leaveReqs.filter((r) => r.status === "pending").length;
   const titles = { home: "Glamager", add: t("titleAdd"), reg: t("navRegister"), rep: t("navReports"), clients: t("navClients"), z: t("titleZ") };
   const selVisitLive = selVisit ? visits.find((x) => x.id === selVisit.id) : null;
-  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100dvh", background: "var(--bg)" } }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { style: { minHeight: "100dvh", background: "var(--bg)" } }, /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement(
     Header,
     {
       title: titles[tab],
