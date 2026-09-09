@@ -714,6 +714,9 @@ const STRINGS = {
   perHourSuffixLabel: { el:'/ώρα',                                        en:'/hr' },
   resaleInlineLabel:  { el:'μεταπωλήσεις',                                en:'resale' },
   noLinesInPeriodLabel: { el:'Καμία γραμμή στην περίοδο',                 en:'No lines in this period' },
+  occupancyLabel:      { el:'Βαθμός απασχόλησης',                        en:'Occupancy rate' },
+  ofShiftLabel:        { el:'βάρδιας',                                    en:'shift' },
+  noScheduleDataLabel: { el:'Δεν υπάρχει καταγεγραμμένο πρόγραμμα βάρδιας γι\' αυτή την περίοδο', en:'No shift schedule recorded for this period' },
   exportLedgerTitleAttr: { el:'Export CSV για λογιστή',                   en:'Export CSV for accountant' },
   discountsLabel:     { el:'Εκπτώσεις',                                   en:'Discounts' },
   vatEstimateUpperBoundLabel: { el:'ΦΠΑ — εκτίμηση (upper bound)',        en:'VAT — estimate (upper bound)' },
@@ -4638,7 +4641,7 @@ const KudosManager = ({kudos,staff,onDelete}) => {
    Κινήσεις/αποδοτικότητα ανά Ημέρα/Εβδομάδα/Μήνα: ώρες παραγωγικής
    δουλειάς, τζίρος, €/ώρα (δείκτης ισονομίας), μείγμα υπηρεσιών,
    μεταπωλήσεις χωριστά, tips. Tap σε υπάλληλο → όλες οι γραμμές του. */
-const PerfReports = ({visits,staff,clients}) => {
+const PerfReports = ({visits,staff,clients,schedData}) => {
   const [period,setPeriod] = useState('day');
   const [anchor,setAnchor] = useState(today());
   const [open,setOpen] = useState(null); // staffId drill-down
@@ -4667,6 +4670,29 @@ const PerfReports = ({visits,staff,clients}) => {
 
   const mixOf = id => { const m={}; act.forEach(v=>v.lines.forEach(l=>{ if(l.staffId===id&&l.kind!=='product') m[l.name]=(m[l.name]||0)+1; })); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3); };
   const linesOf = id => { const out=[]; [...act].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).forEach(v=>v.lines.forEach((l,i)=>{ if(l.staffId===id) out.push({v,l,key:v.id+'-'+i}); })); return out; };
+
+  /* Βαθμός απασχόλησης (κρυφός δείκτης, Master-only, tap-to-expand — απόφαση Ανδρέα 09/09):
+     παραγωγικές ώρες ÷ προγραμματισμένες ώρες βάρδιας στην περίοδο, από το SalonStaff
+     schedData. Το staffOnly προσωπικό έχει δικό του καταχωρημένο schedule εκεί· οι Masters
+     (π.χ. η Σοφία) δεν έχουν προσωπικό schedule σε αυτό το σύστημα — θεωρούνται full-time
+     στο μαγαζί, οπότε μετρώνται πάνω στο πλήρες ημερήσιο ωράριο λειτουργίας (DEF_SCHEDULE,
+     ίδιο fallback που ήδη χρησιμοποιεί το hoursForEntry/getDefaultStatus παντού αλλού —
+     απόφαση Ανδρέα 09/09, 2ος γύρος). Επιστρέφει null μόνο αν λείπει το ίδιο το schedData
+     ή ο υπάλληλος δεν βρέθηκε καθόλου. */
+  const occupancyOf = st => {
+    const emp = staff.find(x=>x.id===st.id);
+    if(!emp || !schedData) return null;
+    let sched=0, d=s;
+    while(d<=e){
+      const [yy,mm,dd]=d.split('-');
+      const raw=schedData[yy]?.[mm]?.[emp.id]?.[dd];
+      const entry=raw||getDefaultStatus(d,emp);
+      sched+=hoursForEntry(entry,emp,d);
+      d=addDays(d,1);
+    }
+    if(sched<=0) return null;
+    return { scheduled:sched, pct:(st.hours/sched)*100 };
+  };
 
   return (
     <div>
@@ -4717,6 +4743,20 @@ const PerfReports = ({visits,staff,clients}) => {
               </button>
               {isOpen && (
                 <div className="px-3 pb-3 space-y-1.5" style={{borderTop:'1px solid var(--border)',paddingTop:10}}>
+                  {(() => {
+                    const occ = occupancyOf(st);
+                    return (
+                      <div className="rounded-xl px-3 py-2.5 mb-1" style={{background:'var(--soft)'}}>
+                        <p className="text-[10px] font-black uppercase tracking-wider mb-1" style={{color:'var(--text-dim)'}}>{t('occupancyLabel')}</p>
+                        {occ
+                          ? <div className="flex items-center justify-between">
+                              <span className="text-xs" style={{color:'var(--text-dim)'}}>{st.hours.toFixed(1)}{t('hourAbbrev')} {t('productiveLabel')} / {occ.scheduled.toFixed(1)}{t('hourAbbrev')} {t('ofShiftLabel')}</span>
+                              <span className="text-sm font-black" style={{color: occ.pct>=85?'#059669':occ.pct<=50?'#dc2626':'var(--text-dim)'}}>{occ.pct.toFixed(0)}%</span>
+                            </div>
+                          : <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('noScheduleDataLabel')}</p>}
+                      </div>
+                    );
+                  })()}
                   {linesOf(st.id).map(r=>(
                     <div key={r.key} className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
                       <div className="flex-1 min-w-0">
@@ -4967,7 +5007,7 @@ const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,sched
       {/* fin/perf: ΠΛΗΡΕΣ staff (ο Master μπαίνει στο €/ώρα benchmark + CSV λογιστή αν σέρβιρε).
           staffmod/reqs: staffOnly (δεν έχει δικό του πρόγραμμα βάρδιας ο Master, βλ. σημείωση App). */}
       {sub==='fin' && <FinReports visits={visits} expenses={expenses} staff={staff} clients={clients}/>}
-      {sub==='perf' && <PerfReports visits={visits} staff={staff} clients={clients}/>}
+      {sub==='perf' && <PerfReports visits={visits} staff={staff} clients={clients} schedData={schedData}/>}
       {sub==='staffmod' && <MasterStaffModule staff={staffOnly} schedData={schedData} onSaveDay={onSaveDay}/>}
       {sub==='reqs' && (<React.Fragment>
         <LeaveRequests leaveReqs={leaveReqs} staff={staffOnly} onApprove={onApprove} onDecline={onDecline} onDelete={onDeleteLeaveReq}/>
