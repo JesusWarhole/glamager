@@ -8,3 +8,6 @@ firebase-key.json
 .DS_Store
 *.log
 node_modules/
+
+# Ποτέ ολόκληρα zip backups/exports του project στο repo (μπορεί να περιέχουν credentials)
+*.zip
