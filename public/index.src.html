@@ -3148,7 +3148,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
         )}
         <div className="card p-3 flex gap-2 items-center">
           <input type="text" value={freeName} onChange={e=>setFreeName(e.target.value)} placeholder={t('namePlaceholder')} className="flex-1 min-w-0 text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
-          <input type="number" value={freePrice} onChange={e=>setFreePrice(e.target.value)} placeholder="€" inputMode="decimal" className="w-20 text-sm font-bold outline-none bg-transparent text-right amt" style={{color:'var(--text)'}}/>
+          <input type="text" value={freePrice} onChange={e=>setFreePrice(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="€" inputMode="decimal" className="w-20 text-sm font-bold outline-none bg-transparent text-right amt" style={{color:'var(--text)'}}/>
           <button disabled={!freeName.trim()||!(parseFloat(freePrice)>0)} onClick={()=>setPending({name:freeName.trim(),price:parseFloat(freePrice),dur:0,vat:24,kind:'service',free:true})}
             className="px-3 py-2 rounded-xl text-white text-sm font-black disabled:opacity-30" style={{background:'var(--accent-600)'}}>+</button>
         </div>
@@ -3180,7 +3180,7 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
         <div className="flex items-center gap-2 mb-2">
           <div className="flex-1 flex items-baseline gap-1 rounded-xl px-4 py-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
             <span className="font-black" style={{color:'var(--text-dim)'}}>€</span>
-            <input type="number" value={price} onChange={e=>setPrice(e.target.value)} step="0.01" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-xl amt" style={{color:'var(--text)'}}/>
+            <input type="text" value={price} onChange={e=>setPrice(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-xl amt" style={{color:'var(--text)'}}/>
           </div>
           {/* Quick-convert ΦΠΑ — μόνο στο πεδίο τιμής ΕΣΟΔΩΝ (spec §3) */}
           <div className="flex flex-col gap-1">
@@ -3194,7 +3194,7 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
         <div className="flex gap-2 mb-4 items-center">
           <button onClick={()=>setDiscMode(discMode==='amt'?null:'amt')} className={`chip ${discMode==='amt'?'on':''}`}>{t('discountAmountChip')}</button>
           <button onClick={()=>setDiscMode(discMode==='pct'?null:'pct')} className={`chip ${discMode==='pct'?'on':''}`}>{t('discountPercentChip')}</button>
-          {discMode && <input type="number" value={disc} onChange={e=>setDisc(e.target.value)} placeholder={discMode==='pct'?'%':'€'} inputMode="decimal"
+          {discMode && <input type="text" value={disc} onChange={e=>setDisc(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder={discMode==='pct'?'%':'€'} inputMode="decimal"
             className="w-24 rounded-xl px-3 py-2 text-sm font-bold outline-none border amt" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>}
         </div>
 
@@ -3656,7 +3656,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
           <div className="flex gap-3 items-center">
             <div className="flex-1 flex items-baseline gap-1">
               <span className="text-lg font-black" style={{color:'var(--text-dim)'}}>€</span>
-              <input type="number" value={tip} onChange={e=>setTip(e.target.value)} placeholder="0,00" step="0.01" min="0" inputMode="decimal" className="text-xl font-black text-yellow-500 bg-transparent border-none outline-none w-full amt"/>
+              <input type="text" value={tip} onChange={e=>setTip(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="0,00" inputMode="decimal" className="text-xl font-black text-yellow-500 bg-transparent border-none outline-none w-full amt"/>
             </div>
             {tp>0 && <div className="flex gap-1">
               {[['cash',t('cashAbbrev')],['pos','POS']].map(([v,l])=>(
@@ -3760,7 +3760,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
           <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--text-dim)'}}>{t('expenseAmountLabel')}</p>
           <div className="flex items-baseline gap-2">
             <span className="text-3xl font-black" style={{color:'var(--text-dim)'}}>€</span>
-            <input type="number" value={eAmt} onChange={e=>setEAmt(e.target.value)} placeholder="0,00" step="0.01" min="0" inputMode="decimal" className="bg-transparent border-none outline-none w-full font-black amt" style={{fontSize:'2.2rem',color:'var(--text)'}}/>
+            <input type="text" value={eAmt} onChange={e=>setEAmt(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="0,00" inputMode="decimal" className="bg-transparent border-none outline-none w-full font-black amt" style={{fontSize:'2.2rem',color:'var(--text)'}}/>
           </div>
         </div>
         <div className="card p-4 mb-3">
@@ -5080,7 +5080,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
               <p className="text-xs font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('cashRegisterZLabel')}</p>
               <div className="flex items-center gap-2 rounded-xl px-4 py-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
                 <span className="font-bold" style={{color:'var(--text-dim)'}}>€</span>
-                <input type="number" value={cashZ} onChange={e=>setCashZ(e.target.value)} placeholder="0,00" step="0.01" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-lg amt" style={{color:'var(--text)'}}/>
+                <input type="text" value={cashZ} onChange={e=>setCashZ(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="0,00" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-lg amt" style={{color:'var(--text)'}}/>
                 <DiffBadge val={cashDiff}/>
               </div>
             </div>
@@ -5088,7 +5088,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
               <p className="text-xs font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('posTerminalZLabel')}</p>
               <div className="flex items-center gap-2 rounded-xl px-4 py-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
                 <span className="font-bold" style={{color:'var(--text-dim)'}}>€</span>
-                <input type="number" value={posZ} onChange={e=>setPosZ(e.target.value)} placeholder="0,00" step="0.01" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-lg amt" style={{color:'var(--text)'}}/>
+                <input type="text" value={posZ} onChange={e=>setPosZ(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="0,00" inputMode="decimal" className="flex-1 bg-transparent outline-none font-black text-lg amt" style={{color:'var(--text)'}}/>
                 <DiffBadge val={posDiff}/>
               </div>
             </div>
