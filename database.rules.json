@@ -31,8 +31,8 @@
         "leaveReqs":    { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
 
         "pushTokens": {
-          ".read": "auth != null && auth.token.tenantId === $tenantId",
-          ".write": "auth != null && auth.token.tenantId === $tenantId"
+          ".read": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'",
+          ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"
         },
 
         "pins": {
