@@ -4,6 +4,10 @@ firebase-key.json
 # Firebase CLI local cache/state — δεν χρειάζεται στο repo
 .firebase/
 
+# Cloud Functions local env (PUSH_TRIGGER_TOKEN κ.ά.) — φορτώνεται αυτόματα από
+# firebase-functions v2 σε deploy/emulator, ποτέ στο git
+functions/.env
+
 # Λοιπά τυπικά
 .DS_Store
 *.log

@@ -21,6 +21,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
@@ -168,6 +169,13 @@ firebase.initializeApp(firebaseConfig);
 const fbAuth = firebase.auth();
 const fbDb = firebase.database();
 const fbFunctions = firebase.app().functions('europe-west1'); // ίδιο region με τη Cloud Function (functions/index.js)
+
+/* 11/09: Web Push (FCM) VAPID key — δημιουργείται ΜΙΑ φορά στο Firebase Console
+   → Project Settings → Cloud Messaging → Web configuration → Web Push certificates
+   → "Generate key pair". ΧΕΙΡΟΚΙΝΗΤΟ βήμα, δεν μπορεί να γίνει από κώδικα.
+   ΧΩΡΙΣ αυτό, registerPushToken() θα αποτυγχάνει σιωπηλά (βλ. εκεί). */
+const FCM_VAPID_KEY = "BFUEAUKNk3kIN-y4HdvslOlNMznhA5QqY-fmD9iyoKWsmQtD19gKn69sQEPh0ltYDFIiNdwqUNItm0_oAVJjJSY";
+const fbMessaging = firebase.messaging.isSupported() ? firebase.messaging() : null;
 
 /* ── Multi-tenant θεμέλιο (27/08/2026, Phase 2) ─────────────────────────────
    Όλα τα δεδομένα ζουν κάτω από /tenants/{tenantId}/...
@@ -615,6 +623,11 @@ const STRINGS = {
   syncClaimsHint:       { el:'Πάτα το μετά από κάθε πρόσληψη, αλλαγή ρόλου ή αποχώρηση προσωπικού — ενημερώνει τα δικαιώματα πρόσβασης ώστε να ταιριάζουν με το τι λέει η λίστα Προσωπικού. Δεν αγγίζει email/κωδικό/PIN κανενός.', en:'Tap this after any hire, role change, or departure — updates access permissions to match what the Staff list says. Does not touch anyone\'s email/password/PIN.' },
   syncClaimsBtn:        { el:'Συγχρονισμός τώρα',                        en:'Sync now' },
   syncClaimsBusyBtn:    { el:'Συγχρονισμός…',                            en:'Syncing…' },
+  pushTitle:            { el:'Ειδοποιήσεις κρατήσεων (push)',            en:'Booking notifications (push)' },
+  pushHint:             { el:'Ενεργοποίησε το σε ΑΥΤΗ τη συσκευή για να λαμβάνεις ειδοποίηση για νέα online ραντεβού ακόμα κι όταν το κινητό είναι κλειδωμένο. Μία φορά ανά συσκευή — ο browser θα ζητήσει άδεια.', en:'Turn this on on THIS device to get notified about new online bookings even while the phone is locked. Once per device — the browser will ask for permission.' },
+  pushBtn:              { el:'Ενεργοποίησε ειδοποιήσεις',                en:'Enable notifications' },
+  pushBusyBtn:          { el:'Ενεργοποίηση…',                            en:'Enabling…' },
+  pushOkMsg:            { el:'Ενεργό σε αυτή τη συσκευή.',               en:'Enabled on this device.' },
   testModeBannerText:   { el:'ό,τι καταχωρείς μπορεί να διαγραφεί',     en:'whatever you enter may get deleted' },
   resetPreLaunchTitle:  { el:'⚠️ Επαναφορά πριν την έναρξη',            en:'⚠️ Reset before launch' },
   resetPreLaunchHint:   { el:'Σβήνει ΟΡΙΣΤΙΚΑ όλες τις επισκέψεις, έξοδα, πελάτες, αιτήματα αδειών, kudos και κλειδώματα Ζ — ό,τι δοκιμαστικό έχει μπει μέχρι τώρα. ΔΕΝ αγγίζει προσωπικό, κατάλογο, ρυθμίσεις μαγαζιού, ή πρόγραμμα βαρδιών/αδειών. Μη αναστρέψιμο.', en:'PERMANENTLY deletes all visits, expenses, clients, leave requests, kudos and Z-locks — any test data entered so far. Does NOT touch staff, catalog, shop settings, or the shift/leave schedule. Irreversible.' },
@@ -5514,7 +5527,7 @@ const PinChangeCard = ({onChangePin}) => {
   );
 };
 
-const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch, onClearTestEntries, onSyncClaims}) => {
+const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, updateSettings, staff, isMaster, onOpenCatalog, onOpenExpCats, onOpenFixedExp, onOpenTemplates, onOpenStaffManager, onChangePassword, onChangePin, deviceEmail, onFullSignOut, onWipeDemoData, onResetPreLaunch, onClearTestEntries, onSyncClaims, onRegisterPush}) => {
   const [wiped,setWiped] = useState(false);
   const [wiping,setWiping] = useState(false);
   const [resetConfirmText,setResetConfirmText] = useState('');
@@ -5523,6 +5536,8 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
   const [clearingTest,setClearingTest] = useState(false);
   const [syncBusy,setSyncBusy] = useState(false);
   const [syncResult,setSyncResult] = useState(null);
+  const [pushBusy,setPushBusy] = useState(false);
+  const [pushResult,setPushResult] = useState(null);
   const set = async (k,v) => {
     try{ await updateSettings({[k]:v}); }
     catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
@@ -5723,6 +5738,34 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 </React.Fragment>
               )}
             </div>
+          )}
+        </div>
+      </React.Fragment>)}
+
+      {isMaster && onRegisterPush && (<React.Fragment>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('pushTitle')}</p>
+        <div className="rounded-xl px-3 py-3 mb-1" style={{background:'var(--soft)'}}>
+          <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pushHint')}</p>
+          <button onClick={async ()=>{
+              if(pushBusy) return;
+              setPushBusy(true); setPushResult(null);
+              try{
+                await onRegisterPush();
+                setPushResult({ok:true});
+              }catch(err){
+                setPushResult({ok:false, error:(err&&(err.message||err.code))||String(err)});
+              }finally{
+                setPushBusy(false);
+              }
+            }}
+            disabled={pushBusy}
+            className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
+            {pushBusy ? t('pushBusyBtn') : t('pushBtn')}
+          </button>
+          {pushResult && (
+            <p className="mt-3 text-[11px]" style={{color: pushResult.ok ? '#16a34a' : '#dc2626'}}>
+              {pushResult.ok ? '✅ ' + t('pushOkMsg') : '❌ ' + pushResult.error}
+            </p>
           )}
         </div>
       </React.Fragment>)}
@@ -6141,6 +6184,43 @@ const App = () => {
     return res.data;
   };
 
+  /* Real push (FCM) — 11/09. Ξεχωριστό από το SSE booking alert (βλ. σχόλιο στο
+     HAIR_CORNER_BOOKING_STREAM_URL/notifyNewBooking στο functions/index.js): αυτό
+     φτάνει ακόμα και με κλειδωμένη/κοιμισμένη συσκευή, γιατί το trigger είναι
+     server-side (booking app → Cloud Function), όχι live JS σύνδεση. Μόνο Master
+     βλέπει το κουμπί (SettingsSheet, isMaster gate) — reception/staff αρκούνται στο
+     tablet/SSE. Fail-open: κάθε αποτυχία (άρνηση άδειας, iOS εκτός standalone mode,
+     λείπει VAPID key) πετάει ένα κατανοητό μήνυμα, δεν ρίχνει την εφαρμογή.
+     Dedup by token (όχι by device) — αν κάποιος ξανακάνει register στην ίδια
+     συσκευή (π.χ. μετά από καθάρισμα δεδομένων), ενημερώνει την ίδια εγγραφή αντί
+     να διπλασιάζει. */
+  const registerPushToken = async () => {
+    if (!fbMessaging) throw new Error('Αυτός ο browser δεν υποστηρίζει push notifications.');
+    if (!tenantId) throw new Error('Άγνωστο μαγαζί ακόμα — δοκίμασε ξανά σε λίγο.');
+    if (FCM_VAPID_KEY === 'PASTE_VAPID_PUBLIC_KEY_HERE') throw new Error('Λείπει ακόμα το VAPID key στον κώδικα (βλ. σχόλιο FCM_VAPID_KEY).');
+
+    const permission = await Notification.requestPermission();
+    if (permission !== 'granted') throw new Error('Δεν δόθηκε άδεια ειδοποιήσεων στον browser.');
+
+    const reg = await navigator.serviceWorker.register('/firebase-messaging-sw.js');
+    const token = await fbMessaging.getToken({ vapidKey: FCM_VAPID_KEY, serviceWorkerRegistration: reg });
+    if (!token) throw new Error('Δεν κατάφερα να πάρω push token από τον browser.');
+
+    const isIOS = /iPhone|iPad|iPod/.test(navigator.userAgent);
+    const ref = fbDb.ref(tPath('pushTokens'));
+    const snap = await ref.once('value');
+    const existing = snap.val() || {};
+    const dupeKey = Object.keys(existing).find(k => existing[k] && existing[k].token === token);
+    const entry = {
+      token, platform: isIOS ? 'ios' : 'android', staffId: operator?.id || null,
+      label: `${operator?.name || 'Συσκευή'} — ${isIOS ? 'iPhone' : 'Android/Web'}`,
+      createdAt: Date.now(),
+    };
+    if (dupeKey) await ref.child(dupeKey).update(entry);
+    else await ref.push(entry);
+    return { ok: true };
+  };
+
   /* Κλείδωμα/αλλαγή χεριού — ΚΑΘΗΜΕΡΙΝΗ χρήση. ΔΕΝ κάνει signOut (το Firebase session μένει
      ζωντανό στο παρασκήνιο) — απλά καθαρίζει τον τοπικό operator, γυρνάει στο OperatorPicker. */
   const lockNow = useCallback(()=>{
@@ -6439,7 +6519,7 @@ const App = () => {
           onOpenTemplates={isMaster?()=>{setShowSettings(false);setTemplatePickerOpen(true);}:null}
           onOpenStaffManager={isMaster?()=>{setShowSettings(false);setStaffManagerOpen(true);}:null}
           onChangePassword={changePassword} onChangePin={changePin}
-          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch} onClearTestEntries={clearTestEntries} onSyncClaims={syncStaffClaims}/>
+          deviceEmail={fbUser?.email} onFullSignOut={fullSignOut} onWipeDemoData={wipeDemoData} onResetPreLaunch={resetPreLaunch} onClearTestEntries={clearTestEntries} onSyncClaims={syncStaffClaims} onRegisterPush={registerPushToken}/>
       )}
     </div>
   );

@@ -30,6 +30,11 @@
         "schedData":    { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
         "leaveReqs":    { ".read": "auth != null && auth.token.tenantId === $tenantId", ".write": "auth != null && auth.token.tenantId === $tenantId" },
 
+        "pushTokens": {
+          ".read": "auth != null && auth.token.tenantId === $tenantId",
+          ".write": "auth != null && auth.token.tenantId === $tenantId"
+        },
+
         "pins": {
           ".read": "auth != null && auth.token.tenantId === $tenantId",
           ".write": "auth != null && auth.token.tenantId === $tenantId && auth.token.role === 'master'"

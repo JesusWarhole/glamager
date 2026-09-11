@@ -36,7 +36,7 @@
    Master ενός ολότελα νέου μαγαζιού (αυτός δεν έχει ακόμα κανένα claim να διαβαστεί εδώ),
    αυτό παραμένει χειροκίνητο αρχικό βήμα, ίδιο μοτίβο με το αρχικό setup του Hair Corner. */
 
-const { onCall, HttpsError } = require("firebase-functions/v2/https");
+const { onCall, onRequest, HttpsError } = require("firebase-functions/v2/https");
 const { setGlobalOptions } = require("firebase-functions/v2");
 const admin = require("firebase-admin");
 
@@ -74,4 +74,66 @@ exports.syncStaffClaims = onCall(async (request) => {
   }
 
   return { ok: true, count: results.length, results };
+});
+
+/* Real push notifications (FCM) για νέα online ραντεβού — 11/09.
+   ΓΙΑΤΙ ξεχωριστά από το υπάρχον SSE/EventSource (βλ. HAIR_CORNER_BOOKING_STREAM_URL
+   στο index.src.html): το SSE ζωντανεύει ΜΟΝΟ όσο το Glamager tab είναι ανοιχτό/
+   foreground — άχρηστο σε κλειδωμένη/κοιμισμένη συσκευή. Αυτό εδώ καλείται ΑΠΕΥΘΕΙΑΣ
+   από το booking app (server.js, ξεχωριστό repo/host στο Render) στο ίδιο σημείο
+   που ήδη καλεί notifyTenant() για το SSE — server-side trigger, φτάνει ό,τι κι αν
+   κάνει η συσκευή του παραλήπτη.
+
+   Auth: ΟΧΙ Firebase Auth — ο caller είναι server-to-server (Node στο Render), όχι
+   browser client, άρα onCall δεν ταιριάζει (γι' αυτό onRequest + δικό του secret,
+   ίδιο μοτίβο με το SSE_EVENTS_TOKEN του booking app). PUSH_TRIGGER_TOKEN είναι
+   ΕΝΤΕΛΩΣ ανεξάρτητο από κάθε άλλο credential — αν διαρρεύσει, επιτρέπει ΜΟΝΟ
+   αποστολή push, καμία πρόσβαση σε δεδομένα.
+
+   Recipients: ΜΟΝΟ ό,τι υπάρχει σε tenants/{tenantId}/pushTokens. Εκεί γράφονται
+   ΜΟΝΟ όσοι πατήσουν το κουμπί "Ενεργοποίησε ειδοποιήσεις" στο Settings — ορατό
+   ΜΟΝΟ σε Master (isMaster gate, ίδιο pattern με το κουμπί του syncStaffClaims πιο
+   πάνω). Reception/staff δεν βλέπουν καν το κουμπί — τους αρκεί το tablet/SSE. */
+exports.notifyNewBooking = onRequest(async (req, res) => {
+  if (req.method !== "POST") { res.status(405).send("Method not allowed"); return; }
+
+  const expected = process.env.PUSH_TRIGGER_TOKEN;
+  const provided = req.get("x-push-token");
+  if (!expected || provided !== expected) {
+    res.status(401).json({ error: "invalid or missing token" });
+    return;
+  }
+
+  const { tenantId, name, svc, start, bookingId } = req.body || {};
+  if (!tenantId) { res.status(400).json({ error: "missing tenantId" }); return; }
+
+  const snap = await admin.database().ref(`tenants/${tenantId}/pushTokens`).once("value");
+  const entries = Object.entries(snap.val() || {}); // [[key, {token,...}], ...]
+  if (entries.length === 0) { res.json({ ok: true, sent: 0 }); return; }
+
+  const timeLabel = typeof start === "number"
+    ? String(Math.floor(start / 60)).padStart(2, "0") + ":" + String(start % 60).padStart(2, "0")
+    : "";
+
+  const result = await admin.messaging().sendEachForMulticast({
+    notification: {
+      title: "Νέο online ραντεβού",
+      body: `${name || "Πελάτης"} · ${svc || ""} · ${timeLabel}`.trim(),
+    },
+    data: { type: "new_booking", bookingId: String(bookingId || ""), tenantId },
+    tokens: entries.map(([, v]) => v.token),
+  });
+
+  // Καθάρισμα ληγμένων/άκυρων tokens (π.χ. απεγκατάσταση) ώστε η λίστα να μη
+  // γεμίζει σκουπίδια με τον καιρό — ΔΕΝ μπλοκάρει την απάντηση αν αποτύχει.
+  const staleKeys = result.responses
+    .map((r, i) => (!r.success && r.error?.code === "messaging/registration-token-not-registered" ? entries[i][0] : null))
+    .filter(Boolean);
+  if (staleKeys.length) {
+    const updates = {};
+    staleKeys.forEach((k) => { updates[k] = null; });
+    await admin.database().ref(`tenants/${tenantId}/pushTokens`).update(updates).catch(() => {});
+  }
+
+  res.json({ ok: true, sent: result.successCount, failed: result.failureCount });
 });
