@@ -165,4 +165,31 @@ Backend: Firebase Realtime Database, project **`glamager-hair-corner`**, region 
 3. Πρόσθεσε τα νέα, ξανατρέξε το ίδιο τσεκ.
 4. Ενημέρωσε τους αριθμούς εδώ στο PROJECT_STATUS.md (πόσες ερωτήσεις/entries τώρα).
 
+---
+
+## 📌 11/09/2026 — Real push notifications (FCM) για booking alerts
+
+Νέο feature που αγγίζει ΚΑΙ το Glamager ΚΑΙ το ξεχωριστό Hair Corner booking
+app repo (`C:\Users\andwa\Hair Corner`) — πλήρες αφηγηματικό log στο δικό του
+`ΑΛΛΑΓΕΣ.md` εκεί, εδώ μόνο σύνοψη για cross-reference.
+
+- Το υπάρχον SSE/live banner (booking alert μέσα στο Glamager tab) δουλεύει
+  μόνο όσο το tab είναι ανοιχτό/foreground. Προστέθηκε πραγματικό push μέσω
+  FCM που φτάνει και σε κλειδωμένο κινητό — και τα δύο συνυπάρχουν πλέον.
+- Νέα Cloud Function εδώ: `functions/index.js` → `exports.notifyNewBooking`
+  (onRequest, δικό της `PUSH_TRIGGER_TOKEN` σε `functions/.env`, gitignored).
+  Καλείται από το `server.js` του booking app όταν έρχεται νέα online κράτηση.
+- Νέο RTDB node: `tenants/{tenantId}/pushTokens` — rules master-only
+  read/write (`database.rules.json`), matched με το ήδη κλειδωμένο `isMaster`
+  gate στο UI (κουμπί "Ενεργοποίησε ειδοποιήσεις" στις Ρυθμίσεις, ορατό ΜΟΝΟ
+  σε Master, ίδιο pattern με το `onSyncClaims`).
+- Νέο service worker: `public/firebase-messaging-sw.js`.
+- Επιβεβαιωμένο live end-to-end: πραγματικό online ραντεβού από
+  book.haircorner.gr → push έφτασε σε κλειδωμένο κινητό (Ανδρέα).
+- Στην πορεία βρέθηκαν & διορθώθηκαν 4 άσχετα, προϋπάρχοντα bugs στο booking
+  app (deploy-gate/admin-gate endpoint mismatch, favicon phantom login popup,
+  blocking `bcrypt.compareSync` σε κάθε admin request, σπασμένο SSE reconnect
+  loop στο ίδιο το `admin.html`) — λεπτομέρειες στο `ΑΛΛΑΓΕΣ.md` του booking
+  app repo, όχι εδώ.
+
 Τρέχοντα μεγέθη (25/08/2026): 118 ερωτήσεις, 12 ζώδια × 3 traits (36), 145 ημερομηνίες/152 entries world days, 73 ημερομηνίες/~150 ονόματα namedays, 51 fun facts ζώων (δίγλωσσο), 51 mottos (μόνο EN, βλ. §ΝΕΑ σήμερα).
