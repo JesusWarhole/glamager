@@ -1696,10 +1696,15 @@ const stLabel = st => t(st.labelKey);
    φτιαγμένοι με WebAudio (όχι αρχείο ήχου) — bell-like "ντινγκ". Τα alerts μένουν στην οθόνη
    (stack πάνω-δεξιά) μέχρι να πατηθεί "Το είδα ✓", και επιμένουν σε localStorage ώστε ένα
    refresh να μην τα χάνει.
-   TODO: όταν κλειδώσει το hosting/subdomain του booking app (βλ. #booking TODO στο
-   hair-corner.html και εκκρεμές #6 στο project-status.md), ενημέρωσε το URL παρακάτω από
-   localhost στο πραγματικό https://book.haircorner.gr. ── */
-const HAIR_CORNER_BOOKING_STREAM_URL = "http://localhost:3000/api/tenants/hair-corner/admin/events";
+   10/09: το booking app είναι πλέον live στο πραγματικό https://book.haircorner.gr
+   (Render), URL ενημερωμένο παρακάτω. Το ?token= ΔΕΝ είναι ο κωδικός ρεσεψιόν — είναι
+   ξεχωριστό, χαμηλού-ρίσκου SSE_EVENTS_TOKEN (μόνο για read-only πρόσβαση σε αυτό το
+   event stream, τίποτα άλλο) γιατί το native browser EventSource δεν υποστηρίζει custom
+   Authorization header, άρα δεν υπάρχει άλλος τρόπος να περάσει credentials σε αυτό το
+   cross-origin request. Ίδιο trust model με το ήδη public firebaseConfig.apiKey πιο πάνω
+   στο αρχείο — ορατό στο client bundle by design, δεν προστατεύει με το να είναι κρυφό.
+   Βλ. server.js (Hair Corner repo) SSE_EVENTS_TOKEN/SSE_EVENTS_PATH για το server-side gate. ── */
+const HAIR_CORNER_BOOKING_STREAM_URL = "https://book.haircorner.gr/api/tenants/hair-corner/admin/events?token=6fdae37bdb5e8791f111de1327fd22dce7ded1e5c44aff96c007cbb63cb4da03";
 
 function minutesToClock(m){
   if(m==null) return "";

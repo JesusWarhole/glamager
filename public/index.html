@@ -1967,7 +1967,7 @@ const STATUSES = [
 ];
 const stMap = Object.fromEntries(STATUSES.map((s) => [s.id, s]));
 const stLabel = (st) => t(st.labelKey);
-const HAIR_CORNER_BOOKING_STREAM_URL = "http://localhost:3000/api/tenants/hair-corner/admin/events";
+const HAIR_CORNER_BOOKING_STREAM_URL = "https://book.haircorner.gr/api/tenants/hair-corner/admin/events?token=6fdae37bdb5e8791f111de1327fd22dce7ded1e5c44aff96c007cbb63cb4da03";
 function minutesToClock(m) {
   if (m == null) return "";
   const h = Math.floor(m / 60), mm = m % 60;
