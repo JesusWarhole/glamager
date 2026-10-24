@@ -102,6 +102,8 @@
     /* 01/08 v3: το header είναι πλέον fixed (βγήκε από το normal flow) — το περιεχόμενο από
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
+    /* 25/10 (Cleanup #17): ιεραρχία γραμμάτων — font-black (900) μόνο σε ποσά (.amt), μεγέθη ≥16px και τίτλους·
+       όλα τα υπόλοιπα font-bold (700). Κανένα κείμενο κάτω από 12px (ήταν 9–11px σε 54 σημεία + badges). */
     .hdr-spacer{padding-top:108px;}
     .hdr-btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
     /* TEST MODE (25/08 β', μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο» στην safe-area/notch
@@ -111,15 +113,15 @@
        ΠΟΤΕ δεν μετακινείται/εξαφανίζεται, μόνο μεγαλώνει/μικραίνει εσωτερικά.
        ΠΡΟΣΟΧΗ: το .test-banner ΔΕΝ είναι νεκρό — το χρησιμοποιεί το <TestBanner/> στις οθόνες ΧΩΡΙΣ Header
        (login, «Ποιος είσαι;», φόρτωση, NoTenant). Αφαιρέθηκε κατά λάθος στο Cleanup #1 και επανήλθε αυτούσιο. */
-    .test-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;z-index:70;background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
-    .test-banner-inline{background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+    .test-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;z-index:70;background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:12px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+    .test-banner-inline{background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:12px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
     html.test-mode .hdr-spacer{padding-top:135px;}
     html.test-mode .hero{padding-top:27px;box-sizing:border-box;}
     .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);}
     .amt{font-variant-numeric:tabular-nums;}
     .hero-shadow{box-shadow:0 8px 32px rgba(5,150,105,.28);}
     html.dark .hero-shadow{box-shadow:0 8px 24px rgba(0,0,0,.35);}
-    .badge{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);color:white;border-radius:6px;padding:2px 6px;letter-spacing:.5px;}
+    .badge{font-size:12px;font-weight:800;background:rgba(255,255,255,.25);color:white;border-radius:6px;padding:2px 6px;letter-spacing:.5px;}
     .swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all .15s;}
     .swatch.sel{border-color:var(--text);transform:scale(1.1);}
     .modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;display:flex;align-items:flex-end;justify-content:center;}
@@ -133,7 +135,7 @@
     /* soft delete: λεπτή κόκκινη strikethrough, ευανάγνωστο από κάτω (spec §8) */
     .soft-del{position:relative;opacity:.6;}
     .soft-del::after{content:'';position:absolute;left:10px;right:10px;top:50%;height:1.5px;background:var(--danger-2);}
-    .red-dot{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:#ef4444;color:white;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;}
+    .red-dot{position:absolute;top:-5px;right:-7px;min-width:20px;height:20px;border-radius:10px;background:#ef4444;color:white;font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;}
     .chip{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;flex-shrink:0;}
     .chip.on{background:var(--accent-600);color:white;border-color:var(--accent-600);}
     /* confetti στα γιορτινά banners — καθαρή πολυτέλεια */
@@ -651,7 +653,7 @@ const StaffNameTag = (staffList, id, fallback) => {
   const s = (staffList||[]).find(x=>x.id===id);
   if(!s) return fallback!==undefined ? fallback : '—';
   if(isActiveStaff(s)) return s.name;
-  return <React.Fragment>{s.name} <span className="text-[9px] font-bold not-italic" style={{opacity:0.65}}>({t('inactiveStaffBadge')})</span></React.Fragment>;
+  return <React.Fragment>{s.name} <span className="text-xs font-bold not-italic" style={{opacity:0.65}}>({t('inactiveStaffBadge')})</span></React.Fragment>;
 };
 const tipShareFor = (v,staffId) => {
   if(!(v.tip>0)) return 0;
@@ -844,7 +846,7 @@ const Sheet = ({onClose, title, right, headerCls='mb-3', tall=false, z, after, c
 const SaveCancel = ({onCancel, onSave, disabled=false}) => (
   <div className="flex gap-2">
     <button onClick={onCancel} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-    <button onClick={onSave} disabled={disabled} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+    <button onClick={onSave} disabled={disabled} className="flex-1 py-3 rounded-2xl font-bold text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
   </div>
 );
 
@@ -886,7 +888,7 @@ const LoginScreen = ({shopName, busy, err, onLogin}) => {
           className="card px-4 py-3 text-sm font-semibold outline-none" style={{color:'var(--text)'}}/>
         {err && <p className="text-red-200 text-sm text-center fade">{err}</p>}
         <button type="submit" disabled={busy || !email.trim() || !pw}
-          className="rounded-2xl py-3 font-black text-sm mt-2"
+          className="rounded-2xl py-3 font-bold text-sm mt-2"
           style={{background:'white',color:'var(--accent-600)', opacity:(busy||!email.trim()||!pw)?.6:1}}>
           {busy ? t('loginBusy') : t('loginBtn')}
         </button>
@@ -904,7 +906,7 @@ const NoTenantScreen = ({onSignOut}) => (
     <BrandMark s={64}/>
     <h1 className="text-2xl font-black text-white mt-5">{t('noTenantTitle')}</h1>
     <p className="text-white/70 text-sm mt-2 max-w-xs">{t('noTenantBody')}</p>
-    <button onClick={onSignOut} className="rounded-2xl py-3 px-6 font-black text-sm mt-6"
+    <button onClick={onSignOut} className="rounded-2xl py-3 px-6 font-bold text-sm mt-6"
       style={{background:'white',color:'var(--accent-600)'}}>
       {t('noTenantSignOut')}
     </button>
@@ -1123,7 +1125,7 @@ const Header = ({title,sub,operator,onSettings,onLock,testMode}) => (
       </div>
       {operator && (
         <div title={operator.name} aria-label={t('hdrOperatorAria')+' '+operator.name} role="img"
-          className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-sm font-black">
+          className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-sm font-bold">
           {(operator.name||'?').trim().charAt(0).toUpperCase()}
         </div>
       )}
@@ -1199,8 +1201,8 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
 
         {view==='info' && !pendingReq && !isPast && (
           <div className="space-y-2">
-            <button onClick={()=>setView('leave')} className="w-full py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'#0891b2'}}>🏖️ {t('leaveRequestBtn')}</button>
-            <button onClick={()=>setView('sick')} className="w-full py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>🤒 {t('sickDeclareBtn')}</button>
+            <button onClick={()=>setView('leave')} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{background:'#0891b2'}}>🏖️ {t('leaveRequestBtn')}</button>
+            <button onClick={()=>setView('sick')} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm" style={{background:'var(--danger-solid)'}}>🤒 {t('sickDeclareBtn')}</button>
             <p className="text-xs text-center pt-1" style={{color:'var(--text-dim)'}}>{t('overtimeMasterOnlyHint')}</p>
           </div>
         )}
@@ -1210,19 +1212,19 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
 
         {view==='leave' && (
           <div className="rounded-2xl p-4 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--st-leave)'}}>{t('leaveRequestFromLabel')} {fmtD(dateStr)}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--st-leave)'}}>{t('leaveRequestFromLabel')} {fmtD(dateStr)}</p>
             <p className="text-xs mb-1" style={{color:'var(--text-dim)'}}>{t('untilLabel')}</p>
             <input type="date" value={to} min={dateStr} onChange={e=>setTo(e.target.value)} className="w-full rounded-xl px-3 py-2.5 text-sm font-bold outline-none border mb-3" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <p className="text-xs font-bold mb-3" style={{color:'var(--text)'}}>{days} {days===1?t('dayCountSingular'):t('dayCountPlural')}</p>
-            <button onClick={()=>{onRequestLeave(dateStr,to);onClose();}} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'#0891b2'}}>{t('submitRequestBtn')}</button>
+            <button onClick={()=>{onRequestLeave(dateStr,to);onClose();}} className="w-full py-3 rounded-2xl font-bold text-white text-sm" style={{background:'#0891b2'}}>{t('submitRequestBtn')}</button>
           </div>
         )}
 
         {view==='sick' && (
           <div className="rounded-2xl p-4 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--danger)'}}>{t('stSick')} — {fmtD(dateStr)}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--danger)'}}>{t('stSick')} — {fmtD(dateStr)}</p>
             <input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t('sickPlaceholder')} className="w-full rounded-xl px-3 py-2.5 text-sm outline-none border mb-3" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
-            <button onClick={()=>{onSetSick(dateStr,note);onClose();}} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('saveBtn')}</button>
+            <button onClick={()=>{onSetSick(dateStr,note);onClose();}} className="w-full py-3 rounded-2xl font-bold text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('saveBtn')}</button>
             <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>{t('sickExtendHint')}</p>
           </div>
         )}
@@ -1260,7 +1262,7 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
       <div className="card px-4 py-3 mb-3">
         <div className="flex items-center justify-between mb-1.5">
           <p className="text-xs font-bold" style={{color:'var(--st-leave)'}}>🏖️ {t('leaveBalanceLabel')} {year}</p>
-          <p className="text-xs font-black" style={{color:'var(--st-leave)'}}>{leaveLeft} / {emp.leaveTotal||20} {t('dayCountPlural')}</p>
+          <p className="text-xs font-bold" style={{color:'var(--st-leave)'}}>{leaveLeft} / {emp.leaveTotal||20} {t('dayCountPlural')}</p>
         </div>
         <div className="progress-bar"><div className="progress-fill" style={{width:`${Math.min(100,(leaveUsed/(emp.leaveTotal||20))*100)}%`,background:'#0891b2'}}/></div>
       </div>
@@ -1278,7 +1280,7 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
             <div key={d} onClick={()=>setModal(dk)} className="day-cell flex items-center gap-3 px-4 py-2.5"
               style={{background:pend?'var(--st-leave-pend-bg)':st.bg, border:`1.5px solid ${pend?'var(--st-leave-bd)':st.border}`, ...(isToday?{boxShadow:'0 0 0 2px var(--accent-600)'}:{})}}>
               <div className="w-10 text-center flex-shrink-0">
-                <p className="text-[10px] font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p>
+                <p className="text-xs font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p>
                 <p className="text-lg font-black" style={{color:'var(--day-num)'}}>{d}</p>
               </div>
               <div className="text-lg flex-shrink-0">{pend?'⏳':st.emoji}</div>
@@ -1300,13 +1302,13 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
       {/* Τα αιτήματά μου */}
       {myReqs.length>0 && (
         <div className="mt-4">
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myRequestsLabel')}</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myRequestsLabel')}</p>
           <div className="space-y-2">
             {[...myReqs].sort((a,b)=>b.reqAt.localeCompare(a.reqAt)).map(r=>(
               <div key={r.id} className="card px-4 py-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>🏖️ {fmtD(r.from)} – {fmtD(r.to)}</p>
-                  <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='pending'?{background:'var(--warn-bg)',color:'var(--warn)'}:r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>
+                  <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={r.status==='pending'?{background:'var(--warn-bg)',color:'var(--warn)'}:r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>
                     {r.status==='pending'?t('reqPending'):r.status==='approved'?t('reqApproved'):t('reqDeclined')}
                   </span>
                 </div>
@@ -1347,13 +1349,13 @@ const Celebrations = ({t:dateIso,staff,visits,clients}) => {
   return (
     <div className={`rounded-2xl p-4 mb-3 border fade ${festive?'confetti-wrap':''}`} style={{background:'var(--festive-bg)',borderColor:'var(--festive-border)'}}>
       {festive && <Confetti/>}
-      {b.map(x=><p key={x.name} className="font-black text-sm" style={{color:'var(--happy-bday)'}}>🎂 {
+      {b.map(x=><p key={x.name} className="font-bold text-sm" style={{color:'var(--happy-bday)'}}>🎂 {
         x.age!=null
           ? (LANG==='en' ? `${x.name} turns ${x.age} today!` : `${x.name} σήμερα γίνεται ${x.age}!`)
           : `${t('birthdaysTodayPrefixLabel')} ${x.name}!`
       } 🎉</p>)}
-      {sc.length>0 && <p className="font-black text-sm" style={{color:'var(--happy-bday)'}}>🎈 {t('teamCelebratingPrefixLabel')} {sc.join(' & ')}{t('manyHappyReturnsSuffixLabel')}</p>}
-      {an.map(a=><p key={a.name} className="font-black text-sm" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
+      {sc.length>0 && <p className="font-bold text-sm" style={{color:'var(--happy-bday)'}}>🎈 {t('teamCelebratingPrefixLabel')} {sc.join(' & ')}{t('manyHappyReturnsSuffixLabel')}</p>}
+      {an.map(a=><p key={a.name} className="font-bold text-sm" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
       {ms.map(m=><p key={m.name} className="font-bold text-sm" style={{color:'var(--happy-nameday)'}}>🏆 {LANG==='en'?`${m.name} — visit #${m.n} today! Maybe treat them to something?`:`${m.name} — ${m.n}η επίσκεψη σήμερα! Αξίζει ένα κέρασμα;`}</p>)}
       {nd.length>0 && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🎈 {t('namedayTodayPrefixLabel')} {nd.join(', ')}</p>}
       {wd && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🌍 {t('worldDayTodayPrefixLabel')} {wd.join(' · ')}</p>}
@@ -1372,19 +1374,19 @@ const DailySpark = ({t:dateIso}) => {
   const mo = mottoOfDay(dateIso);
   return (
     <div className="rounded-2xl p-4 mb-3 border fade" style={{background:'var(--card)',borderColor:'var(--border)'}}>
-      <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('mottoOfDayLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('mottoOfDayLabel')}</p>
       <p className="text-sm font-bold mb-3" style={{color:'var(--accent-600)'}}>{mo}</p>
-      <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('questionOfDayLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('questionOfDayLabel')}</p>
       <p className="text-sm font-semibold mb-3" style={{color:'var(--text)'}}>{q}</p>
       {z && <>
-        <p className="text-[11px] font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('zodiacFunFactLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-1" style={{color:'var(--text-dim)'}}>{t('zodiacFunFactLabel')}</p>
         <p className="text-xs" style={{color:'var(--text)'}}>
           <b>{z.name}</b> ({t('zodiacSeasonLabel')} {z.range[0].split('-').reverse().join('/')}–{z.range[1].split('-').reverse().join('/')}) —
           {' '}{z.element} · {z.planet} · {z.symbol} · {z.stone} · {z.color}
         </p>
         <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>{z.trait}</p>
       </>}
-      <p className="text-[11px] font-bold uppercase tracking-wide mb-1 mt-3" style={{color:'var(--text-dim)'}}>{t('funFactLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-1 mt-3" style={{color:'var(--text-dim)'}}>{t('funFactLabel')}</p>
       <p className="text-xs" style={{color:'var(--text)'}}>{ff}</p>
     </div>
   );
@@ -1405,7 +1407,7 @@ const KudosModal = ({staff,onSend,onClose}) => {
         <button onClick={async()=>{
             try{ await onSend(who,msg.trim()); onClose(); }
             catch(err){ reportSaveError(err); }
-          }} disabled={!who} className="w-full py-3.5 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>
+          }} disabled={!who} className="w-full py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>
           {t('kudosSendBtn')}
         </button>
     </Sheet>
@@ -1444,14 +1446,14 @@ const HomeStaff = ({operator,staff,allStaff,schedData,leaveReqs,visits,clients,k
 
       {myKudos.map(k=>(
         <div key={k.id} className="rounded-2xl p-4 mb-3 border fade" style={{background:'var(--accent-50)',borderColor:'var(--accent-100)'}}>
-          <p className="text-sm font-black" style={{color:'var(--accent-600)'}}>👏 {t('kudosFrom')} {k.byName||boss?.name||'Master'}{k.date!==todayIso?` (${fmtD(k.date)})`:''}</p>
+          <p className="text-sm font-bold" style={{color:'var(--accent-600)'}}>👏 {t('kudosFrom')} {k.byName||boss?.name||'Master'}{k.date!==todayIso?` (${fmtD(k.date)})`:''}</p>
           {k.msg && <p className="text-sm mt-0.5" style={{color:'var(--text)'}}>{k.msg}</p>}
         </div>
       ))}
 
       {/* Σήμερα δουλεύουμε */}
       <div className="card px-4 py-3 mb-4">
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('whoWorksToday')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('whoWorksToday')}</p>
         <div className="flex gap-1.5 flex-wrap">
           {working.map(x=>(
             <span key={x.s.id} className="text-xs font-bold px-2.5 py-1.5 rounded-xl" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>
@@ -1534,7 +1536,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
       <div className="flex gap-2 mb-3 overflow-x-auto pb-1">
         {[[t('todayLabel'),sum.netVat],[t('vatChipWeek'),wSum.netVat],[t('vatChipMonth'),mSum.netVat],[(LANG==='en'?'Q':'Τ')+q,qSum.netVat]].map(([p,v])=>(
           <div key={p} className="card px-3 py-2 flex-shrink-0 text-center" style={{minWidth:80}}>
-            <p className="text-[10px] font-bold" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {p}</p>
+            <p className="text-xs font-bold" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {p}</p>
             <p className="text-sm font-black amt" style={{color:'var(--warn)'}}>{fmt(v)}</p>
           </div>
         ))}
@@ -1549,7 +1551,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
       {/* Υπάλληλοι σήμερα */}
       {stf.length>0 && (
         <div className="mb-3">
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('staffTodayLabel')}</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('staffTodayLabel')}</p>
           <div className="card overflow-hidden">
             {stf.map((s,i)=>(
               <div key={s.id} className="flex items-center justify-between px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
@@ -1579,7 +1581,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
 
       {/* Πρόσφατες εγγραφές */}
       <div className="flex items-center justify-between mb-2">
-        <p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--text-dim)'}}>{t('dailyEntriesLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide" style={{color:'var(--text-dim)'}}>{t('dailyEntriesLabel')}</p>
         {dV.length>0&&<button onClick={()=>go('reg')} className="text-xs font-bold" style={{color:'var(--accent-600)'}}>{t('seeAllLabel')}</button>}
       </div>
       {recent.length>0
@@ -1651,7 +1653,7 @@ const LineRow = ({v,l,clients,deleted}) => {
       </div>
       <div className="text-right flex-shrink-0">
         <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(lineTotal(l))}</p>
-        {lineDiscount(l)>0.005 && <p className="text-[10px] amt" style={{color:'#e11d48'}}>{t('discAbbrevInline')} −{fmt(lineDiscount(l))}</p>}
+        {lineDiscount(l)>0.005 && <p className="text-xs amt" style={{color:'#e11d48'}}>{t('discAbbrevInline')} −{fmt(lineDiscount(l))}</p>}
       </div>
     </div>
   );
@@ -1712,7 +1714,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
   return (
     <Sheet onClose={onClose} z={110} tall title={t('editVisitTitle')}>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('linesHeaderLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('linesHeaderLabel')}</p>
         <div className="space-y-2 mb-4">
           {lines.map((l,i)=>(
             <div key={i} className="rounded-xl p-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
@@ -1721,7 +1723,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
                 <button onClick={()=>removeLine(i)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'var(--surface)'}}><Ic n="x" s={13} c="var(--danger-2)"/></button>
               </div>
               <div className="mb-2"><CInput label={t('priceEuroLabel')} value={l.price} onChange={v2=>setLine(i,{price:v2})} decimal/></div>
-              <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffLabel')}</p>
+              <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffLabel')}</p>
               <div className="flex gap-1.5 flex-wrap">
                 {pickableStaff(staff, l.staffId).map(s=><button key={s.id} onClick={()=>setLine(i,{staffId:s.id})} className={`chip ${l.staffId===s.id?'on':''}`}>{s.name}{!isActiveStaff(s)?` (${t('inactiveStaffBadge')})`:''}</button>)}
               </div>
@@ -1730,7 +1732,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
           {lines.length===0 && <p className="text-xs text-center py-4" style={{color:'var(--text-dim)'}}>{t('noLinesWarning')}</p>}
         </div>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('paymentLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('paymentLabel')}</p>
         <div className="flex gap-2 mb-4">
           {[['cash',t('cashLabel')],['pos','POS']].map(([k,l])=>(
             <button key={k} onClick={()=>setPm(k)} className="flex-1 py-2.5 rounded-xl text-sm font-bold" style={pm===k?{background:'var(--accent-600)',color:'white'}:{background:'var(--soft)',color:'var(--text)'}}>{l}</button>
@@ -1738,12 +1740,12 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
         </div>
 
         <div className="flex items-center justify-between mb-2">
-          <p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--text-dim)'}}>Tip</p>
+          <p className="text-xs font-bold uppercase tracking-wide" style={{color:'var(--text-dim)'}}>Tip</p>
           {tp>0 && (
             <button onClick={()=>{
               if(tipSplitOn){ setTipStaffId(tipSplitIds[0]||tipStaffId); setTipSplitOn(false); setTipSplitIds([]); }
               else { setTipSplitIds(tipStaffId?[tipStaffId]:[]); setTipSplitOn(true); }
-            }} className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg" style={tipSplitOn?{background:'var(--accent-600)',color:'white'}:{background:'var(--soft)',color:'var(--text-dim)'}}>
+            }} className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg" style={tipSplitOn?{background:'var(--accent-600)',color:'white'}:{background:'var(--soft)',color:'var(--text-dim)'}}>
               <Ic n="split" s={12} c={tipSplitOn?'white':'var(--text-dim)'}/> Split
             </button>
           )}
@@ -1761,7 +1763,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
               );
             })}
           </div>
-          {tipSplitOn && <p className="text-[11px] mb-2" style={{color:'var(--text-dim)'}}>
+          {tipSplitOn && <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>
             {tipSplitIds.length>=2 ? `${fmt(tp)} ÷ ${tipSplitIds.length} = ${fmt(tp/tipSplitIds.length)} ${t('perPersonLabel')}` : t('pickAtLeast2')}
           </p>}
           <div className="flex gap-2 mb-4">
@@ -1771,7 +1773,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
           </div>
         </React.Fragment>)}
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('noteLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('noteLabel')}</p>
         <div className="card px-4 py-3 mb-4">
           <input type="text" value={note} onChange={e=>setNote(e.target.value)} className="w-full text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
         </div>
@@ -1801,7 +1803,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
     <Sheet onClose={onClose} after={editing && <VisitEditor v={v} staff={staff} onClose={()=>setEditing(false)}
         onSave={next=>{onEdit(v.id,next);setEditing(false);}}/>}>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--accent-600)'}}>{t('visitLabel')} {locked&&`· 🔒 ${t('lockedZLabel')}`}{isDel(v)&&` · ${t('deletedLabel')}`}</p>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--accent-600)'}}>{t('visitLabel')} {locked&&`· 🔒 ${t('lockedZLabel')}`}{isDel(v)&&` · ${t('deletedLabel')}`}</p>
           <CloseBtn onClick={onClose} sm/>
         </div>
         {client && <p className="text-lg font-black" style={{color:'var(--text)'}}>{client.name}</p>}
@@ -1820,7 +1822,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
         </div>
 
         <div className="flex justify-between items-center py-2" style={{borderTop:'1px solid var(--border)'}}>
-          <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('totalLabel')}</span>
+          <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('totalLabel')}</span>
           <span className="text-xl font-black amt" style={{color:'var(--accent-600)'}}>{fmt(visitTotal(v))}</span>
         </div>
         {v.tip>0 && <div className="flex justify-between items-center py-1.5">
@@ -1842,7 +1844,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
         {isDel(v) && <p className="text-xs mt-3 text-red-500 font-bold">{t('deletedByLabel')}: {staff.find(s=>s.id===v.deleted.by)?.name||'Master'} · {v.deleted.at}</p>}
         {canHardDelete && (
           <button onClick={()=>{ if(window.confirm(t('hardDeleteFinConfirm'))){ onHardDelete(v.id); onClose(); } }}
-            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>
+            className="w-full mt-3 py-2.5 rounded-xl font-bold text-white text-sm" style={{background:'var(--danger-solid)'}}>
             🗑️ {t('hardDeleteFinBtn')}
           </button>
         )}
@@ -1918,17 +1920,17 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
         <div className="flex items-center gap-3 mb-5">
           <button onClick={()=>setPending(null)} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black truncate" style={{color:'var(--text)'}}>{pending.name}</p>
+            <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{pending.name}</p>
             <p className="text-xs" style={{color:'var(--text-dim)'}}>{fmt(pending.price)}{pending.dur>0?` · ${pending.dur}′`:''}</p>
           </div>
         </div>
-        <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--text-dim)'}}>{t('whoDidItLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--text-dim)'}}>{t('whoDidItLabel')}</p>
         <div className="grid grid-cols-2 gap-2 mb-2">
           {staffOrdered.map(s=>(
             <button key={s.id} onClick={()=>onPick({...pending,staffId:s.id})}
-              className="py-4 rounded-2xl font-black text-sm border-2 text-center"
+              className="py-4 rounded-2xl font-bold text-sm border-2 text-center"
               style={s.id===defaultStaffId?{borderColor:'var(--accent-600)',background:'var(--accent-50)',color:'var(--accent-600)'}:{borderColor:'var(--border)',background:'var(--soft)',color:'var(--text)'}}>
-              {s.name}{s.role===ROLE.RECEPTION?<span className="block text-[10px] font-bold mt-0.5 opacity-60">{t('roleReception')}</span>:null}
+              {s.name}{s.role===ROLE.RECEPTION?<span className="block text-xs font-bold mt-0.5 opacity-60">{t('roleReception')}</span>:null}
             </button>
           ))}
         </div>
@@ -1956,11 +1958,11 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
 
         {cat!==RESALE_CAT && (
           <>
-            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} {cat!=='all'?`— ${catLabel(cat)}`:''}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} {cat!=='all'?`— ${catLabel(cat)}`:''}</p>
             <div className="space-y-1.5 mb-4">
               {sv.map(s=>(
                 <button key={s.id} onClick={()=>setPending({name:s.name,price:s.price,dur:s.dur,vat:s.vat,kind:'service',catalogId:s.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
-                  <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{itemLabel(s)}{(freq[s.name]||0)>1?<span className="text-[10px] ml-1.5 px-1.5 py-0.5 rounded-md font-black" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>★</span>:null}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{catLabel(s.cat||'Άλλο')} · {s.dur}′ · {t('vatAbbrev')} {s.vat}%</p></div>
+                  <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{itemLabel(s)}{(freq[s.name]||0)>1?<span className="text-xs ml-1.5 px-1.5 py-0.5 rounded-md font-bold" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>★</span>:null}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{catLabel(s.cat||'Άλλο')} · {s.dur}′ · {t('vatAbbrev')} {s.vat}%</p></div>
                   <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(s.price)}</p>
                 </button>
               ))}
@@ -1971,7 +1973,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
 
         {(cat==='all'||cat===RESALE_CAT) && (
           <>
-            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsResaleLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsResaleLabel')}</p>
             <div className="space-y-1.5 mb-4">
               {pr.map(p=>(
                 <button key={p.id} onClick={()=>setPending({name:p.name,price:p.price,dur:0,vat:p.vat,kind:'product',productId:p.id,catalogId:p.id})} className="w-full card px-4 py-3 flex items-center justify-between text-left">
@@ -1988,7 +1990,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
         )}
 
         {/* Ελεύθερο είδος — εκτός καταλόγου, μηδέν επιβάρυνση καταλόγου */}
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('freeItemLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('freeItemLabel')}</p>
         {recentFree.length>0 && (
           <div className="flex gap-2 flex-wrap mb-2">
             {recentFree.map(f=>(
@@ -2000,7 +2002,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
           <input type="text" value={freeName} onChange={e=>setFreeName(e.target.value)} placeholder={t('namePlaceholder')} className="flex-1 min-w-0 text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
           <input type="text" value={freePrice} onChange={e=>setFreePrice(e.target.value.replace(',','.').replace(/[^0-9.]/g,''))} placeholder="€" inputMode="decimal" className="w-20 text-sm font-bold outline-none bg-transparent text-right amt" style={{color:'var(--text)'}}/>
           <button disabled={!freeName.trim()||!(parseFloat(freePrice)>0)} onClick={()=>setPending({name:freeName.trim(),price:parseFloat(freePrice),dur:0,vat:24,kind:'service',free:true})}
-            className="px-3 py-2 rounded-xl text-white text-sm font-black disabled:opacity-30" style={{background:'var(--accent-600)'}}>+</button>
+            className="px-3 py-2 rounded-xl text-white text-sm font-bold disabled:opacity-30" style={{background:'var(--accent-600)'}}>+</button>
         </div>
     </Sheet>
   );
@@ -2032,11 +2034,11 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
           </div>
           {/* Quick-convert ΦΠΑ — μόνο στο πεδίο τιμής ΕΣΟΔΩΝ (spec §3) */}
           <div className="flex flex-col gap-1">
-            <button onClick={()=>setPrice((p*(1+rate)).toFixed(2))} className="px-3 py-1.5 rounded-lg text-xs font-black border" style={{background:'var(--accent-50)',color:'var(--accent-600)',borderColor:'var(--accent-100)'}}>+{t('vatAbbrev')}</button>
-            <button onClick={()=>setPrice((p/(1+rate)).toFixed(2))} className="px-3 py-1.5 rounded-lg text-xs font-black border" style={{background:'var(--soft)',color:'var(--text-dim)',borderColor:'var(--border)'}}>−{t('vatAbbrev')}</button>
+            <button onClick={()=>setPrice((p*(1+rate)).toFixed(2))} className="px-3 py-1.5 rounded-lg text-xs font-bold border" style={{background:'var(--accent-50)',color:'var(--accent-600)',borderColor:'var(--accent-100)'}}>+{t('vatAbbrev')}</button>
+            <button onClick={()=>setPrice((p/(1+rate)).toFixed(2))} className="px-3 py-1.5 rounded-lg text-xs font-bold border" style={{background:'var(--soft)',color:'var(--text-dim)',borderColor:'var(--border)'}}>−{t('vatAbbrev')}</button>
           </div>
         </div>
-        <p className="text-[10px] mb-4" style={{color:'var(--text-dim)'}}>{t('itemVatLabel')}: {line.vat||24}% · {t('vatExampleHint')}</p>
+        <p className="text-xs mb-4" style={{color:'var(--text-dim)'}}>{t('itemVatLabel')}: {line.vat||24}% · {t('vatExampleHint')}</p>
 
         <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('discountLabelHint')}</p>
         <div className="flex gap-2 mb-4 items-center">
@@ -2055,7 +2057,7 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
 
         <div className="flex gap-2">
           <button onClick={()=>{onRemove();onClose();}} className="flex-1 py-3 rounded-2xl font-bold text-red-500 text-sm border-2 border-red-200">{t('removeBtn')}</button>
-          <button onClick={apply} className="flex-1 py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>OK</button>
+          <button onClick={apply} className="flex-1 py-3 rounded-2xl font-bold text-white text-sm" style={{background:'var(--accent-600)'}}>OK</button>
         </div>
     </Sheet>
   );
@@ -2075,7 +2077,7 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
 const decimalInput = s => String(s).replace(',','.').replace(/[^0-9.]/g,'');
 const CInput = ({label,value,onChange,type='text',w,decimal=false}) => (
   <div className={w?'':'flex-1'} style={w?{width:w}:{}}>
-    <p className="text-[10px] font-bold mb-1" style={{color:'var(--text-dim)'}}>{label}</p>
+    <p className="text-xs font-bold mb-1" style={{color:'var(--text-dim)'}}>{label}</p>
     <input type={decimal?'text':type} value={value??''} onChange={e=>onChange(decimal?decimalInput(e.target.value):e.target.value)} inputMode={(decimal||type==='number')?'decimal':undefined}
       className="w-full rounded-xl px-3 py-2.5 text-sm font-bold outline-none border" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
   </div>
@@ -2105,33 +2107,33 @@ const CatalogTemplatePicker = ({onApply,onClose}) => {
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>{LANG==='en'&&tp.label_en?tp.label_en:tp.label}</p>
                   <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{LANG==='en'&&tp.desc_en?tp.desc_en:tp.desc}</p>
-                  <p className="text-[10px] mt-1 font-bold" style={{color:'var(--accent-600)'}}>{tp.services.length} {t('tmplServicesUnit')} · {tp.products.length} {t('tmplProductsUnit')}</p>
+                  <p className="text-xs mt-1 font-bold" style={{color:'var(--accent-600)'}}>{tp.services.length} {t('tmplServicesUnit')} · {tp.products.length} {t('tmplProductsUnit')}</p>
                 </div>
                 {sel===tp.id && <Ic n="check" s={18} c="var(--accent-600)"/>}
               </button>
             ))}
           </div>
-          <button onClick={()=>chosen&&setConfirming(true)} disabled={!chosen} className="w-full mt-4 py-3.5 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>
+          <button onClick={()=>chosen&&setConfirming(true)} disabled={!chosen} className="w-full mt-4 py-3.5 rounded-2xl font-bold text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>
             {t('continueArrowBtn')}
           </button>
         </React.Fragment>) : (<React.Fragment>
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--danger-bg-2)',borderColor:'var(--danger-border)'}}>
-            <p className="text-sm font-black mb-1" style={{color:'var(--danger)'}}>{t('catalogReplaceWarnTitle')}</p>
+            <p className="text-sm font-bold mb-1" style={{color:'var(--danger)'}}>{t('catalogReplaceWarnTitle')}</p>
             <p className="text-xs" style={{color:'var(--danger-deep)'}}>{t('catalogReplaceWarnBody1')} {chosen.services.length + chosen.products.length} {t('catalogReplaceWarnBody2')} «{LANG==='en'&&chosen.label_en?chosen.label_en:chosen.label}». {t('catalogReplaceWarnBody3')}</p>
           </div>
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} ({chosen.services.length})</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} ({chosen.services.length})</p>
           <div className="flex flex-wrap gap-1.5 mb-3">
-            {chosen.services.map(s=><span key={s.name} className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{itemLabel(s)}</span>)}
+            {chosen.services.map(s=><span key={s.name} className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{itemLabel(s)}</span>)}
             {chosen.services.length===0 && <span className="text-xs" style={{color:'var(--text-dim)'}}>—</span>}
           </div>
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsLabel')} ({chosen.products.length})</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productsLabel')} ({chosen.products.length})</p>
           <div className="flex flex-wrap gap-1.5 mb-4">
-            {chosen.products.map(p=><span key={p.name} className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{itemLabel(p)}</span>)}
+            {chosen.products.map(p=><span key={p.name} className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{itemLabel(p)}</span>)}
             {chosen.products.length===0 && <span className="text-xs" style={{color:'var(--text-dim)'}}>—</span>}
           </div>
           <div className="flex gap-2">
             <button onClick={()=>setConfirming(false)} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('backPlainBtn')}</button>
-            <button onClick={apply} className="flex-1 py-3 rounded-2xl font-black text-white text-sm bg-red-500">{t('applyReplaceBtn')}</button>
+            <button onClick={apply} className="flex-1 py-3 rounded-2xl font-bold text-white text-sm bg-red-500">{t('applyReplaceBtn')}</button>
           </div>
         </React.Fragment>)}
     </Sheet>
@@ -2235,14 +2237,14 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
 
         {pendingImport && (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--accent-50)',borderColor:'var(--accent-100)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--accent-600)'}}>{t('importPreviewLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--accent-600)'}}>{t('importPreviewLabel')}</p>
             <p className="text-sm mb-3" style={{color:'var(--text)'}}>
               {t('servicesLabel')}: {pendingImport.svcNew.length} {t('newFemLabel')}, {pendingImport.svcUpdates.length} {t('updatesLabel')}<br/>
               {t('productsLabel')}: {pendingImport.prNew.length} {t('newNeuterLabel')}, {pendingImport.prUpdates.length} {t('updatesLabel')}
             </p>
             <div className="flex gap-2">
               <button onClick={()=>setPendingImport(null)} className="px-4 py-2.5 rounded-xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-              <button onClick={commitImport} className="flex-1 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>{t('confirmImportBtn')}</button>
+              <button onClick={commitImport} className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm" style={{background:'var(--accent-600)'}}>{t('confirmImportBtn')}</button>
             </div>
           </div>
         )}
@@ -2263,10 +2265,10 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
         {/* Φόρμα επεξεργασίας/νέου */}
         {edit ? (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newItemLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newItemLabel')}</p>
             <div className="mb-3"><CInput label={t('nameLabel')} value={edit.name} onChange={v=>set('name',v)}/></div>
             {isSv ? (<React.Fragment>
-              <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('serviceCategoryHint')}</p>
+              <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('serviceCategoryHint')}</p>
               <div className="flex gap-2 flex-wrap mb-3">
                 {SERVICE_CATS.map(c=><button key={c} onClick={()=>set('cat',c)} className={`chip ${edit.cat===c?'on':''}`}>{catLabel(c)}</button>)}
               </div>
@@ -2276,7 +2278,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
                 <CInput label={t('vatPercentLabel')} value={edit.vat} onChange={v=>set('vat',v)} type="number" w={80}/>
               </div>
             </React.Fragment>) : (<React.Fragment>
-              <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('useHintLabel')}</p>
+              <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('useHintLabel')}</p>
               <div className="flex gap-2 flex-wrap mb-3">
                 {PRODUCT_USES.map(([v])=><button key={v} onClick={()=>set('use',v)} className={`chip ${edit.use===v?'on':''}`}>{puLabel(v)}</button>)}
               </div>
@@ -2291,7 +2293,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
             </React.Fragment>)}
             {edit.id && (
               <div className="flex items-center justify-between mb-3 rounded-xl px-3 py-2.5 border" style={{background:'var(--surface)',borderColor:'var(--border)'}}>
-                <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{t('activeLabel')}</p><p className="text-[10px]" style={{color:'var(--text-dim)'}}>{t('deactivateInsteadHint')}</p></div>
+                <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{t('activeLabel')}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{t('deactivateInsteadHint')}</p></div>
                 <button onClick={()=>set('active',!edit.active)} className={`w-12 h-6 rounded-full flex items-center transition-all`} style={{background:edit.active?'var(--accent-600)':'var(--toggle-off)'}}>
                   <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:edit.active?'translateX(24px)':'none'}}/>
                 </button>
@@ -2444,13 +2446,13 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
       {/* Τύπος: το προσωπικό καταχωρεί ΚΑΙ έξοδα/τιμολόγια (spec §6) —
           τα έξοδα μπαίνουν πάντα ΤΕΛΙΚΑ, χωρίς κανένα κουμπί ΦΠΑ */}
       <div className="rounded-2xl p-1 flex mt-4 mb-4" style={{background:'var(--soft)'}}>
-        <button onClick={()=>setType('income')} className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${type==='income'?'text-white shadow':''}`} style={type==='income'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>↑ {t('incomeTab')}</button>
-        <button onClick={()=>setType('expense')} className={`flex-1 py-3 rounded-xl text-sm font-black transition-all ${type==='expense'?'bg-red-500 text-white shadow':''}`} style={type!=='expense'?{color:'var(--text-dim)'}:{}}>↓ {t('expenseTab')}</button>
+        <button onClick={()=>setType('income')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${type==='income'?'text-white shadow':''}`} style={type==='income'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>↑ {t('incomeTab')}</button>
+        <button onClick={()=>setType('expense')} className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all ${type==='expense'?'bg-red-500 text-white shadow':''}`} style={type!=='expense'?{color:'var(--text-dim)'}:{}}>↓ {t('expenseTab')}</button>
       </div>
 
       {type==='income' ? (<React.Fragment>
         {/* Καλάθι */}
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('cartLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('cartLabel')}</p>
         <div className="space-y-2 mb-2">
           {lines.map((l,i)=>(
             <button key={i} onClick={()=>setEditIdx(i)} className="w-full card px-4 py-3 flex items-center gap-3 text-left">
@@ -2469,7 +2471,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
 
         {lines.length>0 && (
           <div className="card px-4 py-3 mb-3 flex justify-between items-center">
-            <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('totalLabel')}</span>
+            <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('totalLabel')}</span>
             <span className="text-2xl font-black amt" style={{color:'var(--accent-600)'}}>{fmt(total)}</span>
           </div>
         )}
@@ -2503,12 +2505,12 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
           </div>
           {tp>0 && (<React.Fragment>
             <div className="flex items-center justify-between mt-3 mb-1">
-              <p className="text-[10px] font-bold uppercase tracking-wide" style={{color:'var(--text-dim)'}}>{tipSplitOn?t('splitAmongLabel'):t('whoTookItLabel')}</p>
+              <p className="text-xs font-bold uppercase tracking-wide" style={{color:'var(--text-dim)'}}>{tipSplitOn?t('splitAmongLabel'):t('whoTookItLabel')}</p>
               {/* «για τα κορίτσια» — split το tip σε 2+ άτομα αντί για ένα */}
               <button onClick={()=>{
                 if(tipSplitOn){ setTipStaffId(tipSplitIds[0]||tipStaffId); setTipTouched(true); setTipSplitOn(false); setTipSplitIds([]); }
                 else { setTipSplitIds(tipStaffId?[tipStaffId]:[]); setTipSplitOn(true); }
-              }} className="flex items-center gap-1 text-[11px] font-black px-2 py-1 rounded-lg" style={tipSplitOn?{background:'var(--accent-600)',color:'white'}:{background:'var(--soft)',color:'var(--text-dim)'}}>
+              }} className="flex items-center gap-1 text-xs font-bold px-2 py-1 rounded-lg" style={tipSplitOn?{background:'var(--accent-600)',color:'white'}:{background:'var(--soft)',color:'var(--text-dim)'}}>
                 <Ic n="split" s={12} c={tipSplitOn?'white':'var(--text-dim)'}/> Split
               </button>
             </div>
@@ -2523,7 +2525,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
                 );
               })}
             </div>
-            {tipSplitOn && <p className="text-[11px] mt-2" style={{color:'var(--text-dim)'}}>
+            {tipSplitOn && <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>
               {tipSplitIds.length>=2 ? `${fmt(tp)} ÷ ${tipSplitIds.length} = ${fmt(tp/tipSplitIds.length)} ${t('perPersonLabel')}` : t('pickAtLeast2')}
             </p>}
           </React.Fragment>)}
@@ -2568,7 +2570,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
                 χρήστης δεν το έβλεπε πουθενά πριν πατήσει. Αυτό εδώ το κάνει ρητό, χωρίς popup που
                 μπλοκάρει τη ροή. */}
             {cq.trim().length>=1 && !showNew && sugg.length>0 && (
-              <p className="text-[11px] mt-1.5" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientAutoHint')}</p>
+              <p className="text-xs mt-1.5" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientAutoHint')}</p>
             )}
           </React.Fragment>)}
         </div>
@@ -2633,7 +2635,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
 const DateNav = ({date,setDate}) => (
   <div className="flex items-center gap-2 px-4 py-3 sticky z-30" style={{top:73,background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
     <button onClick={()=>setDate(addDays(date,-1))} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
-    <div className="flex-1 text-center"><p className="text-sm font-black" style={{color:'var(--text)'}}>{date===today()?`📅 ${t('todayLabel')}`:fmtDLong(date)}</p></div>
+    <div className="flex-1 text-center"><p className="text-sm font-bold" style={{color:'var(--text)'}}>{date===today()?`📅 ${t('todayLabel')}`:fmtDLong(date)}</p></div>
     <button onClick={()=>{const n=addDays(date,1); if(n<=today()) setDate(n);}} disabled={date>=today()} className="w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-30" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
   </div>
 );
@@ -2651,13 +2653,13 @@ const RegisterOwn = ({operator,visits,clients,zmap}) => {
     <div className="safe-pb">
       <DateNav date={date} setDate={setDate}/>
       <div className="px-4 pt-3">
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myWorkLabel')} {zmap[date]?'· 🔒':''}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myWorkLabel')} {zmap[date]?'· 🔒':''}</p>
         {rows.length>0
           ? <div className="space-y-2">{rows.map(r=><LineRow key={r.key} v={r.v} l={r.l} clients={clients}/>)}</div>
           : <div className="card py-12 text-center"><p className="font-bold" style={{color:'var(--text-dim)'}}>{t('noOwnLinesToday')}</p></div>}
         {myTips.length>0 && (
           <div className="mt-4">
-            <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myTipsLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('myTipsLabel')}</p>
             <div className="space-y-2">
               {myTips.map(v=>(
                 <div key={v.id} className="card px-4 py-3 flex items-center justify-between">
@@ -2683,7 +2685,7 @@ const ExpenseEditor = ({e,cats,onSave,onClose}) => {
   return (
     <Sheet onClose={onClose} z={110} tall title={t('editExpenseTitle')}>
         <div className="mb-3"><CInput label={t('amountEuroLabel')} value={amt} onChange={setAmt} decimal/></div>
-        <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
+        <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
         <div className="flex gap-2 flex-wrap mb-3">
           {cats.map(c=><button key={c.id} onClick={()=>setCat(c.name)} className={`chip ${cat===c.name?'on':''}`}>{c.name}</button>)}
         </div>
@@ -2704,13 +2706,13 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
     <Sheet onClose={onClose} after={editing && <ExpenseEditor e={e} cats={expCats} onClose={()=>setEditing(false)}
         onSave={next=>{onEdit(e.id,next);setEditing(false);}}/>}>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--danger-2)'}}>{t('expenseLabel')}{isDel(e)&&` · ${t('deletedNeuterLabel')}`}</p>
+          <p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--danger-2)'}}>{t('expenseLabel')}{isDel(e)&&` · ${t('deletedNeuterLabel')}`}</p>
           <CloseBtn onClick={onClose} sm/>
         </div>
         <p className="text-lg font-black" style={{color:'var(--text)'}}>{e.cat}</p>
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{fmtDLong(e.date)} · {e.time} · {t('recordedByLabel')}: {enteredBy}</p>
         <div className="flex justify-between items-center py-2" style={{borderTop:'1px solid var(--border)'}}>
-          <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('amountLabel')}</span>
+          <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('amountLabel')}</span>
           <span className="text-xl font-black amt text-red-500">{fmt(-e.amt)}</span>
         </div>
         {e.note && (
@@ -2722,7 +2724,7 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
         {isDel(e) && <p className="text-xs mt-3 text-red-500 font-bold">{t('deletedByLabel')}: {staff.find(s=>s.id===e.deleted.by)?.name||'Master'} · {e.deleted.at}</p>}
         {canHardDelete && (
           <button onClick={()=>{ if(window.confirm(t('hardDeleteFinConfirm'))){ onHardDelete(e.id); onClose(); } }}
-            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>
+            className="w-full mt-3 py-2.5 rounded-xl font-bold text-white text-sm" style={{background:'var(--danger-solid)'}}>
             🗑️ {t('hardDeleteFinBtn')}
           </button>
         )}
@@ -2804,7 +2806,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
               : <div className="p-3 text-center" style={{borderLeft:'1px solid var(--border)'}}><p className="text-xs mb-1" style={{color:'var(--text-dim)'}}>{t('netLabel')}</p><p className="font-bold amt" style={{color:'var(--accent-600)'}}>{fmt(sum.netBalance)}</p></div>}
           </div>
           {isMaster && <div className="px-4 py-3 flex justify-between items-center" style={{background:'var(--accent-50)',borderTop:'1px solid var(--border)'}}>
-            <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('netBalanceShortLabel')}</span>
+            <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('netBalanceShortLabel')}</span>
             <span className="text-lg font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'var(--danger)'}}>{fmt(sum.netBalance)}</span>
           </div>}
         </div>
@@ -2813,7 +2815,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
       {/* Tips ανά υπάλληλο — το βλέπει και η Ρεσεψιόν */}
       {filterStaff==='all' && stf.length>0 && (
         <div className="mx-4 mb-3 card overflow-hidden">
-          <div className="px-4 py-2" style={{background:'var(--gold-bg-2)',borderBottom:'1px solid var(--gold-bg)'}}><p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--gold)'}}>💛 {t('tipsPerStaffLabel')}</p></div>
+          <div className="px-4 py-2" style={{background:'var(--gold-bg-2)',borderBottom:'1px solid var(--gold-bg)'}}><p className="text-xs font-bold uppercase tracking-wide" style={{color:'var(--gold)'}}>💛 {t('tipsPerStaffLabel')}</p></div>
           {stf.map((s,i)=>(
             <div key={s.id} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
               <span className="text-sm font-bold" style={{color:'var(--text)'}}>{s.name}</span>
@@ -2825,7 +2827,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
 
       <div className="px-4">
         {filterStaff==='all' ? (<React.Fragment>
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('movementsLabel')} ({dV.length})</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('movementsLabel')} ({dV.length})</p>
           {dV.length>0
             ? <div className="space-y-2">{dV.map(v=>(
                 <VisitRow key={v.id} v={v} staff={staff} clients={clients} showVat={isMaster}
@@ -2834,7 +2836,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
             : <div className="card py-12 text-center"><p className="font-bold" style={{color:'var(--text-dim)'}}>{t('noEntriesLabel')}</p></div>}
           {dE.length>0 && (
             <div className="mt-4">
-              <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('expLabel')} ({dE.length})</p>
+              <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('expLabel')} ({dE.length})</p>
               <div className="space-y-2">
                 {dE.map(e=>(
                   <div key={e.id} onClick={()=>setSelExp(e)} className={`card px-4 py-3 flex items-center gap-3 ${isDel(e)?'soft-del':''}`} style={{cursor:'pointer'}}>
@@ -2850,7 +2852,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
             </div>
           )}
         </React.Fragment>) : (<React.Fragment>
-          <p className="text-xs font-black uppercase tracking-wide mb-2 mt-1" style={{color:'var(--text-dim)'}}>{t('linesHeaderLabel')}: {staff.find(s=>s.id===filterStaff)?.name}</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2 mt-1" style={{color:'var(--text-dim)'}}>{t('linesHeaderLabel')}: {staff.find(s=>s.id===filterStaff)?.name}</p>
           {filteredRows.length>0
             ? <div className="space-y-2">{filteredRows.map(r=><LineRow key={r.key} v={r.v} l={r.l} clients={clients}/>)}</div>
             : <div className="card py-12 text-center"><p className="font-bold" style={{color:'var(--text-dim)'}}>{t('noLinesLabel')}</p></div>}
@@ -2912,7 +2914,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
       <div className="mt-2">
         <textarea value={draft} onChange={e=>setDraft(e.target.value)} rows={2} className="w-full rounded-xl px-3 py-2 text-sm outline-none border" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
         <div className="flex gap-2 mt-1">
-          <button onClick={()=>{onUpdateNote(v.id,draft.trim());setEditing(null);}} className="px-3 py-1.5 rounded-lg text-xs font-black text-white" style={{background:'var(--accent-600)'}}>OK</button>
+          <button onClick={()=>{onUpdateNote(v.id,draft.trim());setEditing(null);}} className="px-3 py-1.5 rounded-lg text-xs font-bold text-white" style={{background:'var(--accent-600)'}}>OK</button>
           <button onClick={()=>setEditing(null)} className="px-3 py-1.5 rounded-lg text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
         </div>
       </div>
@@ -2941,7 +2943,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
             )}
             {canDelete && (
               hasAnyVisit
-                ? <span title={t('clientDeleteBlockedTitleAttr')} className="text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{background:'var(--soft)',color:'var(--text-dim)'}}>🔒 {t('clientDeleteBlockedLabel')}</span>
+                ? <span title={t('clientDeleteBlockedTitleAttr')} className="text-xs font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{background:'var(--soft)',color:'var(--text-dim)'}}>🔒 {t('clientDeleteBlockedLabel')}</span>
                 : <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDeleteClient(client.id); }}
                     title={t('hardDeleteTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
                     <Ic n="trash" s={14} c="var(--danger)"/>
@@ -2959,7 +2961,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
             <input type="text" autoComplete="off" value={patronymDraft} onChange={e=>setPatronymDraft(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <div className="flex gap-2">
               <button onClick={()=>{const n=nameDraft.trim(); if(!n) return; onUpdateClient(client.id,{name:n,phone:phoneDraft.trim(),patronym:patronymDraft.trim()});setEditingInfo(false);}}
-                disabled={!nameDraft.trim()} className="flex-1 py-2 rounded-xl text-xs font-black text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+                disabled={!nameDraft.trim()} className="flex-1 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
               <button onClick={()=>setEditingInfo(false)} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
             </div>
           </div>
@@ -2973,8 +2975,8 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
       {last ? (
         <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--warn-bg-2)',borderColor:'var(--warn-bg)'}}>
           <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--warn-2)'}}>{t('lastVisitLabel')} — {fmtD(last.date)}</p>
-            {isInactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--danger-bg)',color:'var(--danger)'}}>😴 {t('inactiveLabel')} · {daysSinceLast}{t('daysAbbrev')}</span>}
+            <p className="text-xs font-bold uppercase tracking-wide" style={{color:'var(--warn-2)'}}>{t('lastVisitLabel')} — {fmtD(last.date)}</p>
+            {isInactive && <span className="text-xs font-bold px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--danger-bg)',color:'var(--danger)'}}>😴 {t('inactiveLabel')} · {daysSinceLast}{t('daysAbbrev')}</span>}
           </div>
           <p className="text-sm font-bold" style={{color:'var(--warn-deep)'}}>{last.lines.map(l=>l.name).join(' + ')} · {StaffNameTag(staff,last.lines[0]?.staffId,'')}</p>
           {NoteBlock({v:last,big:true})}
@@ -2987,7 +2989,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
           <div className="grid grid-cols-3 text-center">
             {[[t('perVisitLabel'),fmt(total/hist.length)],[t('thisYearLabel'),yearVisits+' '+t('visitsAbbrev')],[t('totalValueLabel'),fmt(total)]].map(([l,v],i)=>(
               <div key={l} className="py-3" style={i>0?{borderLeft:'1px solid var(--border)'}:{}}>
-                <p className="text-[10px]" style={{color:'var(--text-dim)'}}>{l}</p>
+                <p className="text-xs" style={{color:'var(--text-dim)'}}>{l}</p>
                 <p className="text-sm font-black amt" style={{color:'var(--text)'}}>{v}</p>
               </div>
             ))}
@@ -2998,7 +3000,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
       {/* Αγορές προϊόντων — ξεχωριστά: «τι σου έδωσα την προηγούμενη φορά» */}
       {products.length>0 && (
         <div className="mb-3">
-          <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productPurchasesLabel')}</p>
+          <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('productPurchasesLabel')}</p>
           <div className="card overflow-hidden">
             {products.map((p,i)=>(
               <div key={i} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
@@ -3011,7 +3013,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
       )}
 
       {/* Πλήρες ιστορικό — όλοι (τιμές ανά γραμμή, όχι σούμα) */}
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('visitHistoryLabel')} ({hist.length})</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('visitHistoryLabel')} ({hist.length})</p>
       <div className="space-y-2">
         {hist.map(v=>(
           <div key={v.id} className="card px-4 py-3">
@@ -3127,7 +3129,7 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
           <input type="text" autoComplete="off" autoFocus value={nName} onChange={e=>setNName(e.target.value)} placeholder={t('clientNamePlaceholder')} className="w-full text-sm font-bold outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
           {nSugg.length>0 && (
             <div className="space-y-1">
-              <p className="text-[11px]" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientDifferentPersonPrefix')}</p>
+              <p className="text-xs" style={{color:'var(--text-dim)'}}>ℹ️ {t('newClientDifferentPersonPrefix')}</p>
               {nSugg.map(c=>(
                 <button key={c.id} onClick={()=>{setShowAdd(false);setNName('');setNPhone('');setNPatr('');setSelId(c.id);}} className="w-full text-left rounded-xl px-3 py-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>{c.name}</p>
@@ -3139,7 +3141,7 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
           <input type="tel" autoComplete="off" value={nPhone} onChange={e=>setNPhone(e.target.value)} placeholder={t('phoneOptionalPlaceholder')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
           <input type="text" autoComplete="off" value={nPatr} onChange={e=>setNPatr(e.target.value)} placeholder={t('patronymPrefix')} className="w-full text-sm outline-none rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
           <div className="flex gap-2">
-            <button onClick={saveNewClient} disabled={!nName.trim()} className="flex-1 py-2 rounded-xl text-xs font-black text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+            <button onClick={saveNewClient} disabled={!nName.trim()} className="flex-1 py-2 rounded-xl text-xs font-bold text-white disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
             <button onClick={()=>{setShowAdd(false);setNName('');setNPhone('');setNPatr('');}} className="flex-1 py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
           </div>
         </div>
@@ -3159,7 +3161,7 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
                 {[c.phone, c.patronym&&`${t('patronymPrefix')} ${c.patronym}`, c.lastVisit&&`${t('lastAbbrev')} ${fmtD(c.lastVisit)}`].filter(Boolean).join(' · ')||'—'}
               </p>
             </div>
-            {c.inactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--warn-bg)',color:'var(--warn-2)'}}>😴 {c.daysSince}{t('daysAbbrev')}</span>}
+            {c.inactive && <span className="text-xs font-bold px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--warn-bg)',color:'var(--warn-2)'}}>😴 {c.daysSince}{t('daysAbbrev')}</span>}
             <Ic n="next" s={15} c="var(--text-dim)"/>
           </button>
         ))}
@@ -3219,7 +3221,7 @@ const MasterDayModal = ({dateStr,emp,entry,onSave,onClose}) => {
         <input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t('notePlaceholder')} className="w-full rounded-xl px-4 py-3 text-sm border outline-none mb-4" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
         <div className="flex gap-2">
           {entry&&<button onClick={()=>{onSave(null);onClose();}} className="flex-1 py-3.5 rounded-2xl font-bold text-sm" style={{background:'var(--soft)',color:'var(--text-dim)'}}>↺ {t('resetBtn')}</button>}
-          <button onClick={()=>{onSave({status,start:needsTime?start:'',end:needsTime?end:'',note});onClose();}} className="flex-1 py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+          <button onClick={()=>{onSave({status,start:needsTime?start:'',end:needsTime?end:'',note});onClose();}} className="flex-1 py-3.5 rounded-2xl font-bold text-white text-sm" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
         </div>
     </Sheet>
   );
@@ -3261,14 +3263,14 @@ const ShopClosureModal = ({staff,schedData,onSaveDay,onClose}) => {
                 ⚠️ {t('shopClosureSkippedPrefix')} {result.skipped.join(', ')} — {t('shopClosureSkippedSuffix')}
               </p>
             )}
-            <button onClick={onClose} className="w-full mt-2 py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>{t('okBtn')}</button>
+            <button onClick={onClose} className="w-full mt-2 py-3 rounded-2xl font-bold text-white text-sm" style={{background:'var(--accent-600)'}}>{t('okBtn')}</button>
           </div>
         ) : (
           <React.Fragment>
             <div className="mb-3"><CInput label={t('shopClosureDateLabel')} value={dateStr} onChange={setDateStr} type="date"/></div>
             <div className="mb-3"><CInput label={t('shopClosureNoteLabel')} value={note} onChange={setNote}/></div>
             <p className="text-xs mb-4" style={{color:'var(--text-dim)'}}>{t('shopClosureHint')}</p>
-            <button onClick={apply} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('shopClosureConfirmBtn')}</button>
+            <button onClick={apply} className="w-full py-3 rounded-2xl font-bold text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('shopClosureConfirmBtn')}</button>
           </React.Fragment>
         )}
     </Sheet>
@@ -3327,12 +3329,12 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
         <div className="grid grid-cols-4 text-center">
           {[['✅',work,t('statWorkAbbr')],['⏱️',hours.toFixed(1),t('statHoursAbbr')],['🤒',sick,t('statSickAbbr')],['🏖️',leave,t('stLeave')]].map(([e,v,l],i)=>(
             <div key={l} className="py-3" style={i>0?{borderLeft:'1px solid var(--border)'}:{}}>
-              <div className="text-base mb-0.5">{e}</div><div className="font-black text-sm" style={{color:'var(--text)'}}>{v}</div><div className="text-[10px]" style={{color:'var(--text-dim)'}}>{l}</div>
+              <div className="text-base mb-0.5">{e}</div><div className="font-bold text-sm" style={{color:'var(--text)'}}>{v}</div><div className="text-xs" style={{color:'var(--text-dim)'}}>{l}</div>
             </div>
           ))}
         </div>
         <div className="px-4 py-3" style={{borderTop:'1px solid var(--border)'}}>
-          <div className="flex justify-between mb-1"><span className="text-xs" style={{color:'var(--text-dim)'}}>{t('leaveBalanceLabel')} {year}</span><span className="text-xs font-black" style={{color:'var(--st-leave)'}}>{leaveLeft}/{emp.leaveTotal||20}</span></div>
+          <div className="flex justify-between mb-1"><span className="text-xs" style={{color:'var(--text-dim)'}}>{t('leaveBalanceLabel')} {year}</span><span className="text-xs font-bold" style={{color:'var(--st-leave)'}}>{leaveLeft}/{emp.leaveTotal||20}</span></div>
           <div className="progress-bar"><div className="progress-fill" style={{width:`${Math.min(100,(leaveUsed/(emp.leaveTotal||20))*100)}%`,background:'#0891b2'}}/></div>
         </div>
       </div>
@@ -3346,7 +3348,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
           const needsTime=['overtime','early','festive'].includes(entry.status);
           return (
             <div key={d} onClick={()=>setModal({dk,raw})} className="day-cell flex items-center gap-3 px-4 py-2.5" style={{background:st.bg,border:`1.5px solid ${st.border}`,...(dk===today()?{boxShadow:'0 0 0 2px var(--accent-600)'}:{})}}>
-              <div className="w-10 text-center flex-shrink-0"><p className="text-[10px] font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p><p className="text-lg font-black" style={{color:'var(--day-num)'}}>{d}</p></div>
+              <div className="w-10 text-center flex-shrink-0"><p className="text-xs font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p><p className="text-lg font-black" style={{color:'var(--day-num)'}}>{d}</p></div>
               <div className="text-lg flex-shrink-0">{st.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm" style={{color:st.color}}>{stLabel(st)}</p>
@@ -3387,11 +3389,11 @@ const LeaveRequests = ({leaveReqs,staff,onApprove,onDecline,onDelete}) => {
       <div className="card p-4">
         <div className="flex items-center justify-between gap-2">
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-black" style={{color:'var(--text)'}}>🏖️ {emp?.name}</p>
+            <p className="text-sm font-bold" style={{color:'var(--text)'}}>🏖️ {emp?.name}</p>
             <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{fmtD(r.from)} – {fmtD(r.to)} · {n} {n===1?t('dayCountSingular'):t('dayCountPlural')} · {t('requestedOnLabel')} {fmtD(r.reqAt)}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!actions && <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{r.status==='approved'?t('reqApproved'):t('reqDeclined')}</span>}
+            {!actions && <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{r.status==='approved'?t('reqApproved'):t('reqDeclined')}</span>}
             {onDelete && (
               <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDelete(r.id); }}
                 title={t('hardDeleteTitleAttr')} className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
@@ -3405,13 +3407,13 @@ const LeaveRequests = ({leaveReqs,staff,onApprove,onDecline,onDelete}) => {
           <div className="mt-3">
             <input autoFocus type="text" value={msg} onChange={e=>setMsg(e.target.value)} placeholder={t('declineMsgPlaceholder')} className="w-full rounded-xl px-3 py-2.5 text-sm border outline-none mb-2" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <div className="flex gap-2">
-              <button onClick={()=>{onDecline(r.id,msg.trim());setDeclining(null);setMsg('');}} className="flex-1 py-2.5 rounded-xl font-black text-white text-sm bg-red-500">{t('declineBtn')}</button>
+              <button onClick={()=>{onDecline(r.id,msg.trim());setDeclining(null);setMsg('');}} className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm bg-red-500">{t('declineBtn')}</button>
               <button onClick={()=>{setDeclining(null);setMsg('');}} className="px-4 py-2.5 rounded-xl font-bold text-sm" style={{background:'var(--soft)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
             </div>
           </div>
         ) : (
           <div className="flex gap-2 mt-3">
-            <button onClick={()=>onApprove(r.id)} className="flex-1 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>✓ {t('approveBtn')}</button>
+            <button onClick={()=>onApprove(r.id)} className="flex-1 py-2.5 rounded-xl font-bold text-white text-sm" style={{background:'var(--accent-600)'}}>✓ {t('approveBtn')}</button>
             <button onClick={()=>setDeclining(r.id)} className="flex-1 py-2.5 rounded-xl font-bold text-sm border-2 border-red-200 text-red-500">✕ {t('declineBtn')}</button>
           </div>
         ))}
@@ -3424,7 +3426,7 @@ const LeaveRequests = ({leaveReqs,staff,onApprove,onDecline,onDelete}) => {
         ? pending.map(r=><React.Fragment key={r.id}>{Req({r,actions:true})}</React.Fragment>)
         : <div className="card py-10 text-center"><p className="font-bold" style={{color:'var(--text-dim)'}}>{t('noPendingRequests')}</p></div>}
       {rest.length>0 && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide pt-3" style={{color:'var(--text-dim)'}}>{t('historyLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide pt-3" style={{color:'var(--text-dim)'}}>{t('historyLabel')}</p>
         {rest.map(r=><React.Fragment key={r.id}>{Req({r,actions:false})}</React.Fragment>)}
       </React.Fragment>)}
     </div>
@@ -3440,7 +3442,7 @@ const KudosManager = ({kudos,staff,onDelete}) => {
   const sorted = [...kudos].sort((a,b)=>b.date.localeCompare(a.date));
   return (
     <div className="mt-5">
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>👏 {t('kudosManagerTitle')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>👏 {t('kudosManagerTitle')}</p>
       {sorted.length===0
         ? <div className="card py-8 text-center"><p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('kudosManagerEmpty')}</p></div>
         : <div className="space-y-2">
@@ -3531,7 +3533,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
       </div>
       <div className="flex items-center gap-2 mb-3">
         <button onClick={()=>nav(-1)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
-        <div className="flex-1 text-center"><p className="text-sm font-black" style={{color:'var(--text)'}}>{label}</p></div>
+        <div className="flex-1 text-center"><p className="text-sm font-bold" style={{color:'var(--text)'}}>{label}</p></div>
         <button onClick={()=>nav(1)} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
       </div>
 
@@ -3548,7 +3550,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                   <div className="flex items-center gap-2.5">
                     <div className="w-9 h-9 rounded-full flex items-center justify-center" style={{background:'var(--accent-100)'}}><Ic n="user" s={16} c="var(--accent-600)"/></div>
                     <div>
-                      <p className="text-sm font-black" style={{color:'var(--text)'}}>{st.name}</p>
+                      <p className="text-sm font-bold" style={{color:'var(--text)'}}>{st.name}</p>
                       <p className="text-xs" style={{color:'var(--text-dim)'}}>{st.cnt} {t('linesLabel')} · {st.hours.toFixed(1)}{t('hourAbbrev')} {t('productiveLabel')}</p>
                     </div>
                   </div>
@@ -3562,9 +3564,9 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                 </div>
                 {(mix.length>0 || st.resale>0 || st.tips>0) && (
                   <div className="flex gap-1.5 flex-wrap mt-2">
-                    {mix.map(([n,c])=><span key={n} className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{n} ×{c}</span>)}
-                    {st.resale>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--st-festive-bg)',color:'var(--st-festive)'}}>🏷️ {t('resaleInlineLabel')} {fmt(st.resale)}</span>}
-                    {st.tips>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--gold-bg)',color:'var(--gold)'}}>💛 tips {fmt(st.tips)}</span>}
+                    {mix.map(([n,c])=><span key={n} className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{n} ×{c}</span>)}
+                    {st.resale>0 && <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:'var(--st-festive-bg)',color:'var(--st-festive)'}}>🏷️ {t('resaleInlineLabel')} {fmt(st.resale)}</span>}
+                    {st.tips>0 && <span className="text-xs font-bold px-2 py-1 rounded-lg" style={{background:'var(--gold-bg)',color:'var(--gold)'}}>💛 tips {fmt(st.tips)}</span>}
                   </div>
                 )}
               </button>
@@ -3574,11 +3576,11 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                     const occ = occupancyOf(st);
                     return (
                       <div className="rounded-xl px-3 py-2.5 mb-1" style={{background:'var(--soft)'}}>
-                        <p className="text-[10px] font-black uppercase tracking-wider mb-1" style={{color:'var(--text-dim)'}}>{t('occupancyLabel')}</p>
+                        <p className="text-xs font-bold uppercase tracking-wider mb-1" style={{color:'var(--text-dim)'}}>{t('occupancyLabel')}</p>
                         {occ
                           ? <div className="flex items-center justify-between">
                               <span className="text-xs" style={{color:'var(--text-dim)'}}>{st.hours.toFixed(1)}{t('hourAbbrev')} {t('productiveLabel')} / {occ.scheduled.toFixed(1)}{t('hourAbbrev')} {t('ofShiftLabel')}</span>
-                              <span className="text-sm font-black" style={{color: occ.pct>=85?'var(--ok)':occ.pct<=50?'var(--danger)':'var(--text-dim)'}}>{occ.pct.toFixed(0)}%</span>
+                              <span className="text-sm font-bold" style={{color: occ.pct>=85?'var(--ok)':occ.pct<=50?'var(--danger)':'var(--text-dim)'}}>{occ.pct.toFixed(0)}%</span>
                             </div>
                           : <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('noScheduleDataLabel')}</p>}
                       </div>
@@ -3588,7 +3590,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                     <div key={r.key} className="flex items-center gap-2 rounded-xl px-3 py-2 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
                       <div className="flex-1 min-w-0">
                         <p className="text-xs font-bold truncate" style={{color:'var(--text)'}}>{r.l.name}</p>
-                        <p className="text-[10px]" style={{color:'var(--text-dim)'}}>{period!=='day'?fmtD(r.v.date)+' · ':''}{r.v.time}{r.v.clientId?` · ${clients.find(c=>c.id===r.v.clientId)?.name||''}`:''}{r.l.dur>0?` · ${r.l.dur}′`:''}</p>
+                        <p className="text-xs" style={{color:'var(--text-dim)'}}>{period!=='day'?fmtD(r.v.date)+' · ':''}{r.v.time}{r.v.clientId?` · ${clients.find(c=>c.id===r.v.clientId)?.name||''}`:''}{r.l.dur>0?` · ${r.l.dur}′`:''}</p>
                       </div>
                       <p className="text-xs font-black amt" style={{color:'var(--accent-600)'}}>{fmt(lineTotal(r.l))}</p>
                     </div>
@@ -3676,7 +3678,7 @@ const FinReports = ({visits,expenses,staff,clients}) => {
       {/* ΦΠΑ — συντηρητική εκτίμηση «τι να έχεις στην άκρη».
           Η επίσημη εκκαθάριση γίνεται εκτός εφαρμογής από τον λογιστή. */}
       <div className="card overflow-hidden mb-3">
-        <div className="px-4 py-2.5" style={{background:'var(--warn-bg-2)',borderBottom:'1px solid var(--warn-bg)'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--warn-2)'}}>{t('vatEstimateUpperBoundLabel')}</p></div>
+        <div className="px-4 py-2.5" style={{background:'var(--warn-bg-2)',borderBottom:'1px solid var(--warn-bg)'}}><p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--warn-2)'}}>{t('vatEstimateUpperBoundLabel')}</p></div>
         {[[t('vatOutLabel'),sum.vatOut,'var(--danger)'],[t('vatInDeductibleLabel'),sum.vatIn,'var(--ok)'],[t('netVatSetAsideLabel'),sum.netVat,'var(--warn-2)']].map(([l,v,c],i)=>(
           <div key={l} className="flex justify-between items-center px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
             <span className="text-sm" style={{color:'var(--text-dim)'}}>{l}</span>
@@ -3688,7 +3690,7 @@ const FinReports = ({visits,expenses,staff,clients}) => {
       {/* Ισονομία: ώρες παραγωγικής δουλειάς + €/ώρα (spec §7) */}
       {stf.length>0 && (
         <div className="card overflow-hidden mb-3">
-          <div className="px-4 py-2.5" style={{background:'var(--accent-50)',borderBottom:'1px solid var(--border)'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--accent-600)'}}>{t('fairComparisonLabel')}</p></div>
+          <div className="px-4 py-2.5" style={{background:'var(--accent-50)',borderBottom:'1px solid var(--border)'}}><p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--accent-600)'}}>{t('fairComparisonLabel')}</p></div>
           {stf.map((s,i)=>(
             <div key={s.id} className="px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
               <div className="flex items-center justify-between">
@@ -3707,7 +3709,7 @@ const FinReports = ({visits,expenses,staff,clients}) => {
       {/* Νέοι/επαναλαμβανόμενοι */}
       <div className="card px-4 py-3 mb-3 flex items-center justify-between">
         <p className="text-xs font-bold" style={{color:'var(--text-dim)'}}>{t('clientsInPeriodLabel')}</p>
-        <p className="text-sm font-black" style={{color:'var(--text)'}}>{newC} {t('newClientsInlineLabel')} · {Math.max(0,perClients.length-newC)} {t('repeatClientsInlineLabel')}</p>
+        <p className="text-sm font-bold" style={{color:'var(--text)'}}>{newC} {t('newClientsInlineLabel')} · {Math.max(0,perClients.length-newC)} {t('repeatClientsInlineLabel')}</p>
       </div>
 
       <div className="card px-4 py-3 flex items-center justify-between">
@@ -3757,10 +3759,10 @@ const PendingPhotosQueue = ({visits,clients,onMarkPosted,onUnmarkPosted}) => {
   return (
     <div>
       <div className="rounded-2xl p-1 flex mb-3" style={{background:'var(--soft)'}}>
-        <button onClick={()=>setView('pending')} className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${view==='pending'?'text-white shadow':''}`} style={view==='pending'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
+        <button onClick={()=>setView('pending')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${view==='pending'?'text-white shadow':''}`} style={view==='pending'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
           {t('photoTabPending')}{pending.length>0?` (${pending.length})`:''}
         </button>
-        <button onClick={()=>setView('history')} className={`flex-1 py-2 rounded-xl text-xs font-black transition-all ${view==='history'?'text-white shadow':''}`} style={view==='history'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
+        <button onClick={()=>setView('history')} className={`flex-1 py-2 rounded-xl text-xs font-bold transition-all ${view==='history'?'text-white shadow':''}`} style={view==='history'?{background:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
           {t('photoTabHistory')}
         </button>
       </div>
@@ -3782,10 +3784,10 @@ const PendingPhotosQueue = ({visits,clients,onMarkPosted,onUnmarkPosted}) => {
                     <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{fmtD(v.date)}</p>
                   </div>
                   <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNamesOf(v)}</p>
-                  <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>
+                  <p className="text-xs mb-3" style={{color:'var(--accent-600)'}}>
                     {stats.count===0 ? t('postedNeverLabel') : `×${stats.count} ${t('postedCountLabel')} · ${t('postedLastLabel')} ${fmtD(stats.last)}`}
                   </p>
-                  <button onClick={()=>onMarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black text-white" style={{background:'var(--accent-600)'}}>
+                  <button onClick={()=>onMarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-bold text-white" style={{background:'var(--accent-600)'}}>
                     {t('markPostedBtn')}
                   </button>
                 </div>
@@ -3808,8 +3810,8 @@ const PendingPhotosQueue = ({visits,clients,onMarkPosted,onUnmarkPosted}) => {
                   <p className="text-xs flex-shrink-0" style={{color:'var(--text-dim)'}}>{t('visitDatePrefixLabel')}: {fmtD(v.date)}</p>
                 </div>
                 <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{svcNamesOf(v)}</p>
-                <p className="text-[11px] mb-3" style={{color:'var(--accent-600)'}}>{t('postedOnPrefixLabel')}: {fmtD(v.postedAt||v.date)}</p>
-                <button onClick={()=>onUnmarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-black" style={{background:'var(--soft)',color:'var(--text-dim)'}}>
+                <p className="text-xs mb-3" style={{color:'var(--accent-600)'}}>{t('postedOnPrefixLabel')}: {fmtD(v.postedAt||v.date)}</p>
+                <button onClick={()=>onUnmarkPosted(v.id)} className="w-full py-2 rounded-xl text-xs font-bold" style={{background:'var(--soft)',color:'var(--text-dim)'}}>
                   {t('undoPostedBtn')}
                 </button>
               </div>
@@ -3885,7 +3887,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
   const DiffBadge = ({val}) => {
     if(!hasMachine) return null;
     const ok = Math.abs(val)<0.01;
-    return <span className="text-xs font-black px-2 py-0.5 rounded-full" style={ok?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{ok?t('okBadgeLabel'):(val>0?'+':'')+fmt(val)}</span>;
+    return <span className="text-xs font-bold px-2 py-0.5 rounded-full" style={ok?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{ok?t('okBadgeLabel'):(val>0?'+':'')+fmt(val)}</span>;
   };
 
   return (
@@ -3893,23 +3895,23 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
       <div className="flex items-center gap-2 px-4 py-3" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
         <CloseBtn onClick={onBack}/>
         <button onClick={()=>setDate(addDays(date,-1))} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
-        <div className="flex-1 text-center"><p className="text-sm font-black" style={{color:'var(--text)'}}>⚡ Ζ — {date===today()?t('todayLabel'):fmtD(date)} {zmap[date]&&'· 🔒'}</p></div>
+        <div className="flex-1 text-center"><p className="text-sm font-bold" style={{color:'var(--text)'}}>⚡ Ζ — {date===today()?t('todayLabel'):fmtD(date)} {zmap[date]&&'· 🔒'}</p></div>
         <button onClick={()=>{const n=addDays(date,1); if(n<=today()) setDate(n);}} disabled={date>=today()} className="w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-30" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
       </div>
 
       <div className="px-4 mt-4 space-y-3">
         <div className="card overflow-hidden">
-          <div className="px-4 py-2.5" style={{background:'var(--accent-600)'}}><p className="text-xs font-black text-white uppercase tracking-wider">{t('appCalcHeaderLabel')}</p></div>
+          <div className="px-4 py-2.5" style={{background:'var(--accent-600)'}}><p className="text-xs font-bold text-white uppercase tracking-wider">{t('appCalcHeaderLabel')}</p></div>
           {[[t('cashServicesLabel'),sum.cash],[t('posServicesLabel'),sum.pos],[t('posTipsLabel'),sum.posTips],[t('posTerminalTotalLabel'),appPosTotal],[t('expLabel'),-sum.expTotal]].map(([l,v],i)=>(
             <div key={l} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
-              <span className={`text-sm ${String(l).startsWith('─')?'font-black':''}`} style={{color:String(l).startsWith('─')?'var(--text)':'var(--text-dim)'}}>{String(l).replace('─── ','')}</span>
+              <span className={`text-sm ${String(l).startsWith('─')?'font-bold':''}`} style={{color:String(l).startsWith('─')?'var(--text)':'var(--text-dim)'}}>{String(l).replace('─── ','')}</span>
               <span className="font-bold amt text-sm" style={{color:l===t('expLabel')&&Math.abs(v)>=0.005?'var(--danger-2)':String(l).startsWith('─')?'var(--info)':'var(--text)'}}>{fmt(v)}</span>
             </div>
           ))}
         </div>
 
         <div className="card overflow-hidden">
-          <div className="px-4 py-2.5 bg-gray-700"><p className="text-xs font-black text-white uppercase tracking-wider">{t('fromMachinesHeaderLabel')}</p></div>
+          <div className="px-4 py-2.5 bg-gray-700"><p className="text-xs font-bold text-white uppercase tracking-wider">{t('fromMachinesHeaderLabel')}</p></div>
           <div className="p-4 space-y-3">
             <div>
               <p className="text-xs font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('cashRegisterZLabel')}</p>
@@ -3932,7 +3934,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
 
         {hasMachine && (
           <div className="card overflow-hidden">
-            <div className="px-4 py-2.5" style={{background:Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'var(--accent-50)':'var(--danger-bg)'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--text)'}}>{t('differencesHeaderLabel')}</p></div>
+            <div className="px-4 py-2.5" style={{background:Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'var(--accent-50)':'var(--danger-bg)'}}><p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--text)'}}>{t('differencesHeaderLabel')}</p></div>
             {[[t('cashRegisterShortLabel'),cashDiff],[t('posTerminalShortLabel'),posDiff]].map(([l,v],i)=>(
               <div key={l} className="flex justify-between items-center px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
                 <span className="text-sm" style={{color:'var(--text-dim)'}}>{l}</span>
@@ -3945,7 +3947,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
         {stf.length>0 && (
           <div className="card overflow-hidden">
             <div className="px-4 py-2.5 flex items-center justify-between" style={{background:'var(--gold-bg-2)',borderBottom:'1px solid var(--gold-bg)'}}>
-              <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--gold)'}}>{t('tipsDistributionHeaderLabel')}</p>
+              <p className="text-xs font-bold uppercase tracking-wider" style={{color:'var(--gold)'}}>{t('tipsDistributionHeaderLabel')}</p>
               <button onClick={()=>setTipsGiven(!tipsGiven)} className={`px-3 py-1 rounded-full text-xs font-bold border ${tipsGiven?'bg-emerald-500 text-white border-emerald-500':'border-gray-300'}`} style={!tipsGiven?{color:'var(--text-dim)',background:'var(--surface)'}:{}}>
                 {tipsGiven?t('tipsGivenLabel'):t('tipsPendingLabel')}
               </button>
@@ -3994,9 +3996,9 @@ const ExpenseCatManager = ({cats,onSave,onDelete,onClose}) => {
 
         {edit ? (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newCategoryLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newCategoryLabel')}</p>
             <div className="mb-3"><CInput label={t('nameLabel')} value={edit.name} onChange={v=>set('name',v)}/></div>
-            <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('vatPercentLabel')}</p>
+            <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('vatPercentLabel')}</p>
             <div className="flex gap-2 flex-wrap mb-3">
               {VAT_RATES.map(r=><button key={r} onClick={()=>set('vat',r)} className={`chip ${edit.vat===r?'on':''}`}>{r}%</button>)}
             </div>
@@ -4039,16 +4041,16 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
 
         {edit ? (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newFixedExpenseLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newFixedExpenseLabel')}</p>
             <div className="mb-3"><CInput label={t('nameLabel')} value={edit.name} onChange={v=>set('name',v)}/></div>
-            <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
+            <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
             <div className="flex gap-2 flex-wrap mb-3">
               {cats.map(c=><button key={c.id} onClick={()=>set('cat',c.name)} className={`chip ${edit.cat===c.name?'on':''}`}>{c.name}</button>)}
             </div>
             <div className="flex gap-2 mb-3">
               <CInput label={t('amountEuroLabel')} value={edit.amt} onChange={v=>set('amt',v)} decimal/>
               <div className="flex-1">
-                <p className="text-[10px] font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('typeLabel')}</p>
+                <p className="text-xs font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('typeLabel')}</p>
                 <div className="flex gap-1.5">
                   {[['fixed',t('fixedTypeLabel')],['variable',t('variableTypeLabel')]].map(([v,l])=>(
                     <button key={v} onClick={()=>set('type',v)} className={`chip flex-1 text-center ${edit.type===v?'on':''}`}>{l}</button>
@@ -4131,14 +4133,14 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
 
         {edit ? (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newStaffLabel')}</p>
+            <p className="text-xs font-bold uppercase tracking-wide mb-3" style={{color:'var(--accent-600)'}}>{edit.id?t('editActionLabel'):t('newStaffLabel')}</p>
             <div className="mb-3"><CInput label={t('nameLabel')} value={edit.name} onChange={v=>set('name',v)}/></div>
             <div className="mb-3"><CInput label="Email" value={edit.email} onChange={v=>set('email',v)} type="email"/></div>
             <div className="mb-3">
               <CInput label={t('staffPinLabel')} value={edit.pin} onChange={v=>set('pin', v.replace(/\D/g,'').slice(0,4))}/>
-              <p className="text-[11px] mt-1" style={{color:'var(--text-dim)'}}>{edit.id ? t('staffPinExistingHint') : t('staffPinNewHint')}</p>
+              <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>{edit.id ? t('staffPinExistingHint') : t('staffPinNewHint')}</p>
             </div>
-            <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffRoleFieldLabel')}</p>
+            <p className="text-xs font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffRoleFieldLabel')}</p>
             <div className="flex gap-2 flex-wrap mb-3">
               {[[ROLE.RECEPTION,t('roleReception')],[ROLE.STAFF,t('roleStaff')],[ROLE.MASTER,t('roleMaster')]].map(([v,l])=>(
                 <button key={v} onClick={()=>set('role',v)} className={`chip ${edit.role===v?'on':''}`}>{l}</button>
@@ -4150,7 +4152,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
             <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-3" style={{background:'var(--surface)'}}>
               <div className="pr-2">
                 <p className="text-sm font-bold" style={{color:'var(--text)'}}>✂️ {t('servesClientsLabel')}</p>
-                <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('servesClientsHint')}</p>
+                <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('servesClientsHint')}</p>
               </div>
               <button onClick={()=>set('servesClients',!(edit.servesClients ?? edit.role===ROLE.STAFF))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.servesClients ?? edit.role===ROLE.STAFF)?'var(--accent-600)':'var(--toggle-off)'}}>
                 <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.servesClients ?? edit.role===ROLE.STAFF)?'translateX(24px)':'none'}}/>
@@ -4161,7 +4163,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
                 καταχωρημένες μέρες στο schedData — μόνο το default για νέες/μελλοντικές μέρες. */}
             <div className="rounded-xl px-3 py-2.5 mb-3" style={{background:'var(--surface)'}}>
               <p className="text-sm font-bold mb-0.5" style={{color:'var(--text)'}}>🗓️ {t('scheduleLabel')}</p>
-              <p className="text-[11px] mb-2.5" style={{color:'var(--text-dim)'}}>{t('scheduleHint')}</p>
+              <p className="text-xs mb-2.5" style={{color:'var(--text-dim)'}}>{t('scheduleHint')}</p>
               <div className="space-y-1.5">
                 {[1,2,3,4,5,6,0].map(d=>{
                   const sched = edit.schedule || DEF_SCHEDULE;
@@ -4186,7 +4188,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
               <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-3" style={{background:'var(--surface)'}}>
                 <div className="pr-2">
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>👤 {t('activeStaffLabel')}</p>
-                  <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('activeStaffHint')}</p>
+                  <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('activeStaffHint')}</p>
                 </div>
                 <button onClick={()=>set('active',!(edit.active ?? true))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.active ?? true)?'var(--accent-600)':'var(--toggle-off)'}}>
                   <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.active ?? true)?'translateX(24px)':'none'}}/>
@@ -4209,7 +4211,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
           {[...staff].sort((a,b)=>(isActiveStaff(a)?0:1)-(isActiveStaff(b)?0:1)).map(p=>(
             <button key={p.id} onClick={()=>startEdit(p)} className="card px-4 py-3 flex items-center justify-between gap-2 w-full text-left" style={!isActiveStaff(p)?{opacity:0.55}:{}}>
               <div className="min-w-0">
-                <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{p.name}{!isActiveStaff(p)?<span className="text-[10px] font-bold ml-1.5" style={{color:'var(--text-dim)'}}>({t('inactiveStaffBadge')})</span>:null}</p>
+                <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{p.name}{!isActiveStaff(p)?<span className="text-xs font-bold ml-1.5" style={{color:'var(--text-dim)'}}>({t('inactiveStaffBadge')})</span>:null}</p>
                 <p className="text-xs truncate" style={{color:'var(--text-dim)'}}>{roleLabel(p.role)}{(p.servesClients ?? p.role===ROLE.STAFF)?' · ✂️':''} · {p.email}{p.birthday?` · 🎂 ${p.birthday.split('-').reverse().join('/')}`:''}</p>
               </div>
               <Ic n="next" s={16} c="var(--text-dim)"/>
@@ -4265,7 +4267,7 @@ const ChangePasswordCard = ({onChangePassword}) => {
       </div>
       {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? 'var(--danger)' : 'var(--accent-600)'}}>{msg.text}</p>}
       <button onClick={submit} disabled={busy || !cur || !nw || !cf}
-        className="w-full py-2.5 rounded-xl text-sm font-black" style={{background:'var(--accent-600)',color:'white',opacity:(busy||!cur||!nw||!cf)?.6:1}}>
+        className="w-full py-2.5 rounded-xl text-sm font-bold" style={{background:'var(--accent-600)',color:'white',opacity:(busy||!cur||!nw||!cf)?.6:1}}>
         {busy ? t('changePwBusy') : t('changePwBtn')}
       </button>
     </div>
@@ -4310,7 +4312,7 @@ const PinChangeCard = ({onChangePin}) => {
       </div>
       {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? 'var(--danger)' : 'var(--accent-600)'}}>{msg.text}</p>}
       <button onClick={submit} disabled={!cur || nw.length!==4 || cf.length!==4}
-        className="w-full py-2.5 rounded-xl text-sm font-black" style={{background:'var(--accent-600)',color:'white',opacity:(!cur||nw.length!==4||cf.length!==4)?.6:1}}>
+        className="w-full py-2.5 rounded-xl text-sm font-bold" style={{background:'var(--accent-600)',color:'white',opacity:(!cur||nw.length!==4||cf.length!==4)?.6:1}}>
         {t('changePinBtn')}
       </button>
     </div>
@@ -4338,7 +4340,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5"/>
       <h2 className="text-lg font-black mb-5" style={{color:'var(--text)'}}>{t('settingsTitle')}</h2>
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('themeLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('themeLabel')}</p>
       <div className="flex gap-2 mb-5">
         {[['light',t('themeLight')],['dark',t('themeDark')],['system',t('themeSystem')]].map(([k,l])=>(
           <button key={k} onClick={()=>setTheme(k)} className="flex-1 py-2.5 rounded-xl text-sm font-bold"
@@ -4348,14 +4350,14 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
         ))}
       </div>
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('colorLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('colorLabel')}</p>
       <div className="flex gap-3 mb-5 flex-wrap">
         {Object.entries(ACCENTS).map(([k,a])=>(
           <button key={k} title={a.label} onClick={()=>setAccent(k)} className={`swatch ${accent===k?'sel':''}`} style={{background:`linear-gradient(135deg,${a.accent},${a.accent2})`}}/>
         ))}
       </div>
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('settingsLangLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('settingsLangLabel')}</p>
       <div className="flex gap-2 mb-5">
         <button onClick={()=>set('lang','el')} className="flex-1 py-2.5 rounded-xl text-sm font-bold"
           style={(settings.lang||'el')==='el' ? {background:'var(--accent-600)',color:'white'} : {background:'var(--accent-50)',color:'var(--text)'}}>{t('langNameEl')}</button>
@@ -4367,7 +4369,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       )}
 
       {isMaster && onOpenCatalog && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('catalogLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('catalogLabel')}</p>
         <button onClick={onOpenCatalog} className="w-full card px-4 py-3.5 mb-2 flex items-center justify-between text-left">
           <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>✂️🏷️ {t('servicesProductsTitle')}</p><p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{t('servicesProductsHint')}</p></div>
           <Ic n="next" s={16} c="var(--text-dim)"/>
@@ -4381,7 +4383,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onOpenStaffManager && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('staffSectionLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('staffSectionLabel')}</p>
         <button onClick={onOpenStaffManager} className="w-full card px-4 py-3.5 mb-2 flex items-center justify-between text-left">
           <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>👥 {t('staffManagerCardTitle')}</p><p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{staff.length} {t('staffCountSuffix')}</p></div>
           <Ic n="next" s={16} c="var(--text-dim)"/>
@@ -4389,7 +4391,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
         <p className="text-xs mb-5" style={{color:'var(--text-dim)'}}>{t('staffInviteHint')}</p>
       </React.Fragment>)}
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('businessLabel')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('businessLabel')}</p>
       {isMaster ? (
         <div className="card px-4 py-3 mb-5">
           <CInput label={t('shopNameLabel')} value={settings.shopName} onChange={v=>set('shopName',v)}/>
@@ -4401,7 +4403,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       )}
 
       {isMaster && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('currencyLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('currencyLabel')}</p>
         <div className="flex gap-2 mb-5">
           {Object.entries(CURRENCIES).map(([code,c])=>(
             <button key={code} onClick={()=>set('currency',code)} className="flex-1 py-2.5 rounded-xl text-sm font-bold"
@@ -4411,7 +4413,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
           ))}
         </div>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('vatDefaultsLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('vatDefaultsLabel')}</p>
         <div className="card p-4 mb-5">
           <div className="flex items-center justify-between mb-3">
             <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>🏝️ {t('aegeanIslandLabel')}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{t('aegeanIslandHint')}</p></div>
@@ -4429,46 +4431,46 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
           )}
         </div>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('expenseCatsLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('expenseCatsLabel')}</p>
         <button onClick={onOpenExpCats} className="w-full card px-4 py-3.5 mb-5 flex items-center justify-between text-left">
           <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>💸 {t('expenseCatsCardTitle')}</p><p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{t('expenseCatsHint')}</p></div>
           <Ic n="next" s={16} c="var(--text-dim)"/>
         </button>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('fixedExpensesLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('fixedExpensesLabel')}</p>
         <button onClick={onOpenFixedExp} className="w-full card px-4 py-3.5 mb-5 flex items-center justify-between text-left">
           <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>🔁 {t('fixedExpensesCardTitle')}</p><p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{t('fixedExpensesHint')}</p></div>
           <Ic n="next" s={16} c="var(--text-dim)"/>
         </button>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('autoLockLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('autoLockLabel')}</p>
         <div className="flex gap-2 mb-5 flex-wrap">
           {AUTO_LOCK_OPTIONS.map(m=>(
             <button key={m} onClick={()=>set('autoLockMinutes',m)} className={`chip ${settings.autoLockMinutes===m?'on':''}`}>{m}′</button>
           ))}
         </div>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('clientInactivitySettingsLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('clientInactivitySettingsLabel')}</p>
         <div className="card px-4 py-3 mb-2">
           <CInput label={t('daysUntilInactiveLabel')} value={settings.clientInactivityDays} onChange={v=>set('clientInactivityDays',v)} type="number"/>
         </div>
         <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{t('clientInactivityHint')}</p>
       </React.Fragment>)}
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('changePinTitle')}</p>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('changePinTitle')}</p>
       <PinChangeCard onChangePin={onChangePin}/>
 
-      <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>
+      <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>
         {t('changePwTitle')}{deviceEmail ? ` (${t('deviceAccountLabel')}: ${deviceEmail})` : ''}
       </p>
       <ChangePasswordCard onChangePassword={onChangePassword}/>
 
       {isMaster && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('testModeSectionLabel')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('testModeSectionLabel')}</p>
         <div className="flex items-center justify-between rounded-xl px-3 py-2.5 mb-2" style={{background:'var(--soft)'}}>
           <div className="pr-2">
             <p className="text-sm font-bold" style={{color:'var(--text)'}}>🧪 {t('testModeToggleLabel')}</p>
-            <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('testModeToggleHint')}</p>
+            <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('testModeToggleHint')}</p>
           </div>
           <button onClick={()=>set('testMode',!settings.testMode)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.testMode?'#f59e0b':'var(--toggle-off)'}}>
             <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:settings.testMode?'translateX(24px)':'none'}}/>
@@ -4477,7 +4479,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('testModeSectionHint')}</p>
         {onClearTestEntries && (
           <div className="rounded-xl px-3 py-3 mb-5" style={{background:'var(--soft)'}}>
-            <p className="text-[11px] mb-2" style={{color:'var(--text-dim)'}}>{t('clearTestEntriesHint')}</p>
+            <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{t('clearTestEntriesHint')}</p>
             <button onClick={async ()=>{
                 if(clearingTest) return;
                 if(!window.confirm(t('clearTestEntriesConfirm'))) return;
@@ -4487,7 +4489,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 window.alert(t('clearTestEntriesDoneMsg'));
               }}
               disabled={clearingTest}
-              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'#f59e0b'}}>
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-40" style={{background:'#f59e0b'}}>
               🧪 {clearingTest ? t('clearTestEntriesBusyBtn') : t('clearTestEntriesBtn')}
             </button>
           </div>
@@ -4495,7 +4497,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onSyncClaims && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('syncClaimsTitle')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('syncClaimsTitle')}</p>
         <div className="rounded-xl px-3 py-3 mb-1" style={{background:'var(--soft)'}}>
           <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('syncClaimsHint')}</p>
           <button onClick={async ()=>{
@@ -4511,11 +4513,11 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
               }
             }}
             disabled={syncBusy}
-            className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
             {syncBusy ? t('syncClaimsBusyBtn') : t('syncClaimsBtn')}
           </button>
           {syncResult && (
-            <div className="mt-3 text-[11px]" style={{color:'var(--text)'}}>
+            <div className="mt-3 text-xs" style={{color:'var(--text)'}}>
               {syncResult.ok===false ? (
                 <p style={{color:'var(--danger)'}}>❌ {syncResult.error}</p>
               ) : (
@@ -4533,7 +4535,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onRegisterPush && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('pushTitle')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('pushTitle')}</p>
         <div className="rounded-xl px-3 py-3 mb-1" style={{background:'var(--soft)'}}>
           <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pushHint')}</p>
           <button onClick={async ()=>{
@@ -4549,11 +4551,11 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
               }
             }}
             disabled={pushBusy}
-            className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
+            className="w-full py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-40" style={{background:'var(--accent-600)'}}>
             {pushBusy ? t('pushBusyBtn') : t('pushBtn')}
           </button>
           {pushResult && (
-            <p className="mt-3 text-[11px]" style={{color: pushResult.ok ? 'var(--ok)' : 'var(--danger)'}}>
+            <p className="mt-3 text-xs" style={{color: pushResult.ok ? 'var(--ok)' : 'var(--danger)'}}>
               {pushResult.ok ? '✅ ' + t('pushOkMsg') : '❌ ' + pushResult.error}
             </p>
           )}
@@ -4561,13 +4563,13 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onResetPreLaunch && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--danger)'}}>{t('resetPreLaunchTitle')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--danger)'}}>{t('resetPreLaunchTitle')}</p>
         <div className="rounded-2xl p-4 mb-5 border-2" style={{borderColor:'var(--danger-border)',background:'var(--danger-bg-2)'}}>
           <p className="text-xs mb-3" style={{color:'var(--danger-deep)'}}>{t('resetPreLaunchHint')}</p>
           {resetDone ? (
             <p className="text-xs font-bold" style={{color:'var(--ok)'}}>✅ {t('resetPreLaunchDoneMsg')}</p>
           ) : (<React.Fragment>
-            <p className="text-[11px] font-bold mb-1.5" style={{color:'var(--danger-deep)'}}>{t('resetPreLaunchTypePrompt')} <span className="font-black">{t('resetConfirmWord')}</span></p>
+            <p className="text-xs font-bold mb-1.5" style={{color:'var(--danger-deep)'}}>{t('resetPreLaunchTypePrompt')} <span className="font-black">{t('resetConfirmWord')}</span></p>
             <input value={resetConfirmText} onChange={e=>setResetConfirmText(e.target.value)}
               className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none border mb-2" style={{background:'var(--surface)',borderColor:'var(--danger-border)',color:'var(--danger-deep)'}}/>
             <button onClick={async ()=>{
@@ -4580,7 +4582,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 setResetDone(true);
               }}
               disabled={resetting || resetConfirmText.trim().toUpperCase()!==t('resetConfirmWord')}
-              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--danger-solid)'}}>
+              className="w-full py-2.5 rounded-xl text-xs font-bold text-white disabled:opacity-40" style={{background:'var(--danger-solid)'}}>
               {resetting ? t('wipeDemoBusyBtn') : t('resetPreLaunchBtn')}
             </button>
           </React.Fragment>)}
@@ -4588,7 +4590,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onWipeDemoData && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('wipeDemoTitle')}</p>
+        <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('wipeDemoTitle')}</p>
         <button onClick={async ()=>{
             if(wiped || wiping) return;
             if(!window.confirm(t('wipeDemoConfirm'))) return;
