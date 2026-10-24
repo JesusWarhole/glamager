@@ -39,6 +39,13 @@
       --danger-bg-2:#fef2f2; --danger-border:#fecaca;
       --info:#3b82f6; --ok:#059669; --ok-bg:#d1fae5; --toggle-off:#d1d5db;
       --gold:#ca8a04; --gold-bg:#fef9c3; --gold-bg-2:#fefce8; --gold-border:#fde047; --festive-bg:#fdf2f8; --festive-border:#fbcfe8;
+      /* 24/10 (Cleanup #6): STATUSES palette (ημερολόγιο προσωπικού) + κάρτα ημέρας */
+      --st-work:#059669; --st-work-bg:#d1fae5; --st-work-bd:#6ee7b7; --st-overtime:#2563eb; --st-overtime-bg:#dbeafe; --st-overtime-bd:#93c5fd; --st-early:#d97706; --st-early-bg:#fef3c7; --st-early-bd:#fcd34d;
+      --st-festive:#7c3aed; --st-festive-bg:#ede9fe; --st-festive-bd:#c4b5fd; --st-sick:#dc2626; --st-sick-bg:#fee2e2; --st-sick-bd:#fca5a5; --st-leave:#0891b2; --st-leave-bg:#cffafe; --st-leave-bd:#67e8f9;
+      --st-holiday:#ca8a04; --st-holiday-bg:#fef9c3; --st-holiday-bd:#fde047; --st-off:#9ca3af; --st-off-bg:#f3f4f6; --st-off-bd:#d1d5db; --st-absent:#be123c; --st-absent-bg:#ffe4e6; --st-absent-bd:#fda4af;
+      --st-leave-pend-bg:#cffafe55; --st-leave-banner-bg:#cffafe33;
+      --day-dow:#9ca3af; --day-num:#374151; --day-arrow-bg:rgba(255,255,255,.6);
+      --happy-bday:#db2777; --happy-nameday:#7c3aed; --happy-world:#0ea5e9;
     }
     html.dark{
       --bg:#0b1220; --surface:#161f2e; --text:#f1f5f9; --text-dim:#94a3b8; --border:#243044;
@@ -49,6 +56,12 @@
       --danger-bg-2:#2a1515; --danger-border:#7f1d1d;
       --info:#60a5fa; --ok:#34d399; --ok-bg:#0f3b2e; --toggle-off:#334155;
       --gold:#facc15; --gold-bg:#3a3410; --gold-bg-2:#2a2612; --gold-border:#854d0e; --festive-bg:#2e1a26; --festive-border:#6b2148;
+      --st-work:#34d399; --st-work-bg:#0f2e25; --st-work-bd:#1f5c47; --st-overtime:#60a5fa; --st-overtime-bg:#14213d; --st-overtime-bd:#1e3a8a; --st-early:#fbbf24; --st-early-bg:#2e2410; --st-early-bd:#78530f;
+      --st-festive:#a78bfa; --st-festive-bg:#241a3d; --st-festive-bd:#4c2f8a; --st-sick:#f87171; --st-sick-bg:#2f1717; --st-sick-bd:#7f1d1d; --st-leave:#22d3ee; --st-leave-bg:#0e2a33; --st-leave-bd:#155e75;
+      --st-holiday:#facc15; --st-holiday-bg:#2c2a10; --st-holiday-bd:#713f12; --st-off:#94a3b8; --st-off-bg:#1c2739; --st-off-bd:#334155; --st-absent:#fb7185; --st-absent-bg:#2e1520; --st-absent-bd:#881337;
+      --st-leave-pend-bg:rgba(34,211,238,.10); --st-leave-banner-bg:rgba(34,211,238,.08);
+      --day-dow:#94a3b8; --day-num:#e2e8f0; --day-arrow-bg:rgba(255,255,255,.08);
+      --happy-bday:#f472b6; --happy-nameday:#c4b5fd; --happy-world:#38bdf8;
     }
     html{height:100%;overflow:hidden;}
     /* 01/08 v2: overflow:hidden + height:100% στο html/body ΔΕΝ αρκεί σε standalone iOS PWA —
@@ -459,20 +472,23 @@ for (let y=CUR_Y-1; y<=CUR_Y+3; y++) {
 const holidayLabel = ds => (LANG==='en' ? (HOLIDAYS_EN[ds]||HOLIDAYS[ds]) : HOLIDAYS[ds]);
 
 /* ── STATUSES (από SalonStaff — αυτούσια) + πίνακας δικαιωμάτων ──
+   24/10 (Cleanup #6): color/bg/border είναι πλέον CSS tokens (--st-<id>, -bg, -bd) — οι light τιμές τους στο
+   :root είναι ΑΚΡΙΒΩΣ τα παλιά hex, το html.dark δίνει σκούρα tints. ΠΡΟΣΟΧΗ: δεν γίνεται πια alpha-concat
+   (st.bg+'55') — για διαφάνεια φτιάξε ξεχωριστό token.
    Άδεια: υπάλληλος ΑΙΤΕΙΤΑΙ (pending → Master εγκρίνει/απορρίπτει με μήνυμα)
    Αναρρωτική: υπάλληλος κατευθείαν (+ επέκταση μόνος του)
    Υπερωρία/Πρόωρη/Εορταστικό/Απουσία: MASTER ΜΟΝΟ (επηρεάζουν ώρες/πληρωμή)
    Εργάστηκε/Ρεπό: αυτόματα από εβδομαδιαίο πρόγραμμα · Αργία: αυτόματα */
 const STATUSES = [
-  { id:'work',    label:'Εργάστηκε',    labelKey:'stWork',     emoji:'✅', color:'#059669', bg:'#d1fae5', border:'#6ee7b7', masterOnly:false, auto:true },
-  { id:'overtime',label:'Υπερωρία',      labelKey:'stOvertime', emoji:'⏰', color:'#2563eb', bg:'#dbeafe', border:'#93c5fd', masterOnly:true },
-  { id:'early',   label:'Πρόωρη αποχ.', labelKey:'stEarly',    emoji:'↩️', color:'#d97706', bg:'#fef3c7', border:'#fcd34d', masterOnly:true },
-  { id:'festive', label:'Εορταστικό',    labelKey:'stFestive',  emoji:'🎄', color:'#7c3aed', bg:'#ede9fe', border:'#c4b5fd', masterOnly:true },
-  { id:'sick',    label:'Αναρρωτική',    labelKey:'stSick',     emoji:'🤒', color:'#dc2626', bg:'#fee2e2', border:'#fca5a5', masterOnly:false },
-  { id:'leave',   label:'Άδεια',         labelKey:'stLeave',    emoji:'🏖️', color:'#0891b2', bg:'#cffafe', border:'#67e8f9', masterOnly:false, needsApproval:true },
-  { id:'holiday', label:'Αργία',         labelKey:'stHoliday',  emoji:'🎉', color:'#ca8a04', bg:'#fef9c3', border:'#fde047', masterOnly:true, auto:true },
-  { id:'off',     label:'Ρεπό',          labelKey:'stOff',      emoji:'💤', color:'#9ca3af', bg:'#f3f4f6', border:'#d1d5db', masterOnly:true, auto:true },
-  { id:'absent',  label:'Απουσία',       labelKey:'stAbsent',   emoji:'❌', color:'#be123c', bg:'#ffe4e6', border:'#fda4af', masterOnly:true },
+  { id:'work',    label:'Εργάστηκε',    labelKey:'stWork',     emoji:'✅', color:'var(--st-work)', bg:'var(--st-work-bg)', border:'var(--st-work-bd)', masterOnly:false, auto:true },
+  { id:'overtime',label:'Υπερωρία',      labelKey:'stOvertime', emoji:'⏰', color:'var(--st-overtime)', bg:'var(--st-overtime-bg)', border:'var(--st-overtime-bd)', masterOnly:true },
+  { id:'early',   label:'Πρόωρη αποχ.', labelKey:'stEarly',    emoji:'↩️', color:'var(--st-early)', bg:'var(--st-early-bg)', border:'var(--st-early-bd)', masterOnly:true },
+  { id:'festive', label:'Εορταστικό',    labelKey:'stFestive',  emoji:'🎄', color:'var(--st-festive)', bg:'var(--st-festive-bg)', border:'var(--st-festive-bd)', masterOnly:true },
+  { id:'sick',    label:'Αναρρωτική',    labelKey:'stSick',     emoji:'🤒', color:'var(--st-sick)', bg:'var(--st-sick-bg)', border:'var(--st-sick-bd)', masterOnly:false },
+  { id:'leave',   label:'Άδεια',         labelKey:'stLeave',    emoji:'🏖️', color:'var(--st-leave)', bg:'var(--st-leave-bg)', border:'var(--st-leave-bd)', masterOnly:false, needsApproval:true },
+  { id:'holiday', label:'Αργία',         labelKey:'stHoliday',  emoji:'🎉', color:'var(--st-holiday)', bg:'var(--st-holiday-bg)', border:'var(--st-holiday-bd)', masterOnly:true, auto:true },
+  { id:'off',     label:'Ρεπό',          labelKey:'stOff',      emoji:'💤', color:'var(--st-off)', bg:'var(--st-off-bg)', border:'var(--st-off-bd)', masterOnly:true, auto:true },
+  { id:'absent',  label:'Απουσία',       labelKey:'stAbsent',   emoji:'❌', color:'var(--st-absent)', bg:'var(--st-absent-bg)', border:'var(--st-absent-bd)', masterOnly:true },
 ];
 const stMap = Object.fromEntries(STATUSES.map(s=>[s.id,s]));
 const stLabel = st => t(st.labelKey);
@@ -1142,8 +1158,8 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
           </div>}>
 
         {pendingReq && (
-          <div className="rounded-2xl p-4 mb-3 border" style={{background:'#cffafe33',borderColor:'#67e8f9'}}>
-            <p className="text-sm font-bold" style={{color:'#0891b2'}}>🏖️ {t('pendingLeaveBanner')} {fmtD(pendingReq.from)} – {fmtD(pendingReq.to)}</p>
+          <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--st-leave-banner-bg)',borderColor:'var(--st-leave-bd)'}}>
+            <p className="text-sm font-bold" style={{color:'var(--st-leave)'}}>🏖️ {t('pendingLeaveBanner')} {fmtD(pendingReq.from)} – {fmtD(pendingReq.to)}</p>
             <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>{t('waitingApproval')}</p>
             <button onClick={()=>{onCancelReq(pendingReq.id);onClose();}} className="mt-2 text-xs font-bold text-red-500 underline">{t('cancelRequestBtn')}</button>
           </div>
@@ -1162,7 +1178,7 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
 
         {view==='leave' && (
           <div className="rounded-2xl p-4 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'#0891b2'}}>{t('leaveRequestFromLabel')} {fmtD(dateStr)}</p>
+            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--st-leave)'}}>{t('leaveRequestFromLabel')} {fmtD(dateStr)}</p>
             <p className="text-xs mb-1" style={{color:'var(--text-dim)'}}>{t('untilLabel')}</p>
             <input type="date" value={to} min={dateStr} onChange={e=>setTo(e.target.value)} className="w-full rounded-xl px-3 py-2.5 text-sm font-bold outline-none border mb-3" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
             <p className="text-xs font-bold mb-3" style={{color:'var(--text)'}}>{days} {days===1?t('dayCountSingular'):t('dayCountPlural')}</p>
@@ -1211,8 +1227,8 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
       {/* Υπόλοιπο αδειών */}
       <div className="card px-4 py-3 mb-3">
         <div className="flex items-center justify-between mb-1.5">
-          <p className="text-xs font-bold" style={{color:'#0891b2'}}>🏖️ {t('leaveBalanceLabel')} {year}</p>
-          <p className="text-xs font-black" style={{color:'#0891b2'}}>{leaveLeft} / {emp.leaveTotal||20} {t('dayCountPlural')}</p>
+          <p className="text-xs font-bold" style={{color:'var(--st-leave)'}}>🏖️ {t('leaveBalanceLabel')} {year}</p>
+          <p className="text-xs font-black" style={{color:'var(--st-leave)'}}>{leaveLeft} / {emp.leaveTotal||20} {t('dayCountPlural')}</p>
         </div>
         <div className="progress-bar"><div className="progress-fill" style={{width:`${Math.min(100,(leaveUsed/(emp.leaveTotal||20))*100)}%`,background:'#0891b2'}}/></div>
       </div>
@@ -1228,21 +1244,21 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
           const pend=pendingFor(dk);
           return (
             <div key={d} onClick={()=>setModal(dk)} className="day-cell flex items-center gap-3 px-4 py-2.5"
-              style={{background:pend?'#cffafe55':st.bg, border:`1.5px solid ${pend?'#67e8f9':st.border}`, ...(isToday?{boxShadow:'0 0 0 2px var(--accent-600)'}:{})}}>
+              style={{background:pend?'var(--st-leave-pend-bg)':st.bg, border:`1.5px solid ${pend?'var(--st-leave-bd)':st.border}`, ...(isToday?{boxShadow:'0 0 0 2px var(--accent-600)'}:{})}}>
               <div className="w-10 text-center flex-shrink-0">
-                <p className="text-[10px] font-bold text-gray-400">{dowShort(dk)}</p>
-                <p className="text-lg font-black text-gray-700">{d}</p>
+                <p className="text-[10px] font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p>
+                <p className="text-lg font-black" style={{color:'var(--day-num)'}}>{d}</p>
               </div>
               <div className="text-lg flex-shrink-0">{pend?'⏳':st.emoji}</div>
               <div className="flex-1 min-w-0">
-                <p className="font-bold text-sm" style={{color:pend?'#0891b2':st.color}}>{pend?t('pendingLeaveInline'):stLabel(st)}</p>
+                <p className="font-bold text-sm" style={{color:pend?'var(--st-leave)':st.color}}>{pend?t('pendingLeaveInline'):stLabel(st)}</p>
                 {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs" style={{color:'var(--text-dim)'}}>{sc.s} – {sc.e} ({timeDiff(sc.s,sc.e)}{t('hourAbbrev')})</p>:null; })()}
                 {['overtime','early','festive'].includes(entry.status)&&entry.start&&<p className="text-xs" style={{color:'var(--text-dim)'}}>🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
-                {entry.note&&<p className="text-xs text-gray-500 truncate">📝 {entry.note}</p>}
-                {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
+                {entry.note&&<p className="text-xs truncate" style={{color:'var(--text-dim)'}}>📝 {entry.note}</p>}
+                {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'var(--happy-bday)'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
                 {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
-                {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
-                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
+                {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'var(--happy-nameday)'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
+                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'var(--happy-world)'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
             </div>
           );
@@ -1299,14 +1315,14 @@ const Celebrations = ({t:dateIso,staff,visits,clients}) => {
   return (
     <div className={`rounded-2xl p-4 mb-3 border fade ${festive?'confetti-wrap':''}`} style={{background:'var(--festive-bg)',borderColor:'var(--festive-border)'}}>
       {festive && <Confetti/>}
-      {b.map(x=><p key={x.name} className="font-black text-sm" style={{color:'#db2777'}}>🎂 {
+      {b.map(x=><p key={x.name} className="font-black text-sm" style={{color:'var(--happy-bday)'}}>🎂 {
         x.age!=null
           ? (LANG==='en' ? `${x.name} turns ${x.age} today!` : `${x.name} σήμερα γίνεται ${x.age}!`)
           : `${t('birthdaysTodayPrefixLabel')} ${x.name}!`
       } 🎉</p>)}
-      {sc.length>0 && <p className="font-black text-sm" style={{color:'#db2777'}}>🎈 {t('teamCelebratingPrefixLabel')} {sc.join(' & ')}{t('manyHappyReturnsSuffixLabel')}</p>}
+      {sc.length>0 && <p className="font-black text-sm" style={{color:'var(--happy-bday)'}}>🎈 {t('teamCelebratingPrefixLabel')} {sc.join(' & ')}{t('manyHappyReturnsSuffixLabel')}</p>}
       {an.map(a=><p key={a.name} className="font-black text-sm" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
-      {ms.map(m=><p key={m.name} className="font-bold text-sm" style={{color:'#7c3aed'}}>🏆 {LANG==='en'?`${m.name} — visit #${m.n} today! Maybe treat them to something?`:`${m.name} — ${m.n}η επίσκεψη σήμερα! Αξίζει ένα κέρασμα;`}</p>)}
+      {ms.map(m=><p key={m.name} className="font-bold text-sm" style={{color:'var(--happy-nameday)'}}>🏆 {LANG==='en'?`${m.name} — visit #${m.n} today! Maybe treat them to something?`:`${m.name} — ${m.n}η επίσκεψη σήμερα! Αξίζει ένα κέρασμα;`}</p>)}
       {nd.length>0 && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🎈 {t('namedayTodayPrefixLabel')} {nd.join(', ')}</p>}
       {wd && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🌍 {t('worldDayTodayPrefixLabel')} {wd.join(' · ')}</p>}
     </div>
@@ -1471,7 +1487,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
       {/* Badge εκκρεμών αιτημάτων — ο Master ανοίγει την εφαρμογή καθημερινά για το Ζ */}
       {pending.length>0 && (
         <button onClick={()=>go('rep','reqs')} className="w-full card px-4 py-3 mb-3 flex items-center gap-3 text-left">
-          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'#cffafe'}}>
+          <div className="relative w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--st-leave-bg)'}}>
             <span className="text-lg">🏖️</span><span className="red-dot">{pending.length}</span>
           </div>
           <div className="flex-1">
@@ -3265,7 +3281,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
           ))}
         </div>
         <div className="px-4 py-3" style={{borderTop:'1px solid var(--border)'}}>
-          <div className="flex justify-between mb-1"><span className="text-xs" style={{color:'var(--text-dim)'}}>{t('leaveBalanceLabel')} {year}</span><span className="text-xs font-black" style={{color:'#0891b2'}}>{leaveLeft}/{emp.leaveTotal||20}</span></div>
+          <div className="flex justify-between mb-1"><span className="text-xs" style={{color:'var(--text-dim)'}}>{t('leaveBalanceLabel')} {year}</span><span className="text-xs font-black" style={{color:'var(--st-leave)'}}>{leaveLeft}/{emp.leaveTotal||20}</span></div>
           <div className="progress-bar"><div className="progress-fill" style={{width:`${Math.min(100,(leaveUsed/(emp.leaveTotal||20))*100)}%`,background:'#0891b2'}}/></div>
         </div>
       </div>
@@ -3279,19 +3295,19 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
           const needsTime=['overtime','early','festive'].includes(entry.status);
           return (
             <div key={d} onClick={()=>setModal({dk,raw})} className="day-cell flex items-center gap-3 px-4 py-2.5" style={{background:st.bg,border:`1.5px solid ${st.border}`,...(dk===today()?{boxShadow:'0 0 0 2px var(--accent-600)'}:{})}}>
-              <div className="w-10 text-center flex-shrink-0"><p className="text-[10px] font-bold text-gray-400">{dowShort(dk)}</p><p className="text-lg font-black text-gray-700">{d}</p></div>
+              <div className="w-10 text-center flex-shrink-0"><p className="text-[10px] font-bold" style={{color:'var(--day-dow)'}}>{dowShort(dk)}</p><p className="text-lg font-black" style={{color:'var(--day-num)'}}>{d}</p></div>
               <div className="text-lg flex-shrink-0">{st.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm" style={{color:st.color}}>{stLabel(st)}</p>
                 {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs" style={{color:'var(--text-dim)'}}>{sc.s} – {sc.e}</p>:null; })()}
                 {needsTime&&entry.start&&<p className="text-xs" style={{color:'var(--text-dim)'}}>🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
-                {entry.note&&<p className="text-xs text-gray-500 truncate">📝 {entry.note}</p>}
-                {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
+                {entry.note&&<p className="text-xs truncate" style={{color:'var(--text-dim)'}}>📝 {entry.note}</p>}
+                {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'var(--happy-bday)'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
                 {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
-                {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
-                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
+                {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'var(--happy-nameday)'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
+                {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'var(--happy-world)'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
-              <div className="w-6 h-6 rounded-lg bg-white/60 flex items-center justify-center flex-shrink-0"><Ic n="next" s={13} c={st.color}/></div>
+              <div className="w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--day-arrow-bg)'}}><Ic n="next" s={13} c={st.color}/></div>
             </div>
           );
         })}
@@ -3496,7 +3512,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                 {(mix.length>0 || st.resale>0 || st.tips>0) && (
                   <div className="flex gap-1.5 flex-wrap mt-2">
                     {mix.map(([n,c])=><span key={n} className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{n} ×{c}</span>)}
-                    {st.resale>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'#ede9fe',color:'#7c3aed'}}>🏷️ {t('resaleInlineLabel')} {fmt(st.resale)}</span>}
+                    {st.resale>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--st-festive-bg)',color:'var(--st-festive)'}}>🏷️ {t('resaleInlineLabel')} {fmt(st.resale)}</span>}
                     {st.tips>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--gold-bg)',color:'var(--gold)'}}>💛 tips {fmt(st.tips)}</span>}
                   </div>
                 )}
