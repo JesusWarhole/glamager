@@ -1729,7 +1729,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
             </button>
           )}
         </div>
-        <div className="mb-2"><CInput label={t('amountEuroLabel')} value={tip} onChange={setTip} type="number"/></div>
+        <div className="mb-2"><CInput label={t('amountEuroLabel')} value={tip} onChange={setTip} decimal/></div>
         {tp>0 && (<React.Fragment>
           <div className="flex gap-1.5 flex-wrap mb-1">
             {staff.map(s=>{
@@ -2048,10 +2048,14 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
    οι παλιές γραμμές κρατούν snapshot, δεν σπάει τίποτα). */
 
 /* Module-level (ΟΧΙ μέσα στο component — αλλιώς remount σε κάθε πάτημα = χάνεται το focus) */
-const CInput = ({label,value,onChange,type='text',w}) => (
+/* 24/10 (Cleanup #11): `decimal` = πεδίο ποσού που δέχεται κόμμα. Με type="number" ο browser πετούσε το κόμμα
+   («2,50» → 250, «13,00» → 1300) στην επεξεργασία κίνησης (tip) και εξόδου (ποσό). Τώρα: type="text" +
+   inputMode="decimal" και κόμμα → τελεία, ΙΔΙΟ μοτίβο με τα άλλα πεδία ποσών (νέα κίνηση, έξοδο, Ζ). */
+const decimalInput = s => String(s).replace(',','.').replace(/[^0-9.]/g,'');
+const CInput = ({label,value,onChange,type='text',w,decimal=false}) => (
   <div className={w?'':'flex-1'} style={w?{width:w}:{}}>
     <p className="text-[10px] font-bold mb-1" style={{color:'var(--text-dim)'}}>{label}</p>
-    <input type={type} value={value??''} onChange={e=>onChange(e.target.value)} inputMode={type==='number'?'decimal':undefined}
+    <input type={decimal?'text':type} value={value??''} onChange={e=>onChange(decimal?decimalInput(e.target.value):e.target.value)} inputMode={(decimal||type==='number')?'decimal':undefined}
       className="w-full rounded-xl px-3 py-2.5 text-sm font-bold outline-none border" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
   </div>
 );
@@ -2657,7 +2661,7 @@ const ExpenseEditor = ({e,cats,onSave,onClose}) => {
   const save = () => onSave({...e, cat, amt:parseFloat(amt)||0, note:note.trim()});
   return (
     <Sheet onClose={onClose} z={110} tall title={t('editExpenseTitle')}>
-        <div className="mb-3"><CInput label={t('amountEuroLabel')} value={amt} onChange={setAmt} type="number"/></div>
+        <div className="mb-3"><CInput label={t('amountEuroLabel')} value={amt} onChange={setAmt} decimal/></div>
         <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
         <div className="flex gap-2 flex-wrap mb-3">
           {cats.map(c=><button key={c.id} onClick={()=>setCat(c.name)} className={`chip ${cat===c.name?'on':''}`}>{c.name}</button>)}
