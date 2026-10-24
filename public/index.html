@@ -9,6 +9,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#059669">
   <link rel="manifest" href="manifest-glamager.json">
+  <!-- 25/10: εικονίδιο αρχικής οθόνης για iPhone (το Safari ΔΕΝ διαβάζει αξιόπιστα τα εικονίδια του manifest — χωρίς
+       αυτό έφτιαχνε δικό του με το γράμμα «G»). 180x180, αδιαφανές μωβ ως τις άκρες: το iOS στρογγυλεύει μόνο του. -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icon-glamager-192.png">
   <title>Glamager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' };</script>
@@ -765,14 +769,8 @@ const STRINGS = {
 };
 const t = (key) => STRINGS[key] && STRINGS[key][LANG] || key;
 const DEF_SCHEDULE = { 0: null, 1: null, 2: { s: "10:00", e: "19:00" }, 3: { s: "09:00", e: "16:00" }, 4: { s: "10:00", e: "19:00" }, 5: { s: "10:00", e: "19:00" }, 6: { s: "09:00", e: "16:00" } };
-const DEFAULT_STAFF = [
-  { id: "s1", name: "\u039C\u03B1\u03C1\u03B3\u03B1\u03C1\u03AF\u03C4\u03B1", email: "margarita@haircorner.gr", role: ROLE.RECEPTION, servesClients: false, leaveTotal: 20, schedule: DEF_SCHEDULE, birthday: "03-22", hired: "2022-09-01" },
-  { id: "s2", name: "\u03A4\u03AC\u03BD\u03B9\u03B1", email: "tania@haircorner.gr", role: ROLE.STAFF, servesClients: true, leaveTotal: 20, schedule: DEF_SCHEDULE, birthday: "07-18", hired: "2023-07-16" },
-  { id: "s3", name: "\u039B\u03AC\u03BF\u03C5\u03C1\u03B1", email: "laura@haircorner.gr", role: ROLE.STAFF, servesClients: true, leaveTotal: 22, schedule: DEF_SCHEDULE, birthday: "11-05", hired: "2019-02-10" },
-  { id: "m1", name: "\u0391\u03BD\u03B4\u03C1\u03AD\u03B1\u03C2", email: "antreas@haircorner.gr", role: ROLE.MASTER, servesClients: false, leaveTotal: 20, schedule: null, birthday: "07-24", hired: null },
-  { id: "m2", name: "\u03A3\u03BF\u03C6\u03AF\u03B1", email: "sofia@haircorner.gr", role: ROLE.MASTER, servesClients: true, leaveTotal: 20, schedule: null, birthday: null, hired: null }
-];
-const DEFAULT_PINS = { m1: "9999", m2: "8888", s1: "1111", s2: "2222", s3: "3333" };
+const NO_STAFF = [];
+const NO_PINS = {};
 const birthdayMonthDay = (b) => !b ? null : b.length > 5 ? b.slice(5) : b;
 const birthdayYear = (b) => b && b.length > 5 ? parseInt(b.slice(0, 4)) : null;
 const birthdaysOn = (ds, staffList) => staffList.filter((s) => birthdayMonthDay(s.birthday) === ds.slice(5)).map((s) => {
@@ -4427,8 +4425,9 @@ const App = () => {
       }
     };
   }, [authed]);
-  const [pins, setPins] = useFirebaseState(tPath("pins"), DEFAULT_PINS, dataReady);
-  const [staff, setStaff] = useFirebaseState(tPath("staff"), DEFAULT_STAFF, dataReady);
+  const [pins, setPins] = useFirebaseState(tPath("pins"), NO_PINS, dataReady);
+  const [staff, setStaff] = useFirebaseState(tPath("staff"), NO_STAFF, dataReady);
+  const staffLoaded = staff !== NO_STAFF && pins !== NO_PINS;
   const staffOnly = useMemo(() => staff.filter((s) => s.role !== ROLE.MASTER), [staff]);
   const serviceStaff = useMemo(() => staff.filter((s) => {
     var _a2;
@@ -4443,12 +4442,12 @@ const App = () => {
   }, [staff]);
   useEffect(() => {
     if (!fbUser || !dataReady) return;
-    if (staff === DEFAULT_STAFF) return;
+    if (!staffLoaded) return;
     if (!authAccounts[(fbUser.email || "").toLowerCase()]) {
       setAuthErr(t("loginNotFound"));
       fbAuth.signOut();
     }
-  }, [fbUser, dataReady, staff, authAccounts]);
+  }, [fbUser, dataReady, staff, staffLoaded, authAccounts]);
   const [visits, setVisits] = useFirebaseState(tPath("visits"), DEMO_VISITS, dataReady);
   const [expenses, setExpenses] = useFirebaseState(tPath("expenses"), DEMO_EXPENSES, dataReady);
   const [clients, setClients] = useFirebaseState(tPath("clients"), DEMO_CLIENTS, dataReady);
@@ -4789,6 +4788,9 @@ const App = () => {
   }
   if (!tenantId) {
     return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement(NoTenantScreen, { onSignOut: fullSignOut }));
+  }
+  if (!operator && !staffLoaded) {
+    return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex items-center justify-center" }, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-sm font-semibold" }, t("loadingApp")));
   }
   if (!operator) {
     return /* @__PURE__ */ React.createElement(React.Fragment, null, settings.testMode && /* @__PURE__ */ React.createElement(TestBanner, null), /* @__PURE__ */ React.createElement(BookingAlertStack, { alerts: bookingAlerts, onDismiss: dismissBookingAlert }), /* @__PURE__ */ React.createElement(
