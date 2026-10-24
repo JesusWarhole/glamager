@@ -328,7 +328,8 @@ const STRINGS = {
   navRegister: { el: "\u03A4\u03B1\u03BC\u03B5\u03AF\u03BF", en: "Register" },
   navReports: { el: "\u0391\u03BD\u03B1\u03C6\u03BF\u03C1\u03AD\u03C2", en: "Reports" },
   navClients: { el: "\u03A0\u03B5\u03BB\u03B1\u03C4\u03BF\u03BB\u03CC\u03B3\u03B9\u03BF", en: "Clients" },
-  hdrBackAria: { el: "\u03A0\u03AF\u03C3\u03C9", en: "Back" },
+  navClientsTab: { el: "\u03A0\u03B5\u03BB\u03AC\u03C4\u03B5\u03C2", en: "Clients" },
+  navAddAria: { el: "\u039D\u03AD\u03B1 \u03BA\u03B1\u03C4\u03B1\u03C7\u03CE\u03C1\u03B7\u03C3\u03B7", en: "New entry" },
   hdrLockAria: { el: "\u039A\u03BB\u03B5\u03AF\u03B4\u03C9\u03BC\u03B1", en: "Lock" },
   hdrOperatorAria: { el: "\u03A7\u03C1\u03AE\u03C3\u03C4\u03B7\u03C2:", en: "User:" },
   settingsLangLabel: { el: "\u0393\u03BB\u03CE\u03C3\u03C3\u03B1", en: "Language" },
@@ -2486,7 +2487,7 @@ const BookingAlertStack = ({ alerts, onDismiss }) => {
     cursor: "pointer"
   } }, "\u03A4\u03BF \u03B5\u03AF\u03B4\u03B1 \u2713 \u2014 \u03B3\u03C1\u03AC\u03C6\u03C4\u03B7\u03BA\u03B5 \u03C3\u03C4\u03BF \u03C4\u03B5\u03C4\u03C1\u03AC\u03B4\u03B9\u03BF"))));
 };
-const Header = ({ title, sub, operator, onSettings, onClients, onBack, onLock, testMode }) => /* @__PURE__ */ React.createElement("div", { className: "hdr fixed top-0 z-40", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640 } }, testMode && /* @__PURE__ */ React.createElement("div", { className: "test-banner-inline" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText")), /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-11 pb-4 flex items-center gap-2" }, onBack ? /* @__PURE__ */ React.createElement("button", { onClick: onBack, "aria-label": t("hdrBackAria"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 20, c: "white" })) : /* @__PURE__ */ React.createElement(BrandMark, { s: 36 }), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 ml-1" }, /* @__PURE__ */ React.createElement("h1", { className: "text-base font-black text-white truncate" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-xs mt-0.5 truncate" }, sub)), operator && /* @__PURE__ */ React.createElement(
+const Header = ({ title, sub, operator, onSettings, onLock, testMode }) => /* @__PURE__ */ React.createElement("div", { className: "hdr fixed top-0 z-40", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640 } }, testMode && /* @__PURE__ */ React.createElement("div", { className: "test-banner-inline" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText")), /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-11 pb-4 flex items-center gap-2" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 36 }), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 ml-1" }, /* @__PURE__ */ React.createElement("h1", { className: "text-base font-black text-white truncate" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-xs mt-0.5 truncate" }, sub)), operator && /* @__PURE__ */ React.createElement(
   "div",
   {
     title: operator.name,
@@ -2495,25 +2496,24 @@ const Header = ({ title, sub, operator, onSettings, onClients, onBack, onLock, t
     className: "w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-sm font-black"
   },
   (operator.name || "?").trim().charAt(0).toUpperCase()
-), onClients && /* @__PURE__ */ React.createElement("button", { onClick: onClients, "aria-label": t("navClients"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "users", s: 20, c: "white" })), onLock && /* @__PURE__ */ React.createElement("button", { onClick: onLock, "aria-label": t("hdrLockAria"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "lock", s: 19, c: "white" })), onSettings && /* @__PURE__ */ React.createElement("button", { onClick: onSettings, "aria-label": t("settingsTitle"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "gear", s: 20, c: "white" }))));
+), onLock && /* @__PURE__ */ React.createElement("button", { onClick: onLock, "aria-label": t("hdrLockAria"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "lock", s: 19, c: "white" })), onSettings && /* @__PURE__ */ React.createElement("button", { onClick: onSettings, "aria-label": t("settingsTitle"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "gear", s: 20, c: "white" }))));
 const Nav = ({ active, go, operator, pendingCount }) => {
+  const T = t;
   const isMaster = operator.role === ROLE.MASTER;
-  const tabs = isMaster ? [
+  const tabs = [
     { id: "home", icon: "home", label: t("navHome") },
-    { id: "add", icon: "plus", label: "" },
     { id: "reg", icon: "list", label: t("navRegister") },
-    { id: "rep", icon: "bar", label: t("navReports"), badge: pendingCount }
-  ] : [
-    { id: "home", icon: "home", label: t("navHome") },
     { id: "add", icon: "plus", label: "" },
-    { id: "reg", icon: "list", label: t("navRegister") },
-    { id: "clients", icon: "users", label: t("navClients") }
+    { id: "clients", icon: "users", label: t("navClientsTab") },
+    ...isMaster ? [{ id: "rep", icon: "bar", label: t("navReports"), badge: pendingCount }] : []
   ];
   return /* @__PURE__ */ React.createElement("div", { className: "nav-bar fixed bottom-0 flex z-50", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640, background: "var(--surface)", borderTop: "1px solid var(--border)" } }, tabs.map((t2) => /* @__PURE__ */ React.createElement(
     "button",
     {
       key: t2.id,
       onClick: () => go(t2.id),
+      "aria-label": t2.id === "add" ? T("navAddAria") : void 0,
+      "aria-current": active === t2.id ? "page" : void 0,
       className: "flex-1 flex flex-col items-center pt-3 pb-1 gap-0.5",
       style: { color: active === t2.id ? "var(--accent-600)" : "var(--text-dim)" }
     },
@@ -3340,7 +3340,7 @@ const ClientCard = ({ client, visits, clients, staff, operator, settings, zmap, 
     setEditing(v.id);
     setDraft(v.note || "");
   }, className: `block w-full text-left mt-1 ${big ? "text-sm" : "text-xs"}`, style: { color: v.note ? "var(--warn-deep)" : "var(--text-dim)" } }, v.note ? `\u{1F4DD} ${v.note}` : `\u{1F4DD} ${t("addNoteInline")}`, " ", /* @__PURE__ */ React.createElement("span", { className: "opacity-50" }, "\u270F\uFE0F"));
-  return /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-4 safe-pb" }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, className: "flex items-center gap-2 text-sm font-bold mb-3", style: { color: "var(--accent-600)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 16 }), " ", t("navClients")), /* @__PURE__ */ React.createElement("div", { className: "card p-4 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "text-xl font-black", style: { color: "var(--text)" } }, client.name), !editingInfo && /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-0.5", style: { color: "var(--text-dim)" } }, [client.phone, client.patronym && `${t("patronymPrefix")} ${client.patronym}`].filter(Boolean).join(" \xB7 ") || "\u2014")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-shrink-0" }, onUpdateClient && !editingInfo && /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-4 safe-pb" }, /* @__PURE__ */ React.createElement("button", { onClick: onBack, className: "flex items-center gap-2 text-sm font-bold mb-1 -mt-2 min-h-[44px] pr-3", style: { color: "var(--accent-600)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 16 }), " ", t("navClients")), /* @__PURE__ */ React.createElement("div", { className: "card p-4 mb-3" }, /* @__PURE__ */ React.createElement("div", { className: "flex items-start justify-between gap-2" }, /* @__PURE__ */ React.createElement("div", { className: "min-w-0" }, /* @__PURE__ */ React.createElement("p", { className: "text-xl font-black", style: { color: "var(--text)" } }, client.name), !editingInfo && /* @__PURE__ */ React.createElement("p", { className: "text-xs mt-0.5", style: { color: "var(--text-dim)" } }, [client.phone, client.patronym && `${t("patronymPrefix")} ${client.patronym}`].filter(Boolean).join(" \xB7 ") || "\u2014")), /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1 flex-shrink-0" }, onUpdateClient && !editingInfo && /* @__PURE__ */ React.createElement(
     "button",
     {
       onClick: () => {
@@ -4756,9 +4756,7 @@ const App = () => {
       operator,
       testMode: settings.testMode,
       onSettings: () => setShowSettings(true),
-      onLock: lockNow,
-      onClients: isMaster && tab !== "clients" ? () => setTab("clients") : null,
-      onBack: isMaster && tab === "clients" ? () => setTab("home") : null
+      onLock: lockNow
     }
   ), /* @__PURE__ */ React.createElement("div", { className: "hdr-spacer" }, tab === "home" && (isMaster ? /* @__PURE__ */ React.createElement(HomeMaster, { visits, expenses, staff: staffOnly, allStaff: staff, clients, leaveReqs, go, onZ: () => setTab("z"), onOpenVisit: setSelVisit, onSendKudos: sendKudos }) : /* @__PURE__ */ React.createElement(
     HomeStaff,

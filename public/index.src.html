@@ -1094,7 +1094,7 @@ const BookingAlertStack = ({alerts, onDismiss}) => {
   );
 };
 
-const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}) => (
+const Header = ({title,sub,operator,onSettings,onLock,testMode}) => (
   <div className="hdr fixed top-0 z-40" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640}}>
     {/* 25/08 β' — TEST MODE banner ΜΕΣΑ στο ίδιο πάντα-παρόν fixed κουτί, όχι ξεχωριστό στοιχείο
         από πάνω (όπως ήταν πριν) που εμφανιζόταν/εξαφανιζόταν ΚΑΙ ταυτόχρονα μετακινούσε το ίδιο
@@ -1108,9 +1108,7 @@ const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}
     {/* 25/10 (Cleanup #13): κουμπιά 44px (ελάχιστο αφής) με aria-label· ο χειριστής ως κύκλος με το αρχικό
         (το πλήρες όνομα στο title/aria) ώστε τίτλος + όνομα μαγαζιού να μην κόβονται στα 375px. */}
     <div className="px-4 pt-11 pb-4 flex items-center gap-2">
-      {onBack
-        ? <button onClick={onBack} aria-label={t('hdrBackAria')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={20} c="white"/></button>
-        : <BrandMark s={36}/>}
+      <BrandMark s={36}/>
       <div className="flex-1 min-w-0 ml-1">
         <h1 className="text-base font-black text-white truncate">{title}</h1>
         {sub && <p className="text-white/80 text-xs mt-0.5 truncate">{sub}</p>}
@@ -1121,7 +1119,6 @@ const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}
           {(operator.name||'?').trim().charAt(0).toUpperCase()}
         </div>
       )}
-      {onClients && <button onClick={onClients} aria-label={t('navClients')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="users" s={20} c="white"/></button>}
       {onLock && <button onClick={onLock} aria-label={t('hdrLockAria')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="lock" s={19} c="white"/></button>}
       {onSettings && <button onClick={onSettings} aria-label={t('settingsTitle')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="gear" s={20} c="white"/></button>}
     </div>
@@ -1129,19 +1126,21 @@ const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}
 );
 
 /* ── NAV — ΔΥΟ ξεχωριστά σύνολα tabs ανάλογα με ρόλο ──
-   Προσωπικό (κατ.1 & κατ.2): Αρχική · + · Ταμείο · Πελατολόγιο
-   Master:                    Αρχική · + · Ταμείο · Αναφορές (+badge) */
+   25/10 (Cleanup #14): ίδια σειρά και θέσεις για όλους, ώστε η μυϊκή μνήμη να μη διαφέρει ανά ρόλο.
+   Master:                    Αρχική · Ταμείο · + · Πελάτες · Αναφορές (+badge)  — το + ακριβώς στη μέση
+   Προσωπικό (κατ.1 & κατ.2): Αρχική · Ταμείο · + · Πελάτες
+   Το Πελατολόγιο του Master ήταν εικονίδιο στο header + κουμπί «Πίσω»· τώρα είναι κανονική καρτέλα. */
 const Nav = ({active,go,operator,pendingCount}) => {
+  const T = t;
   const isMaster = operator.role===ROLE.MASTER;
-  const tabs = isMaster
-    ? [ {id:'home',icon:'home',label:t('navHome')}, {id:'add',icon:'plus',label:''},
-        {id:'reg',icon:'list',label:t('navRegister')},  {id:'rep',icon:'bar',label:t('navReports'),badge:pendingCount} ]
-    : [ {id:'home',icon:'home',label:t('navHome')}, {id:'add',icon:'plus',label:''},
-        {id:'reg',icon:'list',label:t('navRegister')},  {id:'clients',icon:'users',label:t('navClients')} ];
+  const tabs = [ {id:'home',icon:'home',label:t('navHome')}, {id:'reg',icon:'list',label:t('navRegister')},
+    {id:'add',icon:'plus',label:''}, {id:'clients',icon:'users',label:t('navClientsTab')},
+    ...(isMaster ? [{id:'rep',icon:'bar',label:t('navReports'),badge:pendingCount}] : []) ];
   return (
     <div className="nav-bar fixed bottom-0 flex z-50" style={{left:'50%',transform:'translateX(-50%)',width:'100%',maxWidth:640,background:'var(--surface)',borderTop:'1px solid var(--border)'}}>
       {tabs.map(t=>(
-        <button key={t.id} onClick={()=>go(t.id)} className="flex-1 flex flex-col items-center pt-3 pb-1 gap-0.5"
+        <button key={t.id} onClick={()=>go(t.id)} aria-label={t.id==='add'?T('navAddAria'):undefined} aria-current={active===t.id?'page':undefined}
+          className="flex-1 flex flex-col items-center pt-3 pb-1 gap-0.5"
           style={{color: active===t.id ? 'var(--accent-600)' : 'var(--text-dim)'}}>
           {t.id==='add'
             ? <div className="w-12 h-12 rounded-full flex items-center justify-center -mt-5 shadow-lg mb-0.5" style={{background:'var(--accent-600)'}}><Ic n="plus" s={22} c="white"/></div>
@@ -2918,7 +2917,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
 
   return (
     <div className="px-4 pt-4 safe-pb">
-      <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold mb-3" style={{color:'var(--accent-600)'}}><Ic n="back" s={16}/> {t('navClients')}</button>
+      <button onClick={onBack} className="flex items-center gap-2 text-sm font-bold mb-1 -mt-2 min-h-[44px] pr-3" style={{color:'var(--accent-600)'}}><Ic n="back" s={16}/> {t('navClients')}</button>
       <div className="card p-4 mb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="min-w-0">
@@ -5226,8 +5225,7 @@ const App = () => {
       <Header title={titles[tab]} sub={settings.shopName} operator={operator} testMode={settings.testMode}
         onSettings={()=>setShowSettings(true)}
         onLock={lockNow}
-        onClients={isMaster && tab!=='clients' ? ()=>setTab('clients') : null}
-        onBack={isMaster && tab==='clients' ? ()=>setTab('home') : null}/>
+/>
 
       {/* 01/08 v3: hdr-spacer αντισταθμίζει το fixed Header (βλ. Header/CSS πιο πάνω) — το ίδιο
           div-wrapper για ΟΛΑ τα tabs, ώστε το περιεχόμενο να ξεκινάει πάντα κάτω από το header,
