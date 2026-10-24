@@ -1025,7 +1025,9 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId, onForgotPin}) => {
         <div className="text-center mb-8">
           <BrandMark s={72}/>
           <h1 className="text-3xl font-black text-white mt-5">Glamager</h1>
-          {shopName && <p className="text-white/70 text-sm mt-1">{shopName}</p>}
+          {/* 25/10: η γραμμή κρατά πάντα το ύψος της (κενή μέχρι να έρθει το όνομα), ώστε η λίστα να μη «πέφτει» 26px
+              όταν φορτώσουν οι ρυθμίσεις του μαγαζιού. */}
+          <p className="text-white/70 text-sm mt-1 min-h-[1.25rem]">{shopName || '\u00a0'}</p>
         </div>
         <p className="text-white/80 text-sm font-semibold mb-4">{t('whoAreYou')}</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">
@@ -5253,7 +5255,9 @@ const App = () => {
   if(!tenantId){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/><NoTenantScreen onSignOut={fullSignOut}/></React.Fragment>;
   }
-  if(!operator && !staffLoaded){
+  /* 25/10: και οι ρυθμίσεις (όνομα μαγαζιού, test mode) — αλλιώς το όνομα κάτω από το λογότυπο εμφανιζόταν ~50ms αργότερα. */
+  const settingsLoaded = settings !== DEMO_SETTINGS;
+  if(!operator && !(staffLoaded && settingsLoaded)){
     /* 25/10: περιμένουμε την πραγματική λίστα προσωπικού πριν το «Ποιος είσαι;» — αλλιώς εμφανιζόταν πρώτα η παλιά
        σκληροκωδικοποιημένη λίστα και μετά άλλαζε (τρεμόπαιγμα, «ο Κώστας εμφανίζεται με καθυστέρηση»). */
     return (
