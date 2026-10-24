@@ -352,17 +352,17 @@ const DEF_SCHEDULE = { 0:null, 1:null, 2:{s:'10:00',e:'19:00'}, 3:{s:'09:00',e:'
    (true) — ο Ανδρέας είναι Master αλλά δεν κάνει ραντεβού (false) — η Μαργαρίτα είναι Ρεσεψιόν,
    ποτέ δεν έκανε υπηρεσίες (false, πριν ήταν ΛΑΘΟΣ μέσα στη λίστα επειδή το παλιό φίλτρο ήταν
    role!==MASTER, που την περιλάμβανε άθελα). */
-const DEFAULT_STAFF = [
-  { id:'s1', name:'Μαργαρίτα', email:'margarita@haircorner.gr', role:ROLE.RECEPTION, servesClients:false, leaveTotal:20, schedule:DEF_SCHEDULE, birthday:'03-22', hired:'2022-09-01' },
-  { id:'s2', name:'Τάνια',     email:'tania@haircorner.gr',     role:ROLE.STAFF,     servesClients:true,  leaveTotal:20, schedule:DEF_SCHEDULE, birthday:'07-18', hired:'2023-07-16' },
-  { id:'s3', name:'Λάουρα',    email:'laura@haircorner.gr',     role:ROLE.STAFF,     servesClients:true,  leaveTotal:22, schedule:DEF_SCHEDULE, birthday:'11-05', hired:'2019-02-10' },
-  { id:'m1', name:'Ανδρέας',   email:'antreas@haircorner.gr',   role:ROLE.MASTER,    servesClients:false, leaveTotal:20, schedule:null, birthday:'07-24', hired:null },
-  { id:'m2', name:'Σοφία',     email:'sofia@haircorner.gr',     role:ROLE.MASTER,    servesClients:true,  leaveTotal:20, schedule:null, birthday:null,    hired:null },
-];
+/* 25/10: ΔΕΝ υπάρχει πια σκληροκωδικοποιημένο προσωπικό/PIN (ήταν τα 5 άτομα του Hair Corner με emails και αρχικά
+   PIN, ορατά σε όποιον έβλεπε τον κώδικα της σελίδας). Αιτίες: (α) το «Ποιος είσαι;» τα έδειχνε για μια στιγμή πριν
+   φτάσει η πραγματική λίστα — τρεμόπαιγμα όταν προστέθηκε ο Κώστας, και ονόματα Hair Corner στο demo· (β) ένα νέο
+   μαγαζί χωρίς προσωπικό στη βάση θα έπαιρνε αυτά τα 5 άτομα ως seed. Το Hair Corner έχει ήδη το προσωπικό του στη βάση
+   (με _seeded flag), άρα δεν το χρειαζόταν. Νέα μαγαζιά στήνονται με τα scripts/admin. */
+const NO_STAFF = [];
+const NO_PINS = {};
 
 /* Αρχικά PIN — καθημερινή γρήγορη ταυτοποίηση (ΟΧΙ security boundary, αυτό είναι το Firebase
    Auth login από πάνω). Ο καθένας μπορεί να το αλλάξει μόνος του από Ρυθμίσεις. */
-const DEFAULT_PINS = { m1:'9999', m2:'8888', s1:'1111', s2:'2222', s3:'3333' };
+/* (DEFAULT_PINS αφαιρέθηκε 25/10 — βλ. NO_PINS παραπάνω) */
 
 /* Γενέθλια — αποθήκευση: 18/07 μόνο 'MM-DD' (χωρίς έτος, οπότε ΔΕΝ γινόταν να υπολογιστεί ηλικία).
    19/07: αλλαγή σε πλήρες 'YYYY-MM-DD' (native <input type="date">, το πραγματικό έτος γέννησης
@@ -4750,8 +4750,11 @@ const App = () => {
     return () => { try{ es && es.close(); }catch(_){} };
   },[authed]);
 
-  const [pins,setPins] = useFirebaseState(tPath('pins'), DEFAULT_PINS, dataReady);
-  const [staff,setStaff] = useFirebaseState(tPath('staff'), DEFAULT_STAFF, dataReady);
+  const [pins,setPins] = useFirebaseState(tPath('pins'), NO_PINS, dataReady);
+  const [staff,setStaff] = useFirebaseState(tPath('staff'), NO_STAFF, dataReady);
+  /* 25/10: έχει έρθει η πραγματική λίστα από τη βάση; Το useFirebaseState κρατά ακριβώς το seed (ίδια reference)
+     μέχρι το πρώτο snapshot· κάθε τιμή από το Firebase είναι νέο object. */
+  const staffLoaded = staff !== NO_STAFF && pins !== NO_PINS;
   /* staffOnly: Ρεσεψιόν+Προσωπικό χωρίς Masters — χρησιμοποιείται ΜΟΝΟ πλέον για πρόγραμμα/άδειες
      (schedule-eligibility), ΟΧΙ για attribution υπηρεσιών — βλ. serviceStaff παρακάτω για αυτό. */
   const staffOnly = useMemo(()=>staff.filter(s=>s.role!==ROLE.MASTER),[staff]);
@@ -4780,21 +4783,21 @@ const App = () => {
      29/08 (multi-tenant client step, fix μετά το πρώτο demo-shop test): ΠΡΙΝ, το effect έτρεχε
      αμέσως μόλις άλλαζε το fbUser — αλλά το πραγματικό `staff` του tenant χρειάζεται δύο
      ασύγχρονα βήματα (tenantId claim, μετά RTDB read) για να φορτώσει· μέχρι τότε το `staff`
-     state είναι ακόμα στο αρχικό seed (DEFAULT_STAFF, που έχει ΜΟΝΟ τα 5 emails του Hair
+     state είναι ακόμα στο αρχικό seed (τότε DEFAULT_STAFF, που είχε ΜΟΝΟ τα 5 emails του Hair
      Corner). Για λογαριασμούς Hair Corner ο έλεγχος περνούσε "τυχαία" σωστά· για ΚΑΘΕ άλλο
      tenant (π.χ. demo-shop) απέρριπτε λανθασμένα, επειδή έτρεχε πριν προλάβει να φορτώσει το
      σωστό staff. Διόρθωση: περιμένουμε (α) `dataReady` (ξέρουμε το tenantId) ΚΑΙ (β) το `staff`
-     να έχει πλέον διαφορετική reference από το αρχικό `DEFAULT_STAFF` seed — δηλαδή να έχει
+     να έχει πλέον διαφορετική reference από το αρχικό seed (σήμερα: staffLoaded) — δηλαδή να έχει
      όντως έρθει έστω μία φορά πραγματική τιμή από το Firebase γι' αυτό το tenant, όχι απλά η
      αρχική προεπιλογή. */
   useEffect(()=>{
     if(!fbUser || !dataReady) return;
-    if(staff === DEFAULT_STAFF) return; // ακόμα δεν έχει έρθει η πραγματική λίστα του tenant
+    if(!staffLoaded) return; // ακόμα δεν έχει έρθει η πραγματική λίστα του tenant
     if(!authAccounts[(fbUser.email||'').toLowerCase()]){
       setAuthErr(t('loginNotFound'));
       fbAuth.signOut();
     }
-  },[fbUser, dataReady, staff, authAccounts]);
+  },[fbUser, dataReady, staff, staffLoaded, authAccounts]);
   const [visits,setVisits] = useFirebaseState(tPath('visits'), DEMO_VISITS, dataReady);
   const [expenses,setExpenses] = useFirebaseState(tPath('expenses'), DEMO_EXPENSES, dataReady);
   const [clients,setClients] = useFirebaseState(tPath('clients'), DEMO_CLIENTS, dataReady);
@@ -5249,6 +5252,17 @@ const App = () => {
   }
   if(!tenantId){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/><NoTenantScreen onSignOut={fullSignOut}/></React.Fragment>;
+  }
+  if(!operator && !staffLoaded){
+    /* 25/10: περιμένουμε την πραγματική λίστα προσωπικού πριν το «Ποιος είσαι;» — αλλιώς εμφανιζόταν πρώτα η παλιά
+       σκληροκωδικοποιημένη λίστα και μετά άλλαζε (τρεμόπαιγμα, «ο Κώστας εμφανίζεται με καθυστέρηση»). */
+    return (
+      <div className="min-h-screen hero flex items-center justify-center">
+        {settings.testMode && <TestBanner/>}
+        <BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/>
+        <p className="text-white/80 text-sm font-semibold">{t('loadingApp')}</p>
+      </div>
+    );
   }
   if(!operator){
     return <React.Fragment>{settings.testMode && <TestBanner/>}<BookingAlertStack alerts={bookingAlerts} onDismiss={dismissBookingAlert}/><OperatorPicker shopName={settings.shopName} staff={staff} pins={pins} onPick={setOperator}
