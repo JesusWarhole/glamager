@@ -559,8 +559,10 @@ const reportSaveError = err => window.alert(t('saveFailedPrefix')+' '+errText(er
 let CUR_SYMBOL = '€';
 const applyCurrency = code => { CUR_SYMBOL = (CURRENCIES[code]||CURRENCIES.EUR).symbol; };
 /* 25/10 (Cleanup #16): αρνητικά ΠΑΝΤΑ «−€106,45» (τυπογραφικό μείον πριν το νόμισμα). Πριν: «€-106,45» από εδώ και
-   «-€550,00» όπου το μείον έμπαινε με το χέρι. Το −0,00 στρογγυλεύεται σε «€0,00». Το CSV δεν περνά από εδώ. */
-const fmt      = v => { const n = Math.round(Number(v||0)*100)/100; return `${n<0?'−':''}${CUR_SYMBOL}${Math.abs(n).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; };
+   «-€550,00» όπου το μείον έμπαινε με το χέρι. Το −0,00 στρογγυλεύεται σε «€0,00». Το CSV δεν περνά από εδώ.
+   Μετά το μείον μπαίνει U+2060 (word joiner): χωρίς αυτό ο browser έσπαγε γραμμή ανάμεσα σε «−» και «€»
+   σε στενά κουτιά (ΦΠΑ εκτίμηση στην Αρχική). */
+const fmt      = v => { const n = Math.round(Number(v||0)*100)/100; return `${n<0?'−\u2060':''}${CUR_SYMBOL}${Math.abs(n).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; };
 const fmtD     = s => new Date(s+'T12:00:00').toLocaleDateString(LANG==='en'?'en-GB':'el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
 const fmtDLong = s => new Date(s+'T12:00:00').toLocaleDateString(LANG==='en'?'en-GB':'el-GR',{weekday:'long',day:'numeric',month:'long'});
 const addDays  = (s,n) => { const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
