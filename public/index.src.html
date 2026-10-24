@@ -556,7 +556,9 @@ const errText         = err => (err && (err.message||err.code)) || String(err);
 const reportSaveError = err => window.alert(t('saveFailedPrefix')+' '+errText(err));
 let CUR_SYMBOL = '€';
 const applyCurrency = code => { CUR_SYMBOL = (CURRENCIES[code]||CURRENCIES.EUR).symbol; };
-const fmt      = v => `${CUR_SYMBOL}${Number(v||0).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
+/* 25/10 (Cleanup #16): αρνητικά ΠΑΝΤΑ «−€106,45» (τυπογραφικό μείον πριν το νόμισμα). Πριν: «€-106,45» από εδώ και
+   «-€550,00» όπου το μείον έμπαινε με το χέρι. Το −0,00 στρογγυλεύεται σε «€0,00». Το CSV δεν περνά από εδώ. */
+const fmt      = v => { const n = Math.round(Number(v||0)*100)/100; return `${n<0?'−':''}${CUR_SYMBOL}${Math.abs(n).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`; };
 const fmtD     = s => new Date(s+'T12:00:00').toLocaleDateString(LANG==='en'?'en-GB':'el-GR',{day:'2-digit',month:'2-digit',year:'numeric'});
 const fmtDLong = s => new Date(s+'T12:00:00').toLocaleDateString(LANG==='en'?'en-GB':'el-GR',{weekday:'long',day:'numeric',month:'long'});
 const addDays  = (s,n) => { const d=new Date(s+'T12:00:00'); d.setDate(d.getDate()+n); return d.toISOString().slice(0,10); };
@@ -792,7 +794,13 @@ const paths = {
   user:   'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z',
   zap:    'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
   x:      'M18 6L6 18 M6 6l12 12',
-  cash:   'M12 2a10 10 0 100 20A10 10 0 0012 2z M12 8v4 M12 16h.01',
+  /* 25/10 (Cleanup #16): το cash ήταν κύκλος με θαυμαστικό (alert) — τώρα χαρτονόμισμα. Νέα: wallet/calendar/sun/camera
+     για τις καρτέλες των Αναφορών, στο ίδιο ύφος (24px, stroke 2) με τα υπόλοιπα. */
+  cash:   'M4 6h16a2 2 0 012 2v8a2 2 0 01-2 2H4a2 2 0 01-2-2V8a2 2 0 012-2z M12 14a2 2 0 100-4 2 2 0 000 4z M6 12h.01 M18 12h.01',
+  wallet: 'M21 12V7H5a2 2 0 010-4h14v4 M3 5v14a2 2 0 002 2h16v-5 M18 12a2 2 0 000 4h4v-4z',
+  calendar:'M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z M16 2v4 M8 2v4 M3 10h18',
+  sun:    'M12 17a5 5 0 100-10 5 5 0 000 10z M12 1v2 M12 21v2 M4.22 4.22l1.42 1.42 M18.36 18.36l1.42 1.42 M1 12h2 M21 12h2 M4.22 19.78l1.42-1.42 M18.36 5.64l1.42-1.42',
+  camera: 'M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z M12 17a4 4 0 100-8 4 4 0 000 8z',
   card:   'M1 4h22v16H1z M1 10h22',
   tag:    'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
   note:   'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
@@ -1500,7 +1508,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
         </div>
         <div className="grid grid-cols-4 gap-1 pt-3 border-t border-white/20 text-center text-xs">
           {[['cash',sum.cash],['pos',sum.pos],['tips',sum.tips],['exp',-sum.expTotal]].map(([k,v])=>(
-            <div key={k}><p className="text-white/70">{t(k+'Label')}</p><p className={`font-bold amt ${v<0?'text-red-200':k==='tips'?'text-yellow-300':'text-white'}`}>{v<0?'-':''}{fmt(Math.abs(v))}</p></div>
+            <div key={k}><p className="text-white/70">{t(k+'Label')}</p><p className={`font-bold amt ${v<0?'text-red-200':k==='tips'?'text-yellow-300':'text-white'}`}>{fmt(v)}</p></div>
           ))}
         </div>
       </div>
@@ -2703,7 +2711,7 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{fmtDLong(e.date)} · {e.time} · {t('recordedByLabel')}: {enteredBy}</p>
         <div className="flex justify-between items-center py-2" style={{borderTop:'1px solid var(--border)'}}>
           <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('amountLabel')}</span>
-          <span className="text-xl font-black amt text-red-500">-{fmt(e.amt)}</span>
+          <span className="text-xl font-black amt text-red-500">{fmt(-e.amt)}</span>
         </div>
         {e.note && (
           <div className="mt-2">
@@ -2789,7 +2797,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
             ))}
           </div>
           <div className="grid grid-cols-3">
-            <div className="p-3 text-center"><p className="text-xs mb-1" style={{color:'var(--text-dim)'}}>{t('expLabel')}</p><p className="font-bold text-red-500 amt">-{fmt(sum.expTotal)}</p></div>
+            <div className="p-3 text-center"><p className="text-xs mb-1" style={{color:'var(--text-dim)'}}>{t('expLabel')}</p><p className={`font-bold amt ${sum.expTotal>0?'text-red-500':''}`} style={sum.expTotal>0?undefined:{color:'var(--text-dim)'}}>{fmt(-sum.expTotal)}</p></div>
             <div className="p-3 text-center" style={{borderLeft:'1px solid var(--border)'}}><p className="text-xs mb-1 text-yellow-500">Tips</p><p className="font-bold text-yellow-500 amt">{fmt(sum.tips)}</p></div>
             {isMaster
               ? <div className="p-3 text-center" style={{borderLeft:'1px solid var(--border)'}}><p className="text-xs mb-1 text-amber-500">{t('vatEstAbbrev')}</p><p className="font-bold text-amber-600 amt">{fmt(sum.netVat)}</p></div>
@@ -2835,7 +2843,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
                       <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{e.cat}</p>
                       <p className="text-xs" style={{color:'var(--text-dim)'}}>{e.note?e.note+' · ':''}{e.time}</p>
                     </div>
-                    <p className="font-black amt text-red-500">-{fmt(e.amt)}</p>
+                    <p className="font-black amt text-red-500">{fmt(-e.amt)}</p>
                   </div>
                 ))}
               </div>
@@ -3672,7 +3680,7 @@ const FinReports = ({visits,expenses,staff,clients}) => {
         {[[t('vatOutLabel'),sum.vatOut,'var(--danger)'],[t('vatInDeductibleLabel'),sum.vatIn,'var(--ok)'],[t('netVatSetAsideLabel'),sum.netVat,'var(--warn-2)']].map(([l,v,c],i)=>(
           <div key={l} className="flex justify-between items-center px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
             <span className="text-sm" style={{color:'var(--text-dim)'}}>{l}</span>
-            <span className="amt font-bold" style={{color:c}}>{fmt(v)}</span>
+            <span className="amt font-bold" style={{color:Math.abs(v)<0.005?'var(--text-dim)':c}}>{fmt(v)}</span>
           </div>
         ))}
       </div>
@@ -3819,8 +3827,16 @@ const ReportsScreen = ({sub,setSub,visits,expenses,staff,staffOnly,clients,sched
   return (
     <div className="px-4 pt-4 safe-pb">
       <div className="rounded-xl p-1 flex gap-1 mb-4" style={{background:'var(--soft)'}}>
-        {[['fin',t('finTabLabel')],['perf',t('perfTabLabel')],['staffmod',t('schedTabLabel')],['reqs',`🏖️${pending>0?` ${pending}`:''}`],['photos',`${t('pendingPhotosTabLabel')}${pendingPhotos>0?` ${pendingPhotos}`:''}`]].map(([v,l])=>(
-          <button key={v} onClick={()=>setSub(v)} className={`flex-1 py-2 rounded-lg text-xs font-bold ${sub===v?'shadow':''}`} style={sub===v?{background:'var(--surface)',color:'var(--accent-600)'}:{color:'var(--text-dim)'}}>{l}</button>
+        {/* 25/10 (Cleanup #16): κάθε καρτέλα με γραμμικό εικονίδιο + λέξη (πριν: emoji, δύο μόνο-emoji χωρίς λέξη)·
+            οι εκκρεμότητες ως badge πάνω στο εικονίδιο, όπως στην κάτω μπάρα. */}
+        {[['fin','wallet',t('finTabLabel'),0],['perf','zap',t('perfTabLabel'),0],['staffmod','calendar',t('schedTabLabel'),0],
+          ['reqs','sun',t('leaveTabLabel'),pending],['photos','camera',t('pendingPhotosTabLabel'),pendingPhotos]].map(([v,ic,l,n])=>(
+          <button key={v} onClick={()=>setSub(v)} aria-current={sub===v?'page':undefined}
+            className={`flex-1 min-w-0 py-1.5 rounded-lg text-xs font-bold flex flex-col items-center gap-0.5 ${sub===v?'shadow':''}`}
+            style={sub===v?{background:'var(--surface)',color:'var(--accent-600)'}:{color:'var(--text-dim)'}}>
+            <span className="relative"><Ic n={ic} s={18}/>{n>0 && <span className="red-dot">{n}</span>}</span>
+            <span className="truncate max-w-full">{l}</span>
+          </button>
         ))}
       </div>
       {/* fin/perf: ΠΛΗΡΕΣ staff (ο Master μπαίνει στο €/ώρα benchmark + CSV λογιστή αν σέρβιρε).
@@ -3887,7 +3903,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
           {[[t('cashServicesLabel'),sum.cash],[t('posServicesLabel'),sum.pos],[t('posTipsLabel'),sum.posTips],[t('posTerminalTotalLabel'),appPosTotal],[t('expLabel'),-sum.expTotal]].map(([l,v],i)=>(
             <div key={l} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
               <span className={`text-sm ${String(l).startsWith('─')?'font-black':''}`} style={{color:String(l).startsWith('─')?'var(--text)':'var(--text-dim)'}}>{String(l).replace('─── ','')}</span>
-              <span className="font-bold amt text-sm" style={{color:l===t('expLabel')?'var(--danger-2)':String(l).startsWith('─')?'var(--info)':'var(--text)'}}>{v<0?'-':''}{fmt(Math.abs(v))}</span>
+              <span className="font-bold amt text-sm" style={{color:l===t('expLabel')&&Math.abs(v)>=0.005?'var(--danger-2)':String(l).startsWith('─')?'var(--info)':'var(--text)'}}>{fmt(v)}</span>
             </div>
           ))}
         </div>
