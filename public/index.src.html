@@ -3028,6 +3028,39 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
     const nq = norm(nName.trim());
     return clients.filter(c=>norm(c.name).startsWith(nq)).sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
   },[nName,clients]);
+  /* Αδράνεια πελάτη (spec §1ε) — όριο από τις Ρυθμίσεις. Χωρίς επίσκεψη ακόμα ≠ αδρανής (είναι νέος). */
+  const inactiveThreshold = parseInt(settings?.clientInactivityDays)||60;
+  const todayIso = today();
+  /* 24/10 (Cleanup #8, μετά από stress test): πριν, για ΚΑΘΕ πελάτη γινόταν visits.filter() σε ΟΛΕΣ τις
+     επισκέψεις — δύο φορές (λίστα + μετρητής αδρανών) και ξανά σε ΚΑΘΕ πλήκτρο της αναζήτησης.
+     Κόστος πελάτες × επισκέψεις: ~0,7 s ανά πλήκτρο με 3.000 πελάτες / 22.000 επισκέψεις (3 χρόνια).
+     Τώρα: ΕΝΑ πέρασμα στις επισκέψεις → τελευταία ημερομηνία ανά πελάτη, και η ταξινομημένη λίστα
+     κρατιέται (useMemo) μέχρι να αλλάξουν πελάτες/επισκέψεις/όριο/ημέρα. Η αναζήτηση φιλτράρει μόνο.
+     Ίδιο αποτέλεσμα με πριν: ίδια «τελευταία επίσκεψη» (μέγιστη ISO ημερομηνία μη διαγραμμένης),
+     ίδια σειρά (Intl.Collator('el',{sensitivity:'base'}) = ό,τι έκανε το localeCompare), ίδιο φίλτρο.
+     ΠΡΟΣΟΧΗ: τα hooks μένουν ΠΑΝΩ από το «if(sel) return <ClientCard…>» (σειρά hooks του React). */
+  const lastVisitById = useMemo(()=>{
+    const m = {};
+    for(const v of visits){
+      if(isDel(v)) continue;
+      const prev = m[v.clientId];
+      if(!prev || (v.date||'') > prev) m[v.clientId] = v.date;
+    }
+    return m;
+  },[visits]);
+  const rows = useMemo(()=>{
+    const coll = new Intl.Collator('el',{sensitivity:'base'});
+    return clients.map(c=>{
+      const lastVisit = lastVisitById[c.id]||null;
+      const daysSince = lastVisit ? Math.floor((new Date(todayIso)-new Date(lastVisit))/86400000) : null;
+      return {...c, lastVisit, daysSince, inactive: daysSince!=null && daysSince>=inactiveThreshold, _q: norm(c.name)};
+    })
+    /* 04/09 — αίτημα Ανδρέα: αλφαβητική σειρά αντί για "πιο πρόσφατη επίσκεψη πρώτα".
+       Collator 'el' ώστε να ταξινομεί σωστά ελληνικούς τόνους/πεζά-κεφαλαία. */
+    .sort((a,b)=>coll.compare(a.name||'', b.name||''));
+  },[clients,lastVisitById,todayIso,inactiveThreshold]);
+  const inactiveCount = useMemo(()=>rows.filter(c=>c.inactive).length,[rows]);
+
   const sel = clients.find(c=>c.id===selId);
   /* Επιτυχής διαγραφή → γύρνα στη λίστα (ο επιλεγμένος πελάτης δεν υπάρχει πια) */
   const handleDeleteClient = onDeleteClient ? (id=>{ const res=onDeleteClient(id); if(res?.ok) setSelId(null); return res; }) : null;
@@ -3035,28 +3068,8 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
     onBack={()=>setSelId(null)} onUpdateNote={onUpdateNote} onDeleteClient={handleDeleteClient} onUpdateClient={onUpdateClient}
     onEditVisit={onEditVisit} onSoftDelete={onSoftDelete} onHardDeleteVisit={onHardDeleteVisit}/>;
 
-  /* Αδράνεια πελάτη (spec §1ε) — όριο από τις Ρυθμίσεις. Χωρίς επίσκεψη ακόμα ≠ αδρανής (είναι νέος). */
-  const inactiveThreshold = parseInt(settings?.clientInactivityDays)||60;
-  const todayIso = today();
   const nq = norm(q.trim());
-  const list = clients
-    .map(c=>{
-      const h=visits.filter(v=>v.clientId===c.id&&!isDel(v)).sort((a,b)=>b.date.localeCompare(a.date));
-      const lastVisit = h[0]?.date||null;
-      const daysSince = lastVisit ? Math.floor((new Date(todayIso)-new Date(lastVisit))/86400000) : null;
-      return {...c, lastVisit, daysSince, inactive: daysSince!=null && daysSince>=inactiveThreshold};
-    })
-    .filter(c=>!nq||norm(c.name).includes(nq))
-    .filter(c=>!onlyInactive || c.inactive)
-    /* 04/09 — αίτημα Ανδρέα: αλφαβητική σειρά αντί για "πιο πρόσφατη επίσκεψη πρώτα".
-       localeCompare με 'el' locale ώστε να ταξινομεί σωστά ελληνικούς τόνους/πεζά-κεφαλαία. */
-    .sort((a,b)=>(a.name||'').localeCompare(b.name||'','el',{sensitivity:'base'}));
-  const inactiveCount = clients.filter(c=>{
-    const h=visits.filter(v=>v.clientId===c.id&&!isDel(v));
-    if(h.length===0) return false;
-    const lastVisit = h.sort((a,b)=>b.date.localeCompare(a.date))[0].date;
-    return Math.floor((new Date(todayIso)-new Date(lastVisit))/86400000)>=inactiveThreshold;
-  }).length;
+  const list = rows.filter(c=>(!nq||c._q.includes(nq)) && (!onlyInactive || c.inactive));
 
   return (
     <div className="px-4 pt-4 safe-pb">
