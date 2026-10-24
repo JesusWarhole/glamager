@@ -72,6 +72,8 @@ const STRINGS = {
   hardDeleteConfirm:  { el:'Οριστική διαγραφή — δεν αναιρείται. Σίγουρα;', en:'Permanent deletion — cannot be undone. Are you sure?' },
   hardDeleteTitleAttr:{ el:'Οριστική διαγραφή',                          en:'Permanently delete' },
   editClientInfoTitleAttr:{ el:'Επεξεργασία ονόματος/τηλεφώνου/πατρώνυμου', en:'Edit name/phone/patronym' },
+  formerMemberLabel: { el:'Πρώην μέλος', en:'Former member' },
+  kudosForLabel: { el:'για', en:'to' },
   kudosManagerTitle:  { el:'Kudos — ιστορικό',                           en:'Kudos — history' },
   kudosManagerEmpty:  { el:'Δεν υπάρχουν kudos ακόμα.',                  en:'No kudos yet.' },
   clientDeleteBlockedLabel: { el:'Έχει επισκέψεις',                      en:'Has visits' },
