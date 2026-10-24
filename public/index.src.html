@@ -747,16 +747,27 @@ const ACCENTS = {
   teal:    { label:'Teal',    accent:'#0d9488', accent2:'#14b8a6', a50:'#f0fdfa', a100:'#ccfbf1' },
   violet:  { label:'Violet',  accent:'#7c3aed', accent2:'#8b5cf6', a50:'#f5f3ff', a100:'#ede9fe' },
 };
+/* 24/10 (Cleanup #9) — BUG dark mode: χλωμά κουτιά με αόρατο κείμενο. Το --accent-50/-100 (ανοιχτά
+   tints) μπαίνουν inline στο <html>, άρα ΚΕΡΔΙΖΟΥΝ το html.dark{--accent-50:...} του CSS. Στο mount
+   τρέχει πρώτα applyAccent (όχι ακόμα dark → γράφει τα light tints) και μετά applyTheme('dark') →
+   τα light tints έμεναν, με ανοιχτό κείμενο από πάνω (USD/GBP, επιλεγμένα «Μετρητά», κουμπί λήψης…).
+   Ίδιο και σε αλλαγή Light→Dark εν λειτουργία. Λύση: σε dark τα inline tints ΑΦΑΙΡΟΥΝΤΑΙ (ισχύει το
+   html.dark), σε light γράφονται· και το applyTheme ξανατρέχει το applyAccent μετά το toggle.
+   Light mode: ίδιες τιμές με πριν. */
+let CUR_ACCENT = 'emerald';
 const applyAccent = key => {
+  CUR_ACCENT = key;
   const a = ACCENTS[key] || ACCENTS.emerald;
-  const r = document.documentElement.style;
+  const root = document.documentElement, r = root.style;
   r.setProperty('--accent', a.accent); r.setProperty('--accent-2', a.accent2); r.setProperty('--accent-600', a.accent);
-  if(!document.documentElement.classList.contains('dark')){ r.setProperty('--accent-50', a.a50); r.setProperty('--accent-100', a.a100); }
+  if(root.classList.contains('dark')){ r.removeProperty('--accent-50'); r.removeProperty('--accent-100'); }
+  else { r.setProperty('--accent-50', a.a50); r.setProperty('--accent-100', a.a100); }
   document.querySelector('meta[name=theme-color]')?.setAttribute('content', a.accent);
 };
 const applyTheme = mode => {
   const dark = mode==='dark' || (mode==='system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   document.documentElement.classList.toggle('dark', dark);
+  applyAccent(CUR_ACCENT);
 };
 
 /* ── ICONS ── */
