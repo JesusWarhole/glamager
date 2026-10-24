@@ -4324,7 +4324,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
 
       <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('themeLabel')}</p>
       <div className="flex gap-2 mb-5">
-        {[['light','Light'],['dark','Dark'],['system','System']].map(([k,l])=>(
+        {[['light',t('themeLight')],['dark',t('themeDark')],['system',t('themeSystem')]].map(([k,l])=>(
           <button key={k} onClick={()=>setTheme(k)} className="flex-1 py-2.5 rounded-xl text-sm font-bold"
             style={theme===k ? {background:'var(--accent-600)',color:'white'} : {background:'var(--accent-50)',color:'var(--text)'}}>
             {l}
@@ -4425,7 +4425,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
           <Ic n="next" s={16} c="var(--text-dim)"/>
         </button>
 
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>Auto-lock</p>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('autoLockLabel')}</p>
         <div className="flex gap-2 mb-5 flex-wrap">
           {AUTO_LOCK_OPTIONS.map(m=>(
             <button key={m} onClick={()=>set('autoLockMinutes',m)} className={`chip ${settings.autoLockMinutes===m?'on':''}`}>{m}′</button>
