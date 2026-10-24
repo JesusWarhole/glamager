@@ -1741,6 +1741,10 @@ function playBookingChime(){
 const today    = () => new Date().toISOString().slice(0,10);
 const nowTime  = () => new Date().toTimeString().slice(0,5);
 const uid      = () => 'x'+Date.now()+Math.random().toString(36).slice(2,6);
+/* 24/10 (Cleanup #3): κοινό κείμενο/alert λάθους αποθήκευσης — πριν το ίδιο expression ήταν copy-paste
+   σε 9 catch blocks (alert) + 4 σημεία (sync/push/import results). */
+const errText         = err => (err && (err.message||err.code)) || String(err);
+const reportSaveError = err => window.alert(t('saveFailedPrefix')+' '+errText(err));
 let CUR_SYMBOL = '€';
 const applyCurrency = code => { CUR_SYMBOL = (CURRENCIES[code]||CURRENCIES.EUR).symbol; };
 const fmt      = v => `${CUR_SYMBOL}${Number(v||0).toLocaleString('el-GR',{minimumFractionDigits:2,maximumFractionDigits:2})}`;
@@ -1979,6 +1983,39 @@ const Ic = ({n,s=20,c='currentColor',cls=''}) => (
   <svg width={s} height={s} viewBox="0 0 24 24" fill="none" stroke={c} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={cls}>
     {(paths[n]||'').split(' M').map((d,i)=><path key={i} d={i===0?d:'M'+d}/>)}
   </svg>
+);
+
+/* ── SHARED UI (24/10, Cleanup #3) — CloseBtn / Sheet / SaveCancel.
+   Πριν: το ίδιο close-X markup 16×, το ίδιο modal shell 16×, το ίδιο ζεύγος Άκυρο/Αποθήκευση 6×.
+   Κανόνας: ΙΔΙΟ markup/classes με πριν — καμία οπτική αλλαγή. ── */
+const CloseBtn = ({onClick, sm=false, cls=''}) => (
+  <button onClick={onClick} className={`${sm?'w-8 h-8 rounded-lg':'w-9 h-9 rounded-xl'} flex items-center justify-center${cls?' '+cls:''}`} style={{background:'var(--soft)'}}>
+    <Ic n="x" s={sm?14:16} c="var(--text-dim)"/>
+  </button>
+);
+/* Sheet: bottom-sheet modal (.modal-bg + .modal). title: string → <h2>, ή έτοιμο JSX node για σύνθετους τίτλους.
+   Χωρίς title → το component φτιάχνει δικό του header (π.χ. search bar, back button).
+   right: επιπλέον κουμπιά δεξιά από το X. tall: maxHeight 92vh. z: custom zIndex (modal πάνω από modal).
+   after: nested modal (π.χ. VisitEditor) που πρέπει να μπει ΑΔΕΛΦΟΣ του .modal, όχι μέσα του (ίδιο DOM με πριν). */
+const Sheet = ({onClose, title, right, headerCls='mb-3', tall=false, z, after, children}) => (
+  <div className="modal-bg fade" onClick={onClose} style={z?{zIndex:z}:undefined}>
+    <div className="modal pop" onClick={e=>e.stopPropagation()} style={tall?{maxHeight:'92vh'}:undefined}>
+      {title!==undefined && (
+        <div className={`flex items-center justify-between ${headerCls}`}>
+          {typeof title==='string' ? <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{title}</h2> : title}
+          {right ? <div className="flex items-center gap-1.5">{right}<CloseBtn onClick={onClose}/></div> : <CloseBtn onClick={onClose}/>}
+        </div>
+      )}
+      {children}
+    </div>
+    {after}
+  </div>
+);
+const SaveCancel = ({onCancel, onSave, disabled=false}) => (
+  <div className="flex gap-2">
+    <button onClick={onCancel} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
+    <button onClick={onSave} disabled={disabled} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
+  </div>
 );
 
 /* ── BRAND MARK — πραγματικό εικονίδιο (08/09, έκλεισε το spec §15 open item) ── */
@@ -2311,16 +2348,12 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
   const days = reqDates({from:dateStr,to}).length;
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <Sheet onClose={onClose} headerCls="mb-4" title={
           <div>
             <p className="font-black text-lg" style={{color:'var(--text)'}}>{title}</p>
             <p className="text-sm font-bold" style={{color:st.color}}>{st.emoji} {stLabel(st)}{eff.status==='work'&&eff.start?` · ${eff.start}–${eff.end}`:''}</p>
             {eff.note ? <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>📝 {eff.note}</p> : null}
-          </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+          </div>}>
 
         {pendingReq && (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'#cffafe33',borderColor:'#67e8f9'}}>
@@ -2359,8 +2392,7 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
             <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>{t('sickExtendHint')}</p>
           </div>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -2530,12 +2562,7 @@ const KudosModal = ({staff,onSend,onClose}) => {
   const [who,setWho] = useState(null);
   const [msg,setMsg] = useState('');
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <p className="font-black text-lg" style={{color:'var(--text)'}}>{t('kudosToLabel')}</p>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} title={t('kudosToLabel')} headerCls="mb-4">
         <div className="flex gap-2 flex-wrap mb-4">
           {staff.map(s=><button key={s.id} onClick={()=>setWho(s.id)} className={`chip ${who===s.id?'on':''}`}>{s.name}</button>)}
         </div>
@@ -2543,12 +2570,11 @@ const KudosModal = ({staff,onSend,onClose}) => {
           className="w-full rounded-xl px-4 py-3 text-sm border outline-none mb-4" style={{background:'var(--soft)',color:'var(--text)',borderColor:'var(--border)'}}/>
         <button onClick={async()=>{
             try{ await onSend(who,msg.trim()); onClose(); }
-            catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+            catch(err){ reportSaveError(err); }
           }} disabled={!who} className="w-full py-3.5 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>
           {t('kudosSendBtn')}
         </button>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -2850,12 +2876,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose} style={{zIndex:110}}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('editVisitTitle')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} z={110} tall title={t('editVisitTitle')}>
 
         <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('linesHeaderLabel')}</p>
         <div className="space-y-2 mb-4">
@@ -2928,12 +2949,8 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
           </div>
         </button>
 
-        <div className="flex gap-2">
-          <button onClick={onClose} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-          <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-        </div>
-      </div>
-    </div>
+        <SaveCancel onCancel={onClose} onSave={save} disabled={!canSave}/>
+    </Sheet>
   );
 };
 
@@ -2947,11 +2964,11 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
   const canHardDelete = isMaster && isDel(v) && v.date===today() && !locked && !!onHardDelete;
   const enteredBy = staff.find(s=>s.id===v.enteredBy)?.name || (v.enteredBy==='master'?'Master':'—');
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+    <Sheet onClose={onClose} after={editing && <VisitEditor v={v} staff={staff} onClose={()=>setEditing(false)}
+        onSave={next=>{onEdit(v.id,next);setEditing(false);}}/>}>
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--accent-600)'}}>{t('visitLabel')} {locked&&`· 🔒 ${t('lockedZLabel')}`}{isDel(v)&&` · ${t('deletedLabel')}`}</p>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="var(--text-dim)"/></button>
+          <CloseBtn onClick={onClose} sm/>
         </div>
         {client && <p className="text-lg font-black" style={{color:'var(--text)'}}>{client.name}</p>}
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{fmtDLong(v.date)} · {v.time} · {pmName(v.pm)} · {t('recordedByLabel')}: {enteredBy}</p>
@@ -3009,10 +3026,7 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
           </div>
         )}
         {isMaster && <AuditLog audit={v.audit} staff={staff}/>}
-      </div>
-      {editing && <VisitEditor v={v} staff={staff} onClose={()=>setEditing(false)}
-        onSave={next=>{onEdit(v.id,next);setEditing(false);}}/>}
-    </div>
+    </Sheet>
   );
 };
 
@@ -3066,8 +3080,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
   },[visits]);
 
   if(pending) return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+    <Sheet onClose={onClose}>
         <div className="flex items-center gap-3 mb-5">
           <button onClick={()=>setPending(null)} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
           <div className="flex-1 min-w-0">
@@ -3085,20 +3098,18 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
             </button>
           ))}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+    <Sheet onClose={onClose}>
         <div className="flex items-center gap-2 mb-3">
           <div className="flex-1 flex items-center gap-2 rounded-xl px-3 py-2.5 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
             <Ic n="search" s={16} c="var(--text-dim)"/>
             <input autoFocus type="text" value={q} onChange={e=>setQ(e.target.value)} placeholder={t('searchPlaceholder')} className="flex-1 text-sm outline-none bg-transparent" style={{color:'var(--text)'}}/>
           </div>
           {onManage && <button onClick={onManage} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--accent-50)'}}><Ic n="gear" s={16} c="var(--accent-600)"/></button>}
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={15} c="var(--text-dim)"/></button>
+          <CloseBtn onClick={onClose} cls="flex-shrink-0"/>
         </div>
 
         {/* Chips κατηγοριών — 05/09: προστέθηκε "Μεταπώληση" σαν ισότιμη κατηγορία δίπλα
@@ -3157,8 +3168,7 @@ const CatalogPicker = ({services,products,visits,staff,defaultStaffId,onPick,onC
           <button disabled={!freeName.trim()||!(parseFloat(freePrice)>0)} onClick={()=>setPending({name:freeName.trim(),price:parseFloat(freePrice),dur:0,vat:24,kind:'service',free:true})}
             className="px-3 py-2 rounded-xl text-white text-sm font-black disabled:opacity-30" style={{background:'var(--accent-600)'}}>+</button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -3174,11 +3184,10 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
     onClose();
   };
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
+    <Sheet onClose={onClose}>
         <div className="flex items-center justify-between mb-3">
           <p className="font-black" style={{color:'var(--text)'}}>{line.name}</p>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="var(--text-dim)"/></button>
+          <CloseBtn onClick={onClose} sm/>
         </div>
 
         <p className="text-xs font-bold uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('priceLabelHint')}</p>
@@ -3214,8 +3223,7 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
           <button onClick={()=>{onRemove();onClose();}} className="flex-1 py-3 rounded-2xl font-bold text-red-500 text-sm border-2 border-red-200">{t('removeBtn')}</button>
           <button onClick={apply} className="flex-1 py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>OK</button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -3241,16 +3249,11 @@ const CatalogTemplatePicker = ({onApply,onClose}) => {
   const apply = async () => {
     if(!chosen) return;
     try{ await onApply(chosen); onClose(); }
-    catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    catch(err){ reportSaveError(err); }
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('templateCardTitle')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} tall title={t('templateCardTitle')}>
 
         {!confirming ? (<React.Fragment>
           <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('pickShopTypeHint')}</p>
@@ -3291,8 +3294,7 @@ const CatalogTemplatePicker = ({onApply,onClose}) => {
             <button onClick={apply} className="flex-1 py-3 rounded-2xl font-black text-white text-sm bg-red-500">{t('applyReplaceBtn')}</button>
           </div>
         </React.Fragment>)}
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -3320,7 +3322,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
       if(isSv){ clean.dur = parseInt(edit.dur)||0; await onSaveService(clean); }
       else { clean.stock = edit.stock===''?null:parseInt(edit.stock)||0; clean.low = parseInt(edit.low)||0; await onSaveProduct(clean); }
       setEdit(null);
-    }catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    }catch(err){ reportSaveError(err); }
   };
 
   /* Λίστα Παραγγελίας — active προϊόντα ομαδοποιημένα ανά κατηγορία χρήσης, με σήμανση όσων χρειάζονται restock */
@@ -3381,21 +3383,15 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
         ...[...pendingImport.prUpdates, ...pendingImport.prNew].map(onSaveProduct),
       ]);
       setPendingImport(null);
-    }catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    }catch(err){ reportSaveError(err); }
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('catalogLabel')}</h2>
-          <div className="flex items-center gap-1.5">
-            <button onClick={exportCatalog} title={t('exportCatalogTitleAttr')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--accent-50)'}}><Ic n="download" s={15} c="var(--accent-600)"/></button>
-            <button onClick={triggerImport} title={t('importCatalogTitleAttr')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="download" s={15} c="var(--text-dim)" cls="rotate-180"/></button>
-            <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleImportFile} className="hidden"/>
-            <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-          </div>
-        </div>
+    <Sheet onClose={onClose} tall title={t('catalogLabel')} right={<>
+          <button onClick={exportCatalog} title={t('exportCatalogTitleAttr')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--accent-50)'}}><Ic n="download" s={15} c="var(--accent-600)"/></button>
+          <button onClick={triggerImport} title={t('importCatalogTitleAttr')} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="download" s={15} c="var(--text-dim)" cls="rotate-180"/></button>
+          <input ref={fileRef} type="file" accept=".csv,text/csv" onChange={handleImportFile} className="hidden"/>
+        </>}>
 
         {pendingImport && (
           <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--accent-50)',borderColor:'var(--accent-100)'}}>
@@ -3461,10 +3457,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
                 </button>
               </div>
             )}
-            <div className="flex gap-2">
-              <button onClick={()=>setEdit(null)} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-              <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-            </div>
+            <SaveCancel onCancel={()=>setEdit(null)} onSave={save} disabled={!canSave}/>
           </div>
         ) : (
           <button onClick={()=>setEdit(blank())} className="w-full py-3 rounded-2xl font-bold text-sm border-2 border-dashed mb-3" style={{borderColor:'var(--accent-100)',color:'var(--accent-600)'}}>+ {t('newLabel')} {isSv?t('serviceUnitLabel'):t('productUnitLabel')}</button>
@@ -3485,8 +3478,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
             </button>
           ))}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -3849,24 +3841,15 @@ const ExpenseEditor = ({e,cats,onSave,onClose}) => {
   const canSave = parseFloat(amt)>0 && cat;
   const save = () => onSave({...e, cat, amt:parseFloat(amt)||0, note:note.trim()});
   return (
-    <div className="modal-bg fade" onClick={onClose} style={{zIndex:110}}>
-      <div className="modal pop" onClick={ev=>ev.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('editExpenseTitle')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} z={110} tall title={t('editExpenseTitle')}>
         <div className="mb-3"><CInput label={t('amountEuroLabel')} value={amt} onChange={setAmt} type="number"/></div>
         <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('categoryLabel')}</p>
         <div className="flex gap-2 flex-wrap mb-3">
           {cats.map(c=><button key={c.id} onClick={()=>setCat(c.name)} className={`chip ${cat===c.name?'on':''}`}>{c.name}</button>)}
         </div>
         <div className="mb-4"><CInput label={t('noteOptionalLabel')} value={note} onChange={setNote}/></div>
-        <div className="flex gap-2">
-          <button onClick={onClose} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-          <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-        </div>
-      </div>
-    </div>
+        <SaveCancel onCancel={onClose} onSave={save} disabled={!canSave}/>
+    </Sheet>
   );
 };
 
@@ -3878,11 +3861,11 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
   const canHardDelete = isMaster && isDel(e) && e.date===today() && !locked && !!onHardDelete;
   const enteredBy = staff.find(s=>s.id===e.enteredBy)?.name || (e.enteredBy==='master'?'Master':'—');
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={ev=>ev.stopPropagation()}>
+    <Sheet onClose={onClose} after={editing && <ExpenseEditor e={e} cats={expCats} onClose={()=>setEditing(false)}
+        onSave={next=>{onEdit(e.id,next);setEditing(false);}}/>}>
         <div className="flex items-center justify-between mb-1">
           <p className="text-xs font-black uppercase tracking-wider" style={{color:'#ef4444'}}>{t('expenseLabel')}{isDel(e)&&` · ${t('deletedNeuterLabel')}`}</p>
-          <button onClick={onClose} className="w-8 h-8 rounded-lg flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="var(--text-dim)"/></button>
+          <CloseBtn onClick={onClose} sm/>
         </div>
         <p className="text-lg font-black" style={{color:'var(--text)'}}>{e.cat}</p>
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{fmtDLong(e.date)} · {e.time} · {t('recordedByLabel')}: {enteredBy}</p>
@@ -3917,10 +3900,7 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
           </div>
         )}
         {isMaster && <AuditLog audit={e.audit} staff={staff}/>}
-      </div>
-      {editing && <ExpenseEditor e={e} cats={expCats} onClose={()=>setEditing(false)}
-        onSave={next=>{onEdit(e.id,next);setEditing(false);}}/>}
-    </div>
+    </Sheet>
   );
 };
 
@@ -4359,16 +4339,12 @@ const MasterDayModal = ({dateStr,emp,entry,onSave,onClose}) => {
   };
   const d = new Date(dateStr+'T12:00:00');
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
+    <Sheet onClose={onClose} headerCls="mb-4" title={
           <div>
             <p className="font-black text-lg" style={{color:'var(--text)'}}>{dowFullName(dateStr)} {d.getDate()} {monName(d.getMonth()+1)}</p>
             <p className="font-bold text-sm" style={{color:'var(--accent-600)'}}>{emp.name}</p>
             {HOLIDAYS[dateStr]&&<p className="text-xs text-amber-600 font-semibold mt-0.5">🎉 {holidayLabel(dateStr)}</p>}
-          </div>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+          </div>}>
         <div className="grid grid-cols-3 gap-2 mb-4">
           {STATUSES.map(s=>(
             <button key={s.id} onClick={()=>pickStatus(s.id)} className={`status-btn text-center ${status===s.id?'sel':''}`} style={{background:status===s.id?s.bg:'var(--soft)',color:s.color}}>
@@ -4392,8 +4368,7 @@ const MasterDayModal = ({dateStr,emp,entry,onSave,onClose}) => {
           {entry&&<button onClick={()=>{onSave(null);onClose();}} className="flex-1 py-3.5 rounded-2xl font-bold text-sm" style={{background:'var(--soft)',color:'var(--text-dim)'}}>↺ {t('resetBtn')}</button>}
           <button onClick={()=>{onSave({status,start:needsTime?start:'',end:needsTime?end:'',note});onClose();}} className="flex-1 py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -4422,12 +4397,7 @@ const ShopClosureModal = ({staff,schedData,onSaveDay,onClose}) => {
     setResult({applied,total:active.length,skipped});
   };
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()}>
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('shopClosureTitle')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} title={t('shopClosureTitle')} headerCls="mb-4">
         {result ? (
           <div>
             <p className="text-sm font-bold mb-2" style={{color:'var(--text)'}}>
@@ -4448,8 +4418,7 @@ const ShopClosureModal = ({staff,schedData,onSaveDay,onClose}) => {
             <button onClick={apply} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'#dc2626'}}>{t('shopClosureConfirmBtn')}</button>
           </React.Fragment>
         )}
-      </div>
-    </div>
+    </Sheet>
   );
 };
 const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
@@ -5061,7 +5030,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
   return (
     <div className="safe-pb">
       <div className="flex items-center gap-2 px-4 py-3" style={{background:'var(--surface)',borderBottom:'1px solid var(--border)'}}>
-        <button onClick={onBack} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
+        <CloseBtn onClick={onBack}/>
         <button onClick={()=>setDate(addDays(date,-1))} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="back" s={16} c="var(--text-dim)"/></button>
         <div className="flex-1 text-center"><p className="text-sm font-black" style={{color:'var(--text)'}}>⚡ Ζ — {date===today()?t('todayLabel'):fmtD(date)} {zmap[date]&&'· 🔒'}</p></div>
         <button onClick={()=>{const n=addDays(date,1); if(n<=today()) setDate(n);}} disabled={date>=today()} className="w-9 h-9 rounded-xl flex items-center justify-center disabled:opacity-30" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
@@ -5135,7 +5104,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
 
         <button onClick={async()=>{
             try{ await onSaveZ(date,{cashZ:cashZn,posZ:posZn,notes,tipsGiven,closedAt:nowTime()}); setSaved(true); }
-            catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+            catch(err){ reportSaveError(err); }
           }}
           className="w-full py-4 rounded-2xl font-black text-white text-base" style={{background:'var(--accent-600)'}}>
           {saved?t('zSavedLockedLabel'):t('zSaveLockBtn')}
@@ -5155,16 +5124,11 @@ const ExpenseCatManager = ({cats,onSave,onDelete,onClose}) => {
   const canSave = edit && edit.name?.trim();
   const save = async () => {
     try{ await onSave({...edit, name:edit.name.trim(), vat:parseInt(edit.vat)||0}); setEdit(null); }
-    catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    catch(err){ reportSaveError(err); }
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('expenseCatsLabel')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} tall title={t('expenseCatsLabel')}>
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('expenseCatHintFull')}</p>
 
         {edit ? (
@@ -5175,10 +5139,7 @@ const ExpenseCatManager = ({cats,onSave,onDelete,onClose}) => {
             <div className="flex gap-2 flex-wrap mb-3">
               {VAT_RATES.map(r=><button key={r} onClick={()=>set('vat',r)} className={`chip ${edit.vat===r?'on':''}`}>{r}%</button>)}
             </div>
-            <div className="flex gap-2">
-              <button onClick={()=>setEdit(null)} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-              <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-            </div>
+            <SaveCancel onCancel={()=>setEdit(null)} onSave={save} disabled={!canSave}/>
           </div>
         ) : (
           <button onClick={()=>setEdit(blank())} className="w-full py-3 rounded-2xl font-bold text-sm border-2 border-dashed mb-3" style={{borderColor:'var(--accent-100)',color:'var(--accent-600)'}}>+ {t('newCategoryLabel')}</button>
@@ -5195,8 +5156,7 @@ const ExpenseCatManager = ({cats,onSave,onDelete,onClose}) => {
             </div>
           ))}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -5209,16 +5169,11 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
   const canSave = edit && edit.name?.trim() && edit.cat;
   const save = async () => {
     try{ await onSave({...edit, name:edit.name.trim(), amt:parseFloat(edit.amt)||0, note:(edit.note||'').trim()}); setEdit(null); }
-    catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    catch(err){ reportSaveError(err); }
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('fixedExpensesLabel')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} tall title={t('fixedExpensesLabel')}>
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('fixedExpensesFullHint')}</p>
 
         {edit ? (
@@ -5241,10 +5196,7 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
               </div>
             </div>
             <div className="mb-3"><CInput label={t('noteOptionalLabel')} value={edit.note} onChange={v=>set('note',v)}/></div>
-            <div className="flex gap-2">
-              <button onClick={()=>setEdit(null)} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-              <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-            </div>
+            <SaveCancel onCancel={()=>setEdit(null)} onSave={save} disabled={!canSave}/>
           </div>
         ) : (
           <button onClick={()=>setEdit(blank())} className="w-full py-3 rounded-2xl font-bold text-sm border-2 border-dashed mb-3" style={{borderColor:'var(--accent-100)',color:'var(--accent-600)'}}>+ {t('newFixedExpenseLabel')}</button>
@@ -5265,8 +5217,7 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
           ))}
           {items.length===0 && <p className="text-xs text-center py-8" style={{color:'var(--text-dim)'}}>{t('noFixedExpensesYetLabel')}</p>}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -5310,16 +5261,11 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
       await onSave({...profile, id:finalId, name:edit.name.trim(), email:edit.email.trim().toLowerCase(), leaveTotal:parseInt(edit.leaveTotal)||0, hired:edit.hired||null, servesClients: edit.servesClients ?? edit.role===ROLE.STAFF, active: edit.active ?? true});
       if(pin && pin.length===4) onSetPin(finalId, pin);
       setEdit(null);
-    }catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    }catch(err){ reportSaveError(err); }
   };
 
   return (
-    <div className="modal-bg fade" onClick={onClose}>
-      <div className="modal pop" onClick={e=>e.stopPropagation()} style={{maxHeight:'92vh'}}>
-        <div className="flex items-center justify-between mb-3">
-          <h2 className="text-lg font-black" style={{color:'var(--text)'}}>{t('staffManagerTitle')}</h2>
-          <button onClick={onClose} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="x" s={16} c="var(--text-dim)"/></button>
-        </div>
+    <Sheet onClose={onClose} tall title={t('staffManagerTitle')}>
         <p className="text-xs mb-3" style={{color:'var(--text-dim)'}}>{t('staffManagerHint')}</p>
 
         {edit ? (
@@ -5392,10 +5338,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
             </div>
             <div className="mb-3" style={{maxWidth:'50%'}}><CInput label={t('leaveTotalLabel')} value={edit.leaveTotal} onChange={v=>set('leaveTotal',v)} type="number"/></div>
             {!edit.id && <p className="text-xs mb-3 rounded-xl px-3 py-2" style={{background:'#fef3c7',color:'#92400e'}}>⚠️ {t('staffAddNoLoginHint')}</p>}
-            <div className="flex gap-2">
-              <button onClick={()=>setEdit(null)} className="px-4 py-3 rounded-2xl font-bold text-sm" style={{background:'var(--surface)',color:'var(--text-dim)'}}>{t('cancelBtn')}</button>
-              <button onClick={save} disabled={!canSave} className="flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30" style={{background:'var(--accent-600)'}}>{t('saveChangesBtn')}</button>
-            </div>
+            <SaveCancel onCancel={()=>setEdit(null)} onSave={save} disabled={!canSave}/>
           </div>
         ) : (
           <button onClick={()=>setEdit(blank())} className="w-full py-3 rounded-2xl font-bold text-sm border-2 border-dashed mb-3" style={{borderColor:'var(--accent-100)',color:'var(--accent-600)'}}>+ {t('newStaffLabel')}</button>
@@ -5412,8 +5355,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
             </button>
           ))}
         </div>
-      </div>
-    </div>
+    </Sheet>
   );
 };
 
@@ -5527,7 +5469,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
   const [pushResult,setPushResult] = useState(null);
   const set = async (k,v) => {
     try{ await updateSettings({[k]:v}); }
-    catch(err){ window.alert(t('saveFailedPrefix')+' '+((err&&(err.message||err.code))||String(err))); }
+    catch(err){ reportSaveError(err); }
   };
   return (
   <div className="fixed inset-0 flex items-end justify-center bg-black/50 fade" style={{zIndex:70}} onClick={onClose}>
@@ -5702,7 +5644,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 const res = await onSyncClaims();
                 setSyncResult(res);
               }catch(err){
-                setSyncResult({ok:false, error:(err&&(err.message||err.code))||String(err)});
+                setSyncResult({ok:false, error:errText(err)});
               }finally{
                 setSyncBusy(false);
               }
@@ -5740,7 +5682,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 await onRegisterPush();
                 setPushResult({ok:true});
               }catch(err){
-                setPushResult({ok:false, error:(err&&(err.message||err.code))||String(err)});
+                setPushResult({ok:false, error:errText(err)});
               }finally{
                 setPushBusy(false);
               }
@@ -6095,7 +6037,7 @@ const App = () => {
       ]);
       return { ok:true, totalFound, found };
     }catch(err){
-      return { ok:false, totalFound, found, error: (err && (err.message||err.code)) || String(err) };
+      return { ok:false, totalFound, found, error: errText(err) };
     }
   };
 
@@ -6119,7 +6061,7 @@ const App = () => {
       ]);
       return { ok:true };
     }catch(err){
-      return { ok:false, error:(err && (err.message||err.code)) || String(err) };
+      return { ok:false, error:errText(err) };
     }
   };
 
