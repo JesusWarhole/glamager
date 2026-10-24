@@ -1459,6 +1459,28 @@ const itemLabel = (item) => LANG === "en" && item.name_en ? item.name_en : item.
 const PRODUCT_USES = [["resale", "\u039C\u03B5\u03C4\u03B1\u03C0\u03CE\u03BB\u03B7\u03C3\u03B7"], ["dye", "\u0392\u03B1\u03C6\u03B5\u03AF\u03BF"], ["wash", "\u039B\u03BF\u03C5\u03C4\u03AE\u03C1\u03B1\u03C2"], ["other", "\u0386\u03BB\u03BB\u03BF"]];
 const PU_KEYS = { resale: "useResaleLabel", dye: "useDyeLabel", wash: "useWashLabel", other: "otherCatLabel" };
 const puLabel = (code) => t(PU_KEYS[code] || "otherCatLabel");
+const EXP_CATS = [
+  { id: "ec1", name: "\u03A0\u03C1\u03BF\u03BC\u03AE\u03B8\u03B5\u03B9\u03B5\u03C2/\u03A5\u03BB\u03B9\u03BA\u03AC", vat: 24 },
+  { id: "ec2", name: "\u039C\u03B9\u03C3\u03B8\u03BF\u03B4\u03BF\u03C3\u03AF\u03B1", vat: 0 },
+  { id: "ec3", name: "\u0395\u03BD\u03BF\u03AF\u03BA\u03B9\u03BF", vat: 0 },
+  { id: "ec4", name: "\u0394\u0395\u0397/\u039D\u03B5\u03C1\u03CC", vat: 6 },
+  { id: "ec5", name: "\u03A4\u03B7\u03BB\u03AD\u03C6\u03C9\u03BD\u03BF/Internet", vat: 24 },
+  { id: "ec6", name: "\u039B\u03BF\u03B3\u03B9\u03C3\u03C4\u03B9\u03BA\u03AC", vat: 24 },
+  { id: "ec7", name: "\u03A3\u03C5\u03BD\u03C4\u03AE\u03C1\u03B7\u03C3\u03B7", vat: 24 },
+  { id: "ec8", name: "\u0393\u03B5\u03BD\u03B9\u03BA\u03AC/\u0386\u03BB\u03BB\u03B1", vat: 24 }
+];
+let LIVE_EXP_CATS = EXP_CATS;
+const VAT_RATES = [24, 17, 13, 6, 0];
+const CURRENCIES = { EUR: { symbol: "\u20AC", label: "\u0395\u03C5\u03C1\u03CE (\u20AC)" }, USD: { symbol: "$", label: "\u0394\u03BF\u03BB\u03AC\u03C1\u03B9\u03BF ($)" }, GBP: { symbol: "\xA3", label: "\u039B\u03AF\u03C1\u03B1 (\xA3)" } };
+const TODAY_ISO = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
+const daysAgo = (n) => {
+  const d = /* @__PURE__ */ new Date();
+  d.setDate(d.getDate() - n);
+  return d.toISOString().slice(0, 10);
+};
+const NOW = /* @__PURE__ */ new Date();
+const CUR_Y = NOW.getFullYear(), CUR_M = NOW.getMonth() + 1;
+const pad2 = (n) => String(n).padStart(2, "0");
 const DEMO_SERVICES = [
   { id: "sv1", name: "\u039A\u03BF\u03CD\u03C1\u03B5\u03BC\u03B1 \u03B3\u03C5\u03BD\u03B1\u03B9\u03BA\u03B5\u03AF\u03BF", name_en: "Women's Haircut", dur: 60, price: 25, vat: 24, cat: "\u039A\u03BF\u03CD\u03C1\u03B5\u03BC\u03B1", active: true },
   { id: "sv2", name: "\u039A\u03BF\u03CD\u03C1\u03B5\u03BC\u03B1 \u03B1\u03BD\u03B4\u03C1\u03B9\u03BA\u03CC", name_en: "Men's Haircut", dur: 30, price: 15, vat: 24, cat: "\u039A\u03BF\u03CD\u03C1\u03B5\u03BC\u03B1", active: true },
@@ -1719,19 +1741,6 @@ const CATALOG_TEMPLATES = [
     products: []
   }
 ];
-const EXP_CATS = [
-  { id: "ec1", name: "\u03A0\u03C1\u03BF\u03BC\u03AE\u03B8\u03B5\u03B9\u03B5\u03C2/\u03A5\u03BB\u03B9\u03BA\u03AC", vat: 24 },
-  { id: "ec2", name: "\u039C\u03B9\u03C3\u03B8\u03BF\u03B4\u03BF\u03C3\u03AF\u03B1", vat: 0 },
-  { id: "ec3", name: "\u0395\u03BD\u03BF\u03AF\u03BA\u03B9\u03BF", vat: 0 },
-  { id: "ec4", name: "\u0394\u0395\u0397/\u039D\u03B5\u03C1\u03CC", vat: 6 },
-  { id: "ec5", name: "\u03A4\u03B7\u03BB\u03AD\u03C6\u03C9\u03BD\u03BF/Internet", vat: 24 },
-  { id: "ec6", name: "\u039B\u03BF\u03B3\u03B9\u03C3\u03C4\u03B9\u03BA\u03AC", vat: 24 },
-  { id: "ec7", name: "\u03A3\u03C5\u03BD\u03C4\u03AE\u03C1\u03B7\u03C3\u03B7", vat: 24 },
-  { id: "ec8", name: "\u0393\u03B5\u03BD\u03B9\u03BA\u03AC/\u0386\u03BB\u03BB\u03B1", vat: 24 }
-];
-let LIVE_EXP_CATS = EXP_CATS;
-const VAT_RATES = [24, 17, 13, 6, 0];
-const CURRENCIES = { EUR: { symbol: "\u20AC", label: "\u0395\u03C5\u03C1\u03CE (\u20AC)" }, USD: { symbol: "$", label: "\u0394\u03BF\u03BB\u03AC\u03C1\u03B9\u03BF ($)" }, GBP: { symbol: "\xA3", label: "\u039B\u03AF\u03C1\u03B1 (\xA3)" } };
 const DEMO_SETTINGS = {
   shopName: "",
   // 24/10: κενό default — το login/OperatorPicker δείχνουν μόνο «Glamager» μέχρι να φορτώσει το settings του tenant (πριν έγραφε «Hair Corner (demo)» σε ΚΑΘΕ μαγαζί)
@@ -1757,12 +1766,6 @@ const DEMO_CLIENTS = [
   { id: "c3", name: "\u039A\u03B1\u03C4\u03B5\u03C1\u03AF\u03BD\u03B1 \u039B\u03B1\u03BC\u03C0\u03C1\u03AF\u03B4\u03B7", phone: "6932221100", patronym: "", created: "2025-11-20" },
   { id: "c4", name: "\u039D\u03AF\u03BA\u03BF\u03C2 \u03A3\u03C4\u03B1\u03B8\u03CC\u03C0\u03BF\u03C5\u03BB\u03BF\u03C2", phone: "6909876543", patronym: "", created: "2026-06-28" }
 ];
-const TODAY_ISO = (/* @__PURE__ */ new Date()).toISOString().slice(0, 10);
-const daysAgo = (n) => {
-  const d = /* @__PURE__ */ new Date();
-  d.setDate(d.getDate() - n);
-  return d.toISOString().slice(0, 10);
-};
 const DEMO_VISITS = [
   {
     id: "v1",
@@ -1893,9 +1896,6 @@ const DEMO_VISITS = [
 const DEMO_EXPENSES = [
   { id: "e1", date: TODAY_ISO, time: "09:15", cat: "\u03A0\u03C1\u03BF\u03BC\u03AE\u03B8\u03B5\u03B9\u03B5\u03C2/\u03A5\u03BB\u03B9\u03BA\u03AC", amt: 86.8, note: "\u039F\u03BE\u03C5\u03B6\u03B5\u03BD\u03AD + \u03B2\u03B1\u03C6\u03AD\u03C2", enteredBy: "s1", deleted: null, audit: [] }
 ];
-const NOW = /* @__PURE__ */ new Date();
-const CUR_Y = NOW.getFullYear(), CUR_M = NOW.getMonth() + 1;
-const pad2 = (n) => String(n).padStart(2, "0");
 const DEMO_SCHED = {
   [CUR_Y]: { [pad2(CUR_M)]: {
     s2: { "02": { status: "sick", start: "", end: "", note: "\u0392\u03B5\u03B2\u03B1\u03AF\u03C9\u03C3\u03B7 #482" } },
