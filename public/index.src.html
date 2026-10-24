@@ -22,7 +22,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
 
@@ -1561,7 +1561,7 @@ const VAT_RATES = [24,17,13,6,0];
 /* ── ΡΥΘΜΙΣΕΙΣ ΚΑΤΑΣΤΗΜΑΤΟΣ (spec §1α) — state στο App, στο backend βήμα πάνε σε shop doc ── */
 const CURRENCIES = { EUR:{symbol:'€',label:'Ευρώ (€)'}, USD:{symbol:'$',label:'Δολάριο ($)'}, GBP:{symbol:'£',label:'Λίρα (£)'} };
 const DEMO_SETTINGS = {
-  shopName: 'Hair Corner (demo)',
+  shopName: '',               // 24/10: κενό default — το login/OperatorPicker δείχνουν μόνο «Glamager» μέχρι να φορτώσει το settings του tenant (πριν έγραφε «Hair Corner (demo)» σε ΚΑΘΕ μαγαζί)
   lang: 'el',                // 'el' | 'en' — βλ. applyLang()/STRINGS/t() παραπάνω (i18n, ξεκίνησε 16/07)
   currency: 'EUR',
   vatServiceDefault: 24,
@@ -2006,7 +2006,7 @@ const LoginScreen = ({shopName, busy, err, onLogin}) => {
       <div className="text-center mb-8">
         <BrandMark s={72}/>
         <h1 className="text-3xl font-black text-white mt-5">Glamager</h1>
-        <p className="text-white/70 text-sm mt-1">{shopName}</p>
+        {shopName && <p className="text-white/70 text-sm mt-1">{shopName}</p>}
       </div>
       <form onSubmit={submit} className="flex flex-col gap-3 w-full max-w-xs">
         <input type="email" inputMode="email" autoComplete="username" value={email}
@@ -2134,7 +2134,7 @@ const OperatorPicker = ({shopName, staff, pins, onPick, myId, onForgotPin}) => {
         <div className="text-center mb-8">
           <BrandMark s={72}/>
           <h1 className="text-3xl font-black text-white mt-5">Glamager</h1>
-          <p className="text-white/70 text-sm mt-1">{shopName}</p>
+          {shopName && <p className="text-white/70 text-sm mt-1">{shopName}</p>}
         </div>
         <p className="text-white/80 text-sm font-semibold mb-4">{t('whoAreYou')}</p>
         <div className="flex flex-col gap-3 w-full max-w-xs">

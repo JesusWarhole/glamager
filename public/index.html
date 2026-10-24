@@ -21,7 +21,7 @@
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-database-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-functions-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging-compat.js"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     *,*::before,*::after{font-family:'Inter',system-ui,sans-serif;box-sizing:border-box;}
 
@@ -1733,7 +1733,8 @@ let LIVE_EXP_CATS = EXP_CATS;
 const VAT_RATES = [24, 17, 13, 6, 0];
 const CURRENCIES = { EUR: { symbol: "\u20AC", label: "\u0395\u03C5\u03C1\u03CE (\u20AC)" }, USD: { symbol: "$", label: "\u0394\u03BF\u03BB\u03AC\u03C1\u03B9\u03BF ($)" }, GBP: { symbol: "\xA3", label: "\u039B\u03AF\u03C1\u03B1 (\xA3)" } };
 const DEMO_SETTINGS = {
-  shopName: "Hair Corner (demo)",
+  shopName: "",
+  // 24/10: κενό default — το login/OperatorPicker δείχνουν μόνο «Glamager» μέχρι να φορτώσει το settings του tenant (πριν έγραφε «Hair Corner (demo)» σε ΚΑΘΕ μαγαζί)
   lang: "el",
   // 'el' | 'en' — βλ. applyLang()/STRINGS/t() παραπάνω (i18n, ξεκίνησε 16/07)
   currency: "EUR",
@@ -2267,7 +2268,7 @@ const LoginScreen = ({ shopName, busy, err, onLogin }) => {
     if (!email.trim() || !pw || busy) return;
     onLogin(email.trim(), pw);
   };
-  return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 72 }), /* @__PURE__ */ React.createElement("h1", { className: "text-3xl font-black text-white mt-5" }, "Glamager"), /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-sm mt-1" }, shopName)), /* @__PURE__ */ React.createElement("form", { onSubmit: submit, className: "flex flex-col gap-3 w-full max-w-xs" }, /* @__PURE__ */ React.createElement(
+  return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 72 }), /* @__PURE__ */ React.createElement("h1", { className: "text-3xl font-black text-white mt-5" }, "Glamager"), shopName && /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-sm mt-1" }, shopName)), /* @__PURE__ */ React.createElement("form", { onSubmit: submit, className: "flex flex-col gap-3 w-full max-w-xs" }, /* @__PURE__ */ React.createElement(
     "input",
     {
       type: "email",
@@ -2402,7 +2403,7 @@ const OperatorPicker = ({ shopName, staff, pins, onPick, myId, onForgotPin }) =>
     else setFPin2((p) => p.slice(0, -1));
   };
   if (!who) {
-    return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 72 }), /* @__PURE__ */ React.createElement("h1", { className: "text-3xl font-black text-white mt-5" }, "Glamager"), /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-sm mt-1" }, shopName)), /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-sm font-semibold mb-4" }, t("whoAreYou")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 w-full max-w-xs" }, people.map((p) => /* @__PURE__ */ React.createElement("button", { key: p.id, onClick: () => setWho(p), className: "card px-5 py-4 flex items-center gap-3 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", style: { background: "var(--accent-100)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "user", s: 18, c: "var(--accent-600)" })), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold block", style: { color: "var(--text)" } }, p.name), /* @__PURE__ */ React.createElement("span", { className: "text-xs", style: { color: "var(--text-dim)" } }, roleLabel(p.role)))))));
+    return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-8" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 72 }), /* @__PURE__ */ React.createElement("h1", { className: "text-3xl font-black text-white mt-5" }, "Glamager"), shopName && /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-sm mt-1" }, shopName)), /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-sm font-semibold mb-4" }, t("whoAreYou")), /* @__PURE__ */ React.createElement("div", { className: "flex flex-col gap-3 w-full max-w-xs" }, people.map((p) => /* @__PURE__ */ React.createElement("button", { key: p.id, onClick: () => setWho(p), className: "card px-5 py-4 flex items-center gap-3 text-left" }, /* @__PURE__ */ React.createElement("div", { className: "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0", style: { background: "var(--accent-100)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "user", s: 18, c: "var(--accent-600)" })), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("span", { className: "font-bold block", style: { color: "var(--text)" } }, p.name), /* @__PURE__ */ React.createElement("span", { className: "text-xs", style: { color: "var(--text-dim)" } }, roleLabel(p.role)))))));
   }
   if (forgot) {
     return /* @__PURE__ */ React.createElement("div", { className: "min-h-screen hero flex flex-col items-center justify-center px-6" }, /* @__PURE__ */ React.createElement("div", { className: "text-center mb-10" }, /* @__PURE__ */ React.createElement(BrandMark, { s: 64 }), /* @__PURE__ */ React.createElement("h1", { className: "text-2xl font-black text-white mt-4" }, who.name), /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-xs mt-1" }, fStage === "enter" ? t("forgotPinNewTitle") : t("forgotPinConfirmTitle"))), /* @__PURE__ */ React.createElement("div", { className: "flex gap-5 mb-10" }, [0, 1, 2, 3].map((i) => /* @__PURE__ */ React.createElement("div", { key: i, className: `pin-dot ${(fStage === "enter" ? fPin1 : fPin2).length > i ? fErr ? "err" : "on" : ""}` }))), /* @__PURE__ */ React.createElement(DigitPad, { onDigit: pressForgot, onErase: eraseForgot }), fErr && /* @__PURE__ */ React.createElement("p", { className: "text-red-200 text-sm mt-6 fade" }, t("forgotPinMismatch")), /* @__PURE__ */ React.createElement("button", { onClick: cancelForgot, className: "text-white/60 text-xs font-semibold mt-8 underline" }, t("forgotPinCancelBtn")));
