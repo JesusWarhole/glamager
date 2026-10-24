@@ -76,6 +76,9 @@
     #root{position:absolute;inset:0;max-width:640px;margin:0 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
     .hero{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);}
     .hdr{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);}
+    /* 25/10 (Cleanup #13): στο dark το πράσινο (ή όποιο accent) του header/hero/login σκουραίνει προς το --bg,
+       ώστε να μην «καίει» τη νύχτα· λευκό κείμενο από πάνω ≥4.5:1. Browsers χωρίς color-mix κρατάνε το light. */
+    html.dark .hero,html.dark .hdr{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 58%,#0b1220) 0%,color-mix(in srgb,var(--accent-2) 48%,#0b1220) 100%);}
     .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7);transition:all .15s;}
     .pin-dot.on{background:white;transform:scale(1.15);}
     .pin-dot.err{border-color:#fca5a5;background:#fca5a5;}
@@ -99,6 +102,7 @@
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
     .hdr-spacer{padding-top:108px;}
+    .hdr-btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
     /* TEST MODE (25/08 β', μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο» στην safe-area/notch
        iOS standalone PWA μετά το off). Η παλιά προσέγγιση είχε ΔΥΟ fixed στοιχεία (ξεχωριστό banner
        + Header που μετακινούνταν top:0↔27px) και μπέρδευε τον WebKit compositor. Τώρα το banner ζει
@@ -113,6 +117,7 @@
     .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);}
     .amt{font-variant-numeric:tabular-nums;}
     .hero-shadow{box-shadow:0 8px 32px rgba(5,150,105,.28);}
+    html.dark .hero-shadow{box-shadow:0 8px 24px rgba(0,0,0,.35);}
     .badge{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);color:white;border-radius:6px;padding:2px 6px;letter-spacing:.5px;}
     .swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all .15s;}
     .swatch.sel{border-color:var(--text);transform:scale(1.1);}
@@ -323,6 +328,9 @@ const STRINGS = {
   navRegister: { el: "\u03A4\u03B1\u03BC\u03B5\u03AF\u03BF", en: "Register" },
   navReports: { el: "\u0391\u03BD\u03B1\u03C6\u03BF\u03C1\u03AD\u03C2", en: "Reports" },
   navClients: { el: "\u03A0\u03B5\u03BB\u03B1\u03C4\u03BF\u03BB\u03CC\u03B3\u03B9\u03BF", en: "Clients" },
+  hdrBackAria: { el: "\u03A0\u03AF\u03C3\u03C9", en: "Back" },
+  hdrLockAria: { el: "\u039A\u03BB\u03B5\u03AF\u03B4\u03C9\u03BC\u03B1", en: "Lock" },
+  hdrOperatorAria: { el: "\u03A7\u03C1\u03AE\u03C3\u03C4\u03B7\u03C2:", en: "User:" },
   settingsLangLabel: { el: "\u0393\u03BB\u03CE\u03C3\u03C3\u03B1", en: "Language" },
   langNameEl: { el: "\u0395\u03BB\u03BB\u03B7\u03BD\u03B9\u03BA\u03AC", en: "Greek" },
   langNameEn: { el: "English", en: "English" },
@@ -2250,6 +2258,11 @@ const ACCENTS = {
   violet: { label: "Violet", accent: "#7c3aed", accent2: "#8b5cf6", a50: "#f5f3ff", a100: "#ede9fe" }
 };
 let CUR_ACCENT = "emerald";
+const mixHex = (a, b, t2) => {
+  const p = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16));
+  const A = p(a), B = p(b);
+  return "#" + A.map((v, i) => Math.round(v * t2 + B[i] * (1 - t2)).toString(16).padStart(2, "0")).join("");
+};
 const applyAccent = (key) => {
   var _a;
   CUR_ACCENT = key;
@@ -2265,7 +2278,7 @@ const applyAccent = (key) => {
     r.setProperty("--accent-50", a.a50);
     r.setProperty("--accent-100", a.a100);
   }
-  (_a = document.querySelector("meta[name=theme-color]")) == null ? void 0 : _a.setAttribute("content", a.accent);
+  (_a = document.querySelector("meta[name=theme-color]")) == null ? void 0 : _a.setAttribute("content", root.classList.contains("dark") ? mixHex(a.accent, "#0b1220", 0.58) : a.accent);
 };
 const applyTheme = (mode) => {
   const dark = mode === "dark" || mode === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -2299,7 +2312,7 @@ const Ic = ({ n, s = 20, c = "currentColor", cls = "" }) => /* @__PURE__ */ Reac
 const CloseBtn = ({ onClick, sm = false, cls = "" }) => /* @__PURE__ */ React.createElement("button", { onClick, className: `${sm ? "w-8 h-8 rounded-lg" : "w-9 h-9 rounded-xl"} flex items-center justify-center${cls ? " " + cls : ""}`, style: { background: "var(--soft)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "x", s: sm ? 14 : 16, c: "var(--text-dim)" }));
 const Sheet = ({ onClose, title, right, headerCls = "mb-3", tall = false, z, after, children }) => /* @__PURE__ */ React.createElement("div", { className: "modal-bg fade", onClick: onClose, style: z ? { zIndex: z } : void 0 }, /* @__PURE__ */ React.createElement("div", { className: "modal pop", onClick: (e) => e.stopPropagation(), style: tall ? { maxHeight: "92vh" } : void 0 }, title !== void 0 && /* @__PURE__ */ React.createElement("div", { className: `flex items-center justify-between ${headerCls}` }, typeof title === "string" ? /* @__PURE__ */ React.createElement("h2", { className: "text-lg font-black", style: { color: "var(--text)" } }, title) : title, right ? /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5" }, right, /* @__PURE__ */ React.createElement(CloseBtn, { onClick: onClose })) : /* @__PURE__ */ React.createElement(CloseBtn, { onClick: onClose })), children), after);
 const SaveCancel = ({ onCancel, onSave, disabled = false }) => /* @__PURE__ */ React.createElement("div", { className: "flex gap-2" }, /* @__PURE__ */ React.createElement("button", { onClick: onCancel, className: "px-4 py-3 rounded-2xl font-bold text-sm", style: { background: "var(--surface)", color: "var(--text-dim)" } }, t("cancelBtn")), /* @__PURE__ */ React.createElement("button", { onClick: onSave, disabled, className: "flex-1 py-3 rounded-2xl font-black text-white text-sm disabled:opacity-30", style: { background: "var(--accent-600)" } }, t("saveChangesBtn")));
-const BrandMark = ({ s = 36 }) => /* @__PURE__ */ React.createElement("div", { style: { width: s, height: s }, className: "rounded-2xl overflow-hidden mx-auto" }, /* @__PURE__ */ React.createElement("img", { src: "icon-glamager-192.png", alt: "Glamager", style: { width: "100%", height: "100%", objectFit: "cover", display: "block" } }));
+const BrandMark = ({ s = 36 }) => /* @__PURE__ */ React.createElement("img", { src: "mark-glamager-white.png", alt: "Glamager", width: s, height: s, className: "block mx-auto flex-shrink-0", style: { width: s, height: s } });
 const LoginScreen = ({ shopName, busy, err, onLogin }) => {
   const [email, setEmail] = useState("");
   const [pw, setPw] = useState("");
@@ -2473,7 +2486,16 @@ const BookingAlertStack = ({ alerts, onDismiss }) => {
     cursor: "pointer"
   } }, "\u03A4\u03BF \u03B5\u03AF\u03B4\u03B1 \u2713 \u2014 \u03B3\u03C1\u03AC\u03C6\u03C4\u03B7\u03BA\u03B5 \u03C3\u03C4\u03BF \u03C4\u03B5\u03C4\u03C1\u03AC\u03B4\u03B9\u03BF"))));
 };
-const Header = ({ title, sub, operator, onSettings, onClients, onBack, onLock, testMode }) => /* @__PURE__ */ React.createElement("div", { className: "hdr fixed top-0 z-40", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640 } }, testMode && /* @__PURE__ */ React.createElement("div", { className: "test-banner-inline" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText")), /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-11 pb-4 flex items-center gap-3" }, onBack ? /* @__PURE__ */ React.createElement("button", { onClick: onBack, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 18, c: "white" })) : /* @__PURE__ */ React.createElement(BrandMark, { s: 36 }), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0" }, /* @__PURE__ */ React.createElement("h1", { className: "text-base font-black text-white truncate" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "text-white/70 text-xs mt-0.5 truncate" }, sub)), operator && /* @__PURE__ */ React.createElement("div", { className: "flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1 flex-shrink-0" }, /* @__PURE__ */ React.createElement("span", { className: "text-white text-xs font-bold" }, operator.name)), onClients && /* @__PURE__ */ React.createElement("button", { onClick: onClients, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "users", s: 18, c: "white" })), onLock && /* @__PURE__ */ React.createElement("button", { onClick: onLock, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "lock", s: 17, c: "white" })), onSettings && /* @__PURE__ */ React.createElement("button", { onClick: onSettings, className: "w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "gear", s: 18, c: "white" }))));
+const Header = ({ title, sub, operator, onSettings, onClients, onBack, onLock, testMode }) => /* @__PURE__ */ React.createElement("div", { className: "hdr fixed top-0 z-40", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640 } }, testMode && /* @__PURE__ */ React.createElement("div", { className: "test-banner-inline" }, "\u{1F9EA} TEST MODE \u2014 ", t("testModeBannerText")), /* @__PURE__ */ React.createElement("div", { className: "px-4 pt-11 pb-4 flex items-center gap-2" }, onBack ? /* @__PURE__ */ React.createElement("button", { onClick: onBack, "aria-label": t("hdrBackAria"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "back", s: 20, c: "white" })) : /* @__PURE__ */ React.createElement(BrandMark, { s: 36 }), /* @__PURE__ */ React.createElement("div", { className: "flex-1 min-w-0 ml-1" }, /* @__PURE__ */ React.createElement("h1", { className: "text-base font-black text-white truncate" }, title), sub && /* @__PURE__ */ React.createElement("p", { className: "text-white/80 text-xs mt-0.5 truncate" }, sub)), operator && /* @__PURE__ */ React.createElement(
+  "div",
+  {
+    title: operator.name,
+    "aria-label": t("hdrOperatorAria") + " " + operator.name,
+    role: "img",
+    className: "w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-sm font-black"
+  },
+  (operator.name || "?").trim().charAt(0).toUpperCase()
+), onClients && /* @__PURE__ */ React.createElement("button", { onClick: onClients, "aria-label": t("navClients"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "users", s: 20, c: "white" })), onLock && /* @__PURE__ */ React.createElement("button", { onClick: onLock, "aria-label": t("hdrLockAria"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "lock", s: 19, c: "white" })), onSettings && /* @__PURE__ */ React.createElement("button", { onClick: onSettings, "aria-label": t("settingsTitle"), className: "hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0" }, /* @__PURE__ */ React.createElement(Ic, { n: "gear", s: 20, c: "white" }))));
 const Nav = ({ active, go, operator, pendingCount }) => {
   const isMaster = operator.role === ROLE.MASTER;
   const tabs = isMaster ? [

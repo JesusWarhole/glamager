@@ -77,6 +77,9 @@
     #root{position:absolute;inset:0;max-width:640px;margin:0 auto;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior-y:contain;}
     .hero{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);}
     .hdr{background:linear-gradient(135deg,var(--accent) 0%,var(--accent-2) 100%);}
+    /* 25/10 (Cleanup #13): στο dark το πράσινο (ή όποιο accent) του header/hero/login σκουραίνει προς το --bg,
+       ώστε να μην «καίει» τη νύχτα· λευκό κείμενο από πάνω ≥4.5:1. Browsers χωρίς color-mix κρατάνε το light. */
+    html.dark .hero,html.dark .hdr{background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 58%,#0b1220) 0%,color-mix(in srgb,var(--accent-2) 48%,#0b1220) 100%);}
     .pin-dot{width:14px;height:14px;border-radius:50%;border:2px solid rgba(255,255,255,.7);transition:all .15s;}
     .pin-dot.on{background:white;transform:scale(1.15);}
     .pin-dot.err{border-color:#fca5a5;background:#fca5a5;}
@@ -100,6 +103,7 @@
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
     .hdr-spacer{padding-top:108px;}
+    .hdr-btn:focus-visible{outline:2px solid #fff;outline-offset:2px;}
     /* TEST MODE (25/08 β', μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο» στην safe-area/notch
        iOS standalone PWA μετά το off). Η παλιά προσέγγιση είχε ΔΥΟ fixed στοιχεία (ξεχωριστό banner
        + Header που μετακινούνταν top:0↔27px) και μπέρδευε τον WebKit compositor. Τώρα το banner ζει
@@ -114,6 +118,7 @@
     .card{background:var(--surface);border-radius:16px;border:1px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06);}
     .amt{font-variant-numeric:tabular-nums;}
     .hero-shadow{box-shadow:0 8px 32px rgba(5,150,105,.28);}
+    html.dark .hero-shadow{box-shadow:0 8px 24px rgba(0,0,0,.35);}
     .badge{font-size:10px;font-weight:800;background:rgba(255,255,255,.25);color:white;border-radius:6px;padding:2px 6px;letter-spacing:.5px;}
     .swatch{width:36px;height:36px;border-radius:50%;border:3px solid transparent;cursor:pointer;transition:all .15s;}
     .swatch.sel{border-color:var(--text);transform:scale(1.1);}
@@ -755,6 +760,8 @@ const ACCENTS = {
    html.dark), σε light γράφονται· και το applyTheme ξανατρέχει το applyAccent μετά το toggle.
    Light mode: ίδιες τιμές με πριν. */
 let CUR_ACCENT = 'emerald';
+/* 25/10 (Cleanup #13): ίδια ανάμειξη με το html.dark .hdr (color-mix 58%) — για το <meta theme-color>, που δεν δέχεται color-mix. */
+const mixHex = (a,b,t) => { const p=h=>[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)); const A=p(a),B=p(b); return '#'+A.map((v,i)=>Math.round(v*t+B[i]*(1-t)).toString(16).padStart(2,'0')).join(''); };
 const applyAccent = key => {
   CUR_ACCENT = key;
   const a = ACCENTS[key] || ACCENTS.emerald;
@@ -762,7 +769,7 @@ const applyAccent = key => {
   r.setProperty('--accent', a.accent); r.setProperty('--accent-2', a.accent2); r.setProperty('--accent-600', a.accent);
   if(root.classList.contains('dark')){ r.removeProperty('--accent-50'); r.removeProperty('--accent-100'); }
   else { r.setProperty('--accent-50', a.a50); r.setProperty('--accent-100', a.a100); }
-  document.querySelector('meta[name=theme-color]')?.setAttribute('content', a.accent);
+  document.querySelector('meta[name=theme-color]')?.setAttribute('content', root.classList.contains('dark') ? mixHex(a.accent,'#0b1220',0.58) : a.accent);
 };
 const applyTheme = mode => {
   const dark = mode==='dark' || (mode==='system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -834,10 +841,12 @@ const SaveCancel = ({onCancel, onSave, disabled=false}) => (
 );
 
 /* ── BRAND MARK — πραγματικό εικονίδιο (08/09, έκλεισε το spec §15 open item) ── */
+/* 25/10 (Cleanup #13): λευκό σήμα χωρίς το μωβ πλακίδιο — το BrandMark εμφανίζεται ΜΟΝΟ πάνω σε πράσινο
+   (.hero/.hdr: header, login, PIN, φόρτωση), όπου το μωβ συγκρουόταν με το χρώμα του μαγαζιού. Το
+   mark-glamager-white.png βγήκε από το ίδιο το icon-glamager-512.png (το μωβ έγινε διάφανο). Το εικονίδιο
+   της εφαρμογής (home screen / manifest) μένει το μωβ. */
 const BrandMark = ({s=36}) => (
-  <div style={{width:s,height:s}} className="rounded-2xl overflow-hidden mx-auto">
-    <img src="icon-glamager-192.png" alt="Glamager" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>
-  </div>
+  <img src="mark-glamager-white.png" alt="Glamager" width={s} height={s} className="block mx-auto flex-shrink-0" style={{width:s,height:s}}/>
 );
 
 /* ── LoginScreen — Firebase Auth (email/password), αντικατέστησε το παλιό PIN.
@@ -1096,22 +1105,25 @@ const Header = ({title,sub,operator,onSettings,onClients,onBack,onLock,testMode}
         στοιχείο στο top:0 πάντα, απλά μεγαλώνει/μικραίνει εσωτερικά. Χρειάζεται επιβεβαίωση σε
         πραγματικό iPhone, δεν μπορεί να δοκιμαστεί εδώ χωρίς συσκευή. */}
     {testMode && <div className="test-banner-inline">🧪 TEST MODE — {t('testModeBannerText')}</div>}
-    <div className="px-4 pt-11 pb-4 flex items-center gap-3">
+    {/* 25/10 (Cleanup #13): κουμπιά 44px (ελάχιστο αφής) με aria-label· ο χειριστής ως κύκλος με το αρχικό
+        (το πλήρες όνομα στο title/aria) ώστε τίτλος + όνομα μαγαζιού να μην κόβονται στα 375px. */}
+    <div className="px-4 pt-11 pb-4 flex items-center gap-2">
       {onBack
-        ? <button onClick={onBack} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={18} c="white"/></button>
+        ? <button onClick={onBack} aria-label={t('hdrBackAria')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="back" s={20} c="white"/></button>
         : <BrandMark s={36}/>}
-      <div className="flex-1 min-w-0">
+      <div className="flex-1 min-w-0 ml-1">
         <h1 className="text-base font-black text-white truncate">{title}</h1>
-        {sub && <p className="text-white/70 text-xs mt-0.5 truncate">{sub}</p>}
+        {sub && <p className="text-white/80 text-xs mt-0.5 truncate">{sub}</p>}
       </div>
       {operator && (
-        <div className="flex items-center gap-1.5 bg-white/20 rounded-full px-2.5 py-1 flex-shrink-0">
-          <span className="text-white text-xs font-bold">{operator.name}</span>
+        <div title={operator.name} aria-label={t('hdrOperatorAria')+' '+operator.name} role="img"
+          className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center flex-shrink-0 text-white text-sm font-black">
+          {(operator.name||'?').trim().charAt(0).toUpperCase()}
         </div>
       )}
-      {onClients && <button onClick={onClients} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="users" s={18} c="white"/></button>}
-      {onLock && <button onClick={onLock} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="lock" s={17} c="white"/></button>}
-      {onSettings && <button onClick={onSettings} className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="gear" s={18} c="white"/></button>}
+      {onClients && <button onClick={onClients} aria-label={t('navClients')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="users" s={20} c="white"/></button>}
+      {onLock && <button onClick={onLock} aria-label={t('hdrLockAria')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="lock" s={19} c="white"/></button>}
+      {onSettings && <button onClick={onSettings} aria-label={t('settingsTitle')} className="hdr-btn w-11 h-11 rounded-xl bg-white/20 flex items-center justify-center flex-shrink-0"><Ic n="gear" s={20} c="white"/></button>}
     </div>
   </div>
 );
