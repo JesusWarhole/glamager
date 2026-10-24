@@ -5,7 +5,12 @@
    με ένα ΜΙΑ φορά build step, εδώ, πριν το deploy. Τρέχει esbuild πάνω στο ίδιο ακριβώς JSX που
    υπήρχε πριν — καμία αλλαγή λογικής, μόνο ΠΟΤΕ γίνεται η μεταγλώττιση (build time, όχι runtime).
 
-   Πηγή αλήθειας πλέον: public/index.src.html (εκεί γίνονται όλες οι μελλοντικές αλλαγές κώδικα).
+   Πηγή αλήθειας πλέον: public/index.src.html (εκεί γίνονται όλες οι μελλοντικές αλλαγές κώδικα)
+   + τα αρχεία στο src/ (24/10/2026, Cleanup #4): src/strings.js (i18n STRINGS/t), src/happy-content.js
+   (εορτολόγιο/παγκόσμιες ημέρες/ερωτήσεις/ζώδια/fun facts/mottos), src/demo-data.js (DEMO_* seeds).
+   Μέσα στο <script type="text/babel"> υπάρχουν γραμμές `// @include src/<file>.js` — αυτό το script
+   τις αντικαθιστά με το περιεχόμενο του αρχείου ΠΡΙΝ το esbuild, άρα το αποτέλεσμα είναι ΕΝΑ script
+   όπως πάντα (τα src/*.js ΔΕΝ είναι modules και ΔΕΝ σερβίρονται — ζουν έξω από το public/).
    public/index.html είναι το ΠΑΡΑΓΟΜΕΝΟ αρχείο (αυτό που πραγματικά σερβίρει το Firebase Hosting)
    — ξαναγράφεται πλήρως από αυτό το script, ΠΟΤΕ να μην επεξεργαστεί κανείς με το χέρι.
 
@@ -16,11 +21,34 @@ const fs = require('fs');
 const path = require('path');
 const esbuild = require('esbuild');
 
-const SRC = path.join(__dirname, '..', 'public', 'index.src.html');
-const OUT = path.join(__dirname, '..', 'public', 'index.html');
+const ROOT = path.join(__dirname, '..');
+const SRC = path.join(ROOT, 'public', 'index.src.html');
+const OUT = path.join(ROOT, 'public', 'index.html');
 
-const BABEL_CDN_LINE_RE = /^[ \t]*<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/babel-standalone\/[^"]+"><\/script>\n/m;
-const APP_SCRIPT_RE = /<script type="text\/babel">\n([\s\S]*?)\n<\/script>/;
+/* `// @include src/x.js` σε ΔΙΚΗ του γραμμή μέσα στο babel block → αντικαθίσταται από το περιεχόμενο του
+   αρχείου (σχετικό με τη ρίζα του repo). Το αρχείο πρέπει να τελειώνει με newline ώστε η ένωση να δίνει
+   ακριβώς τις ίδιες γραμμές που υπήρχαν πριν στο index.src.html. */
+const INCLUDE_RE = /^[ \t]*\/\/ @include[ \t]+(\S+)[ \t]*\r?\n/gm;
+function resolveIncludes(source) {
+  let count = 0;
+  const out = source.replace(INCLUDE_RE, (_m, rel) => {
+    const file = path.join(ROOT, rel);
+    if (!fs.existsSync(file)) {
+      throw new Error('[build] @include: δεν βρέθηκε το αρχείο ' + rel + ' (αναμενόταν στο ' + file + ')');
+    }
+    let text = fs.readFileSync(file, 'utf8').replace(/\r\n/g, '\n');
+    if (!text.endsWith('\n')) text += '\n';
+    count++;
+    return text;
+  });
+  if (/^[ \t]*\/\/ @include\b/m.test(out)) {
+    throw new Error('[build] @include: έμεινε marker που δεν αντικαταστάθηκε (nested include δεν υποστηρίζεται).');
+  }
+  return { out, count };
+}
+
+const BABEL_CDN_LINE_RE = /^[ \t]*<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/babel-standalone\/[^"]+"><\/script>\r?\n/m;
+const APP_SCRIPT_RE = /<script type="text\/babel">\r?\n([\s\S]*?)\r?\n<\/script>/;
 
 function build() {
   const html = fs.readFileSync(SRC, 'utf8');
@@ -34,7 +62,7 @@ function build() {
   if (!appMatch) {
     throw new Error('[build] Δεν βρέθηκε το <script type="text/babel"> block στο ' + SRC + ' — έλεγξε τη δομή του αρχείου.');
   }
-  const jsxSource = appMatch[1];
+  const { out: jsxSource, count: includes } = resolveIncludes(appMatch[1]);
 
   const { code, warnings } = esbuild.transformSync(jsxSource, {
     loader: 'jsx',
@@ -57,7 +85,7 @@ function build() {
   }
 
   fs.writeFileSync(OUT, out);
-  console.log(`[build] OK: ${path.relative(process.cwd(), SRC)} -> ${path.relative(process.cwd(), OUT)} (${code.length} chars compiled JS, ${warnings.length} warnings)`);
+  console.log(`[build] OK: ${path.relative(process.cwd(), SRC)} (+${includes} @include) -> ${path.relative(process.cwd(), OUT)} (${code.length} chars compiled JS, ${warnings.length} warnings)`);
 }
 
 build();

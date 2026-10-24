@@ -15,3 +15,11 @@ node_modules/
 
 # Ποτέ ολόκληρα zip backups/exports του project στο repo (μπορεί να περιέχουν credentials)
 *.zip
+
+# Τοπικά εργαλεία/εξαγωγές που δεν ανήκουν στο repo (24/10/2026)
+archive-*/
+Claude outputs/
+graphify-out/
+.remember/
+.claude/worktrees/
+.claude/settings.local.json
