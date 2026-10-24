@@ -9,6 +9,10 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#059669">
   <link rel="manifest" href="manifest-glamager.json">
+  <!-- 25/10: εικονίδιο αρχικής οθόνης για iPhone (το Safari ΔΕΝ διαβάζει αξιόπιστα τα εικονίδια του manifest — χωρίς
+       αυτό έφτιαχνε δικό του με το γράμμα «G»). 180x180, αδιαφανές μωβ ως τις άκρες: το iOS στρογγυλεύει μόνο του. -->
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <link rel="icon" type="image/png" href="icon-glamager-192.png">
   <title>Glamager</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script>tailwind.config = { darkMode: 'class' };</script>
