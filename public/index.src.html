@@ -1701,7 +1701,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
                 <p className="text-sm font-bold" style={{color:'var(--text)'}}>{l.name}</p>
                 <button onClick={()=>removeLine(i)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'var(--surface)'}}><Ic n="x" s={13} c="var(--danger-2)"/></button>
               </div>
-              <div className="mb-2"><CInput label={t('priceEuroLabel')} value={l.price} onChange={v2=>setLine(i,{price:v2})} type="number"/></div>
+              <div className="mb-2"><CInput label={t('priceEuroLabel')} value={l.price} onChange={v2=>setLine(i,{price:v2})} decimal/></div>
               <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffLabel')}</p>
               <div className="flex gap-1.5 flex-wrap">
                 {pickableStaff(staff, l.staffId).map(s=><button key={s.id} onClick={()=>setLine(i,{staffId:s.id})} className={`chip ${l.staffId===s.id?'on':''}`}>{s.name}{!isActiveStaff(s)?` (${t('inactiveStaffBadge')})`:''}</button>)}
@@ -2050,7 +2050,9 @@ const LineEditor = ({line,staff,onChange,onRemove,onClose}) => {
 /* Module-level (ΟΧΙ μέσα στο component — αλλιώς remount σε κάθε πάτημα = χάνεται το focus) */
 /* 24/10 (Cleanup #11): `decimal` = πεδίο ποσού που δέχεται κόμμα. Με type="number" ο browser πετούσε το κόμμα
    («2,50» → 250, «13,00» → 1300) στην επεξεργασία κίνησης (tip) και εξόδου (ποσό). Τώρα: type="text" +
-   inputMode="decimal" και κόμμα → τελεία, ΙΔΙΟ μοτίβο με τα άλλα πεδία ποσών (νέα κίνηση, έξοδο, Ζ). */
+   inputMode="decimal" και κόμμα → τελεία, ΙΔΙΟ μοτίβο με τα άλλα πεδία ποσών (νέα κίνηση, έξοδο, Ζ).
+   25/10 (Cleanup #12): και στα υπόλοιπα πεδία χρημάτων — τιμή γραμμής (επεξεργασία κίνησης), τιμή υπηρεσίας/
+   προϊόντος (κατάλογος), ποσό παγίου. Ακέραια πεδία (λεπτά, ΦΠΑ %, απόθεμα, μέρες) μένουν type="number". */
 const decimalInput = s => String(s).replace(',','.').replace(/[^0-9.]/g,'');
 const CInput = ({label,value,onChange,type='text',w,decimal=false}) => (
   <div className={w?'':'flex-1'} style={w?{width:w}:{}}>
@@ -2250,7 +2252,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
                 {SERVICE_CATS.map(c=><button key={c} onClick={()=>set('cat',c)} className={`chip ${edit.cat===c?'on':''}`}>{catLabel(c)}</button>)}
               </div>
               <div className="flex gap-2 mb-3">
-                <CInput label={t('priceEuroLabel')} value={edit.price} onChange={v=>set('price',v)} type="number"/>
+                <CInput label={t('priceEuroLabel')} value={edit.price} onChange={v=>set('price',v)} decimal/>
                 <CInput label={t('durationMinLabel')} value={edit.dur} onChange={v=>set('dur',v)} type="number"/>
                 <CInput label={t('vatPercentLabel')} value={edit.vat} onChange={v=>set('vat',v)} type="number" w={80}/>
               </div>
@@ -2260,7 +2262,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
                 {PRODUCT_USES.map(([v])=><button key={v} onClick={()=>set('use',v)} className={`chip ${edit.use===v?'on':''}`}>{puLabel(v)}</button>)}
               </div>
               <div className="flex gap-2 mb-3">
-                <CInput label={t('priceEuroLabel')} value={edit.price} onChange={v=>set('price',v)} type="number"/>
+                <CInput label={t('priceEuroLabel')} value={edit.price} onChange={v=>set('price',v)} decimal/>
                 <CInput label={t('vatPercentLabel')} value={edit.vat} onChange={v=>set('vat',v)} type="number" w={80}/>
               </div>
               <div className="flex gap-2 mb-3">
@@ -4017,7 +4019,7 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
               {cats.map(c=><button key={c.id} onClick={()=>set('cat',c.name)} className={`chip ${edit.cat===c.name?'on':''}`}>{c.name}</button>)}
             </div>
             <div className="flex gap-2 mb-3">
-              <CInput label={t('amountEuroLabel')} value={edit.amt} onChange={v=>set('amt',v)} type="number"/>
+              <CInput label={t('amountEuroLabel')} value={edit.amt} onChange={v=>set('amt',v)} decimal/>
               <div className="flex-1">
                 <p className="text-[10px] font-bold mb-1" style={{color:'var(--text-dim)'}}>{t('typeLabel')}</p>
                 <div className="flex gap-1.5">
