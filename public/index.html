@@ -4397,6 +4397,17 @@ const App = () => {
     applyAccent(accent);
     applyTheme(theme);
   }, []);
+  useEffect(() => {
+    if (theme !== "system") return;
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    const onChange = () => applyTheme("system");
+    if (mq.addEventListener) mq.addEventListener("change", onChange);
+    else mq.addListener(onChange);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener("change", onChange);
+      else mq.removeListener(onChange);
+    };
+  }, [theme]);
   const [, bumpLangTick] = useState(0);
   useEffect(() => {
     applyCurrency(settings.currency);

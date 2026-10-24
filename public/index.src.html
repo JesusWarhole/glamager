@@ -4761,6 +4761,17 @@ const App = () => {
   const setAccent = a => { setAccentState(a); applyAccent(a); };
   /* accent/theme: τοπικές προτιμήσεις συσκευής — τρέχουν μία φορά στο mount */
   useEffect(()=>{ applyAccent(accent); applyTheme(theme); },[]);
+  /* 24/10 (Cleanup #10): με θέμα «System» η εφαρμογή ακολουθεί το κινητό ΕΝΩ είναι ανοιχτή (π.χ. το
+     iPhone γυρίζει σε dark το βράδυ). Πριν, το matchMedia διαβαζόταν μόνο τη στιγμή του applyTheme, άρα
+     η αλλαγή φαινόταν μόνο αν ξανάνοιγες την εφαρμογή. Με Light/Dark δεν ακούμε τίποτα. Το addListener
+     είναι fallback για παλιό Safari (<14), που δεν έχει addEventListener στο MediaQueryList. */
+  useEffect(()=>{
+    if(theme!=='system') return;
+    const mq = window.matchMedia('(prefers-color-scheme: dark)');
+    const onChange = ()=>applyTheme('system');
+    if(mq.addEventListener) mq.addEventListener('change', onChange); else mq.addListener(onChange);
+    return ()=>{ if(mq.removeEventListener) mq.removeEventListener('change', onChange); else mq.removeListener(onChange); };
+  },[theme]);
   /* 25/08 — BUG (αναφορά Ανδρέα): η γλώσσα "έπιανε" μόνο αφού έφευγες από τις Ρυθμίσεις, όχι
      αμέσως. Αιτία: το LANG (module-level μεταβλητή, όχι React state) ενημερώνεται μέσα σε αυτό
      το useEffect, που τρέχει ΜΕΤΑ το render — άρα το πρώτο render μετά το toggle εξακολουθεί να
