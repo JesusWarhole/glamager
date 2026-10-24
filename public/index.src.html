@@ -31,10 +31,24 @@
       --bg:#f1f5f9; --surface:#ffffff; --text:#111827; --text-dim:#6b7280; --border:#f0fdf4;
       --accent:#059669; --accent-2:#10b981; --accent-50:#ecfdf5; --accent-100:#d1fae5; --accent-600:#059669;
       --soft:#f9fafb;
+      /* 24/10 (Cleanup #5, D2): σημασιολογικά tokens κατάστασης. Οι light τιμές είναι ΑΚΡΙΒΩΣ τα hex που ήταν
+         hardcoded πριν (red/amber/blue/emerald 600 κ.λπ.) — καμία αλλαγή στο light mode. Το dark block από κάτω
+         δίνει πιο ανοιχτό μελάνι + σκούρο tint φόντου, αντί για κόκκινο-600 πάνω σε σκούρο και παστέλ φόντα. */
+      --danger:#dc2626; --danger-2:#ef4444; --danger-solid:#dc2626; --danger-bg:#fee2e2; --danger-bg-faint:#fee2e233; --danger-deep:#7f1d1d;
+      --warn:#d97706; --warn-2:#b45309; --warn-bg:#fef3c7; --warn-bg-2:#fffbeb; --warn-deep:#78350f;
+      --danger-bg-2:#fef2f2; --danger-border:#fecaca;
+      --info:#3b82f6; --ok:#059669; --ok-bg:#d1fae5; --toggle-off:#d1d5db;
+      --gold:#ca8a04; --gold-bg:#fef9c3; --gold-bg-2:#fefce8; --gold-border:#fde047; --festive-bg:#fdf2f8; --festive-border:#fbcfe8;
     }
     html.dark{
       --bg:#0b1220; --surface:#161f2e; --text:#f1f5f9; --text-dim:#94a3b8; --border:#243044;
       --accent-50:#0d2b22; --accent-100:#123b2e; --soft:#1c2739;
+      /* --danger-solid μένει ίδιο (λευκό κείμενο πάνω σε γεμάτο κόκκινο κουμπί χρειάζεται το 600, όχι το 400) */
+      --danger:#f87171; --danger-2:#f87171; --danger-bg:#3f1d1d; --danger-bg-faint:rgba(248,113,113,.12); --danger-deep:#fecaca;
+      --warn:#fbbf24; --warn-2:#fcd34d; --warn-bg:#3d2e12; --warn-bg-2:#2b2414; --warn-deep:#fde68a;
+      --danger-bg-2:#2a1515; --danger-border:#7f1d1d;
+      --info:#60a5fa; --ok:#34d399; --ok-bg:#0f3b2e; --toggle-off:#334155;
+      --gold:#facc15; --gold-bg:#3a3410; --gold-bg-2:#2a2612; --gold-border:#854d0e; --festive-bg:#2e1a26; --festive-border:#6b2148;
     }
     html{height:100%;overflow:hidden;}
     /* 01/08 v2: overflow:hidden + height:100% στο html/body ΔΕΝ αρκεί σε standalone iOS PWA —
@@ -98,7 +112,7 @@
     .progress-fill{height:100%;border-radius:3px;transition:width .4s ease;background:var(--accent-600);}
     /* soft delete: λεπτή κόκκινη strikethrough, ευανάγνωστο από κάτω (spec §8) */
     .soft-del{position:relative;opacity:.6;}
-    .soft-del::after{content:'';position:absolute;left:10px;right:10px;top:50%;height:1.5px;background:#ef4444;}
+    .soft-del::after{content:'';position:absolute;left:10px;right:10px;top:50%;height:1.5px;background:var(--danger-2);}
     .red-dot{position:absolute;top:-4px;right:-6px;min-width:18px;height:18px;border-radius:9px;background:#ef4444;color:white;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px;}
     .chip{padding:6px 12px;border-radius:999px;font-size:12px;font-weight:700;border:1px solid var(--border);background:var(--surface);color:var(--text-dim);cursor:pointer;flex-shrink:0;}
     .chip.on{background:var(--accent-600);color:white;border-color:var(--accent-600);}
@@ -1138,7 +1152,7 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
         {view==='info' && !pendingReq && !isPast && (
           <div className="space-y-2">
             <button onClick={()=>setView('leave')} className="w-full py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'#0891b2'}}>🏖️ {t('leaveRequestBtn')}</button>
-            <button onClick={()=>setView('sick')} className="w-full py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'#dc2626'}}>🤒 {t('sickDeclareBtn')}</button>
+            <button onClick={()=>setView('sick')} className="w-full py-3.5 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>🤒 {t('sickDeclareBtn')}</button>
             <p className="text-xs text-center pt-1" style={{color:'var(--text-dim)'}}>{t('overtimeMasterOnlyHint')}</p>
           </div>
         )}
@@ -1158,9 +1172,9 @@ const StaffDayModal = ({dateStr,emp,entry,pendingReq,onRequestLeave,onSetSick,on
 
         {view==='sick' && (
           <div className="rounded-2xl p-4 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
-            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'#dc2626'}}>{t('stSick')} — {fmtD(dateStr)}</p>
+            <p className="text-xs font-black uppercase tracking-wide mb-3" style={{color:'var(--danger)'}}>{t('stSick')} — {fmtD(dateStr)}</p>
             <input type="text" value={note} onChange={e=>setNote(e.target.value)} placeholder={t('sickPlaceholder')} className="w-full rounded-xl px-3 py-2.5 text-sm outline-none border mb-3" style={{background:'var(--surface)',color:'var(--text)',borderColor:'var(--border)'}}/>
-            <button onClick={()=>{onSetSick(dateStr,note);onClose();}} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'#dc2626'}}>{t('saveBtn')}</button>
+            <button onClick={()=>{onSetSick(dateStr,note);onClose();}} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('saveBtn')}</button>
             <p className="text-xs mt-2" style={{color:'var(--text-dim)'}}>{t('sickExtendHint')}</p>
           </div>
         )}
@@ -1222,11 +1236,11 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
               <div className="text-lg flex-shrink-0">{pend?'⏳':st.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm" style={{color:pend?'#0891b2':st.color}}>{pend?t('pendingLeaveInline'):stLabel(st)}</p>
-                {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs text-gray-500">{sc.s} – {sc.e} ({timeDiff(sc.s,sc.e)}{t('hourAbbrev')})</p>:null; })()}
-                {['overtime','early','festive'].includes(entry.status)&&entry.start&&<p className="text-xs text-gray-500">🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
+                {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs" style={{color:'var(--text-dim)'}}>{sc.s} – {sc.e} ({timeDiff(sc.s,sc.e)}{t('hourAbbrev')})</p>:null; })()}
+                {['overtime','early','festive'].includes(entry.status)&&entry.start&&<p className="text-xs" style={{color:'var(--text-dim)'}}>🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
                 {entry.note&&<p className="text-xs text-gray-500 truncate">📝 {entry.note}</p>}
                 {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
-                {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
+                {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
                 {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
                 {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
@@ -1244,11 +1258,11 @@ const StaffCalendar = ({emp,staff,schedData,leaveReqs,onRequestLeave,onSetSick,o
               <div key={r.id} className="card px-4 py-3">
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>🏖️ {fmtD(r.from)} – {fmtD(r.to)}</p>
-                  <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='pending'?{background:'#fef3c7',color:'#d97706'}:r.status==='approved'?{background:'#d1fae5',color:'#059669'}:{background:'#fee2e2',color:'#dc2626'}}>
+                  <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='pending'?{background:'var(--warn-bg)',color:'var(--warn)'}:r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>
                     {r.status==='pending'?t('reqPending'):r.status==='approved'?t('reqApproved'):t('reqDeclined')}
                   </span>
                 </div>
-                {r.status==='declined'&&r.masterMsg&&<p className="text-xs mt-1.5 rounded-xl px-3 py-2" style={{background:'#fee2e233',color:'#dc2626'}}>💬 {r.masterMsg}</p>}
+                {r.status==='declined'&&r.masterMsg&&<p className="text-xs mt-1.5 rounded-xl px-3 py-2" style={{background:'var(--danger-bg-faint)',color:'var(--danger)'}}>💬 {r.masterMsg}</p>}
               </div>
             ))}
           </div>
@@ -1283,7 +1297,7 @@ const Celebrations = ({t:dateIso,staff,visits,clients}) => {
   if(b.length+nd.length+an.length+ms.length===0 && !wd) return null;
   const festive = b.length>0 || sc.length>0 || an.length>0; /* δικός μας άνθρωπος γιορτάζει → confetti */
   return (
-    <div className={`rounded-2xl p-4 mb-3 border fade ${festive?'confetti-wrap':''}`} style={{background:'#fdf2f8',borderColor:'#fbcfe8'}}>
+    <div className={`rounded-2xl p-4 mb-3 border fade ${festive?'confetti-wrap':''}`} style={{background:'var(--festive-bg)',borderColor:'var(--festive-border)'}}>
       {festive && <Confetti/>}
       {b.map(x=><p key={x.name} className="font-black text-sm" style={{color:'#db2777'}}>🎂 {
         x.age!=null
@@ -1291,7 +1305,7 @@ const Celebrations = ({t:dateIso,staff,visits,clients}) => {
           : `${t('birthdaysTodayPrefixLabel')} ${x.name}!`
       } 🎉</p>)}
       {sc.length>0 && <p className="font-black text-sm" style={{color:'#db2777'}}>🎈 {t('teamCelebratingPrefixLabel')} {sc.join(' & ')}{t('manyHappyReturnsSuffixLabel')}</p>}
-      {an.map(a=><p key={a.name} className="font-black text-sm" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
+      {an.map(a=><p key={a.name} className="font-black text-sm" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop!`:`${a.years} χρόνια ${a.name} στο μαγαζί!`}</p>)}
       {ms.map(m=><p key={m.name} className="font-bold text-sm" style={{color:'#7c3aed'}}>🏆 {LANG==='en'?`${m.name} — visit #${m.n} today! Maybe treat them to something?`:`${m.name} — ${m.n}η επίσκεψη σήμερα! Αξίζει ένα κέρασμα;`}</p>)}
       {nd.length>0 && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🎈 {t('namedayTodayPrefixLabel')} {nd.join(', ')}</p>}
       {wd && <p className="text-xs mt-1" style={{color:'var(--text-dim)'}}>🌍 {t('worldDayTodayPrefixLabel')} {wd.join(' · ')}</p>}
@@ -1473,7 +1487,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
         {[[t('todayLabel'),sum.netVat],[t('vatChipWeek'),wSum.netVat],[t('vatChipMonth'),mSum.netVat],[(LANG==='en'?'Q':'Τ')+q,qSum.netVat]].map(([p,v])=>(
           <div key={p} className="card px-3 py-2 flex-shrink-0 text-center" style={{minWidth:80}}>
             <p className="text-[10px] font-bold" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {p}</p>
-            <p className="text-sm font-black amt" style={{color:'#d97706'}}>{fmt(v)}</p>
+            <p className="text-sm font-black amt" style={{color:'var(--warn)'}}>{fmt(v)}</p>
           </div>
         ))}
       </div>
@@ -1481,7 +1495,7 @@ const HomeMaster = ({visits,expenses,staff,allStaff,clients,leaveReqs,go,onZ,onO
       {/* Καθαρό υπόλοιπο */}
       <div className="card px-4 py-3.5 mb-3 flex items-center justify-between">
         <p className="text-xs font-bold" style={{color:'var(--text-dim)'}}>{t('netBalanceLabel')}</p>
-        <p className="text-xl font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'#dc2626'}}>{fmt(sum.netBalance)}</p>
+        <p className="text-xl font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'var(--danger)'}}>{fmt(sum.netBalance)}</p>
       </div>
 
       {/* Υπάλληλοι σήμερα */}
@@ -1566,7 +1580,7 @@ const VisitRow = ({v,staff,clients,showVat,onOpen,onDel,locked}) => {
         {v.tip>0 && <p className="text-xs text-yellow-500 amt">+tip {fmt(v.tip)}</p>}
         {showVat && <p className="text-xs text-amber-500 amt">ΦΠΑ {fmt(visitVat(v))}</p>}
       </div>
-      {onDel && !isDel(v) && <button onClick={e=>{e.stopPropagation();onDel(v.id);}} className="w-7 h-7 rounded-lg flex items-center justify-center ml-1 flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={13} c="#ef4444"/></button>}
+      {onDel && !isDel(v) && <button onClick={e=>{e.stopPropagation();onDel(v.id);}} className="w-7 h-7 rounded-lg flex items-center justify-center ml-1 flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={13} c="var(--danger-2)"/></button>}
     </div>
   );
 };
@@ -1656,7 +1670,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
             <div key={i} className="rounded-xl p-3 border" style={{background:'var(--soft)',borderColor:'var(--border)'}}>
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-bold" style={{color:'var(--text)'}}>{l.name}</p>
-                <button onClick={()=>removeLine(i)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'var(--surface)'}}><Ic n="x" s={13} c="#ef4444"/></button>
+                <button onClick={()=>removeLine(i)} className="w-7 h-7 rounded-lg flex items-center justify-center" style={{background:'var(--surface)'}}><Ic n="x" s={13} c="var(--danger-2)"/></button>
               </div>
               <div className="mb-2"><CInput label={t('priceEuroLabel')} value={l.price} onChange={v2=>setLine(i,{price:v2})} type="number"/></div>
               <p className="text-[10px] font-bold mb-1.5" style={{color:'var(--text-dim)'}}>{t('staffLabel')}</p>
@@ -1716,7 +1730,7 @@ const VisitEditor = ({v,staff,onSave,onClose}) => {
 
         <button type="button" onClick={()=>setPhoto(p=>!p)} className="w-full card px-4 py-3 flex items-center justify-between mb-4">
           <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('photoToggleLabel')}</span>
-          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'#d1d5db'}}>
+          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'var(--toggle-off)'}}>
             <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:photo?'translateX(24px)':'none'}}/>
           </div>
         </button>
@@ -1774,13 +1788,13 @@ const VisitDetail = ({v,staff,clients,operator,onClose,onDel,onEdit,locked,onHar
         {v.note && (
           <div className="mt-2">
             <p className="text-xs font-bold uppercase tracking-wide mb-1.5 flex items-center gap-1" style={{color:'var(--text-dim)'}}><Ic n="note" s={13} c="#f59e0b"/> {t('noteLabel')}</p>
-            <p className="text-sm rounded-xl p-3 whitespace-pre-wrap break-words border" style={{background:'#fffbeb',borderColor:'#fef3c7',color:'#78350f'}}>{v.note}</p>
+            <p className="text-sm rounded-xl p-3 whitespace-pre-wrap break-words border" style={{background:'var(--warn-bg-2)',borderColor:'var(--warn-bg)',color:'var(--warn-deep)'}}>{v.note}</p>
           </div>
         )}
         {isDel(v) && <p className="text-xs mt-3 text-red-500 font-bold">{t('deletedByLabel')}: {staff.find(s=>s.id===v.deleted.by)?.name||'Master'} · {v.deleted.at}</p>}
         {canHardDelete && (
           <button onClick={()=>{ if(window.confirm(t('hardDeleteFinConfirm'))){ onHardDelete(v.id); onClose(); } }}
-            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'#dc2626'}}>
+            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>
             🗑️ {t('hardDeleteFinBtn')}
           </button>
         )}
@@ -2047,9 +2061,9 @@ const CatalogTemplatePicker = ({onApply,onClose}) => {
             {t('continueArrowBtn')}
           </button>
         </React.Fragment>) : (<React.Fragment>
-          <div className="rounded-2xl p-4 mb-3 border" style={{background:'#fef2f2',borderColor:'#fecaca'}}>
-            <p className="text-sm font-black mb-1" style={{color:'#dc2626'}}>{t('catalogReplaceWarnTitle')}</p>
-            <p className="text-xs" style={{color:'#7f1d1d'}}>{t('catalogReplaceWarnBody1')} {chosen.services.length + chosen.products.length} {t('catalogReplaceWarnBody2')} «{LANG==='en'&&chosen.label_en?chosen.label_en:chosen.label}». {t('catalogReplaceWarnBody3')}</p>
+          <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--danger-bg-2)',borderColor:'var(--danger-border)'}}>
+            <p className="text-sm font-black mb-1" style={{color:'var(--danger)'}}>{t('catalogReplaceWarnTitle')}</p>
+            <p className="text-xs" style={{color:'var(--danger-deep)'}}>{t('catalogReplaceWarnBody1')} {chosen.services.length + chosen.products.length} {t('catalogReplaceWarnBody2')} «{LANG==='en'&&chosen.label_en?chosen.label_en:chosen.label}». {t('catalogReplaceWarnBody3')}</p>
           </div>
           <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--text-dim)'}}>{t('servicesLabel')} ({chosen.services.length})</p>
           <div className="flex flex-wrap gap-1.5 mb-3">
@@ -2224,7 +2238,7 @@ const CatalogManager = ({services,products,onSaveService,onSaveProduct,onClose,v
             {edit.id && (
               <div className="flex items-center justify-between mb-3 rounded-xl px-3 py-2.5 border" style={{background:'var(--surface)',borderColor:'var(--border)'}}>
                 <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>{t('activeLabel')}</p><p className="text-[10px]" style={{color:'var(--text-dim)'}}>{t('deactivateInsteadHint')}</p></div>
-                <button onClick={()=>set('active',!edit.active)} className={`w-12 h-6 rounded-full flex items-center transition-all`} style={{background:edit.active?'var(--accent-600)':'#d1d5db'}}>
+                <button onClick={()=>set('active',!edit.active)} className={`w-12 h-6 rounded-full flex items-center transition-all`} style={{background:edit.active?'var(--accent-600)':'var(--toggle-off)'}}>
                   <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:edit.active?'translateX(24px)':'none'}}/>
                 </button>
               </div>
@@ -2358,7 +2372,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
 
   if(zLocked) return (
     <div className="px-4 pt-16 safe-pb flex flex-col items-center text-center">
-      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{background:'#fef3c7'}}><span className="text-2xl">🔒</span></div>
+      <div className="w-16 h-16 rounded-full flex items-center justify-center mb-4" style={{background:'var(--warn-bg)'}}><span className="text-2xl">🔒</span></div>
       <p className="text-lg font-black mb-1" style={{color:'var(--text)'}}>{t('addLockedTitle')}</p>
       <p className="text-sm" style={{color:'var(--text-dim)'}}>{t('addLockedHint')}</p>
     </div>
@@ -2514,7 +2528,7 @@ const AddScreen = ({operator,staff,services,products,clients,visits,expenses,zma
             μόνο σημαιάκι ώστε να ξέρουμε ότι υπάρχει + να τροφοδοτεί την ουρά "Εκκρεμείς φωτογραφίες". */}
         <button type="button" onClick={()=>setPhoto(p=>!p)} className="w-full card px-4 py-3 flex items-center justify-between mb-4">
           <span className="text-sm font-bold" style={{color:'var(--text)'}}>{t('photoToggleLabel')}</span>
-          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'#d1d5db'}}>
+          <div className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:photo?'var(--accent-600)':'var(--toggle-off)'}}>
             <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:photo?'translateX(24px)':'none'}}/>
           </div>
         </button>
@@ -2636,7 +2650,7 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
     <Sheet onClose={onClose} after={editing && <ExpenseEditor e={e} cats={expCats} onClose={()=>setEditing(false)}
         onSave={next=>{onEdit(e.id,next);setEditing(false);}}/>}>
         <div className="flex items-center justify-between mb-1">
-          <p className="text-xs font-black uppercase tracking-wider" style={{color:'#ef4444'}}>{t('expenseLabel')}{isDel(e)&&` · ${t('deletedNeuterLabel')}`}</p>
+          <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--danger-2)'}}>{t('expenseLabel')}{isDel(e)&&` · ${t('deletedNeuterLabel')}`}</p>
           <CloseBtn onClick={onClose} sm/>
         </div>
         <p className="text-lg font-black" style={{color:'var(--text)'}}>{e.cat}</p>
@@ -2648,13 +2662,13 @@ const ExpenseDetail = ({e,staff,operator,expCats,onDel,onEdit,onClose,locked,onH
         {e.note && (
           <div className="mt-2">
             <p className="text-xs font-bold uppercase tracking-wide mb-1.5 flex items-center gap-1" style={{color:'var(--text-dim)'}}><Ic n="note" s={13} c="#f59e0b"/> {t('noteLabel')}</p>
-            <p className="text-sm rounded-xl p-3 whitespace-pre-wrap break-words border" style={{background:'#fffbeb',borderColor:'#fef3c7',color:'#78350f'}}>{e.note}</p>
+            <p className="text-sm rounded-xl p-3 whitespace-pre-wrap break-words border" style={{background:'var(--warn-bg-2)',borderColor:'var(--warn-bg)',color:'var(--warn-deep)'}}>{e.note}</p>
           </div>
         )}
         {isDel(e) && <p className="text-xs mt-3 text-red-500 font-bold">{t('deletedByLabel')}: {staff.find(s=>s.id===e.deleted.by)?.name||'Master'} · {e.deleted.at}</p>}
         {canHardDelete && (
           <button onClick={()=>{ if(window.confirm(t('hardDeleteFinConfirm'))){ onHardDelete(e.id); onClose(); } }}
-            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'#dc2626'}}>
+            className="w-full mt-3 py-2.5 rounded-xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>
             🗑️ {t('hardDeleteFinBtn')}
           </button>
         )}
@@ -2737,7 +2751,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
           </div>
           {isMaster && <div className="px-4 py-3 flex justify-between items-center" style={{background:'var(--accent-50)',borderTop:'1px solid var(--border)'}}>
             <span className="text-sm font-black" style={{color:'var(--text)'}}>{t('netBalanceShortLabel')}</span>
-            <span className="text-lg font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'#dc2626'}}>{fmt(sum.netBalance)}</span>
+            <span className="text-lg font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'var(--danger)'}}>{fmt(sum.netBalance)}</span>
           </div>}
         </div>
       )}
@@ -2745,7 +2759,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
       {/* Tips ανά υπάλληλο — το βλέπει και η Ρεσεψιόν */}
       {filterStaff==='all' && stf.length>0 && (
         <div className="mx-4 mb-3 card overflow-hidden">
-          <div className="px-4 py-2" style={{background:'#fefce8',borderBottom:'1px solid #fef9c3'}}><p className="text-xs font-black uppercase tracking-wide" style={{color:'#ca8a04'}}>💛 {t('tipsPerStaffLabel')}</p></div>
+          <div className="px-4 py-2" style={{background:'var(--gold-bg-2)',borderBottom:'1px solid var(--gold-bg)'}}><p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--gold)'}}>💛 {t('tipsPerStaffLabel')}</p></div>
           {stf.map((s,i)=>(
             <div key={s.id} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
               <span className="text-sm font-bold" style={{color:'var(--text)'}}>{s.name}</span>
@@ -2770,7 +2784,7 @@ const RegisterFull = ({operator,visits,expenses,staff,serviceStaff,clients,zmap,
               <div className="space-y-2">
                 {dE.map(e=>(
                   <div key={e.id} onClick={()=>setSelExp(e)} className={`card px-4 py-3 flex items-center gap-3 ${isDel(e)?'soft-del':''}`} style={{cursor:'pointer'}}>
-                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center bg-red-50"><Ic n="tag" s={16} c="#ef4444"/></div>
+                    <div className="w-10 h-10 rounded-xl flex-shrink-0 flex items-center justify-center bg-red-50"><Ic n="tag" s={16} c="var(--danger-2)"/></div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{e.cat}</p>
                       <p className="text-xs" style={{color:'var(--text-dim)'}}>{e.note?e.note+' · ':''}{e.time}</p>
@@ -2849,7 +2863,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
         </div>
       </div>
     ) : (
-      <button onClick={()=>{setEditing(v.id);setDraft(v.note||'');}} className={`block w-full text-left mt-1 ${big?'text-sm':'text-xs'}`} style={{color:v.note?'#78350f':'var(--text-dim)'}}>
+      <button onClick={()=>{setEditing(v.id);setDraft(v.note||'');}} className={`block w-full text-left mt-1 ${big?'text-sm':'text-xs'}`} style={{color:v.note?'var(--warn-deep)':'var(--text-dim)'}}>
         {v.note ? `📝 ${v.note}` : `📝 ${t('addNoteInline')}`} <span className="opacity-50">✏️</span>
       </button>
     )
@@ -2876,7 +2890,7 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
                 ? <span title={t('clientDeleteBlockedTitleAttr')} className="text-[10px] font-bold px-2 py-1 rounded-lg flex-shrink-0" style={{background:'var(--soft)',color:'var(--text-dim)'}}>🔒 {t('clientDeleteBlockedLabel')}</span>
                 : <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDeleteClient(client.id); }}
                     title={t('hardDeleteTitleAttr')} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
-                    <Ic n="trash" s={14} c="#dc2626"/>
+                    <Ic n="trash" s={14} c="var(--danger)"/>
                   </button>
             )}
           </div>
@@ -2903,12 +2917,12 @@ const ClientCard = ({client,visits,clients,staff,operator,settings,zmap,onBack,o
       {/* Τελευταία επίσκεψη + σημείωση — πάνω-πάνω, μεγάλο: ο «μπούσουλας».
           Οι σημειώσεις ΔΕΝ κλειδώνουν με το Ζ — επεξεργάσιμες πάντα. */}
       {last ? (
-        <div className="rounded-2xl p-4 mb-3 border" style={{background:'#fffbeb',borderColor:'#fde68a'}}>
+        <div className="rounded-2xl p-4 mb-3 border" style={{background:'var(--warn-bg-2)',borderColor:'var(--warn-bg)'}}>
           <div className="flex items-center justify-between gap-2 mb-1">
-            <p className="text-xs font-black uppercase tracking-wide" style={{color:'#b45309'}}>{t('lastVisitLabel')} — {fmtD(last.date)}</p>
-            {isInactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'#fee2e2',color:'#dc2626'}}>😴 {t('inactiveLabel')} · {daysSinceLast}{t('daysAbbrev')}</span>}
+            <p className="text-xs font-black uppercase tracking-wide" style={{color:'var(--warn-2)'}}>{t('lastVisitLabel')} — {fmtD(last.date)}</p>
+            {isInactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--danger-bg)',color:'var(--danger)'}}>😴 {t('inactiveLabel')} · {daysSinceLast}{t('daysAbbrev')}</span>}
           </div>
-          <p className="text-sm font-bold" style={{color:'#78350f'}}>{last.lines.map(l=>l.name).join(' + ')} · {StaffNameTag(staff,last.lines[0]?.staffId,'')}</p>
+          <p className="text-sm font-bold" style={{color:'var(--warn-deep)'}}>{last.lines.map(l=>l.name).join(' + ')} · {StaffNameTag(staff,last.lines[0]?.staffId,'')}</p>
           {NoteBlock({v:last,big:true})}
         </div>
       ) : <div className="card py-8 text-center mb-3"><p className="text-sm font-bold" style={{color:'var(--text-dim)'}}>{t('noVisitsYet')}</p></div>}
@@ -3078,7 +3092,7 @@ const ClientsScreen = ({operator,clients,visits,staff,settings,zmap,onUpdateNote
                 {[c.phone, c.patronym&&`${t('patronymPrefix')} ${c.patronym}`, c.lastVisit&&`${t('lastAbbrev')} ${fmtD(c.lastVisit)}`].filter(Boolean).join(' · ')||'—'}
               </p>
             </div>
-            {c.inactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'#fef3c7',color:'#b45309'}}>😴 {c.daysSince}{t('daysAbbrev')}</span>}
+            {c.inactive && <span className="text-[10px] font-black px-2 py-0.5 rounded-lg flex-shrink-0" style={{background:'var(--warn-bg)',color:'var(--warn-2)'}}>😴 {c.daysSince}{t('daysAbbrev')}</span>}
             <Ic n="next" s={15} c="var(--text-dim)"/>
           </button>
         ))}
@@ -3187,7 +3201,7 @@ const ShopClosureModal = ({staff,schedData,onSaveDay,onClose}) => {
             <div className="mb-3"><CInput label={t('shopClosureDateLabel')} value={dateStr} onChange={setDateStr} type="date"/></div>
             <div className="mb-3"><CInput label={t('shopClosureNoteLabel')} value={note} onChange={setNote}/></div>
             <p className="text-xs mb-4" style={{color:'var(--text-dim)'}}>{t('shopClosureHint')}</p>
-            <button onClick={apply} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'#dc2626'}}>{t('shopClosureConfirmBtn')}</button>
+            <button onClick={apply} className="w-full py-3 rounded-2xl font-black text-white text-sm" style={{background:'var(--danger-solid)'}}>{t('shopClosureConfirmBtn')}</button>
           </React.Fragment>
         )}
     </Sheet>
@@ -3237,7 +3251,7 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
         <button onClick={()=>{ if(month===12){setMonth(1);setYear(y=>y+1);} else setMonth(m=>m+1); }} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--soft)'}}><Ic n="next" s={16} c="var(--text-dim)"/></button>
         <button onClick={exportCSV} className="w-9 h-9 rounded-xl flex items-center justify-center" style={{background:'var(--accent-50)'}}><Ic n="download" s={16} c="var(--accent-600)"/></button>
       </div>
-      <button onClick={()=>setClosureOpen(true)} className="w-full py-2.5 rounded-2xl font-bold text-sm mb-3 border-2 border-dashed" style={{borderColor:'#fde047',color:'#ca8a04',background:'#fefce8'}}>{t('shopClosureBtnLabel')}</button>
+      <button onClick={()=>setClosureOpen(true)} className="w-full py-2.5 rounded-2xl font-bold text-sm mb-3 border-2 border-dashed" style={{borderColor:'var(--gold-border)',color:'var(--gold)',background:'var(--gold-bg-2)'}}>{t('shopClosureBtnLabel')}</button>
       <div className="flex gap-2 overflow-x-auto pb-2 mb-2">
         {staff.map(s=><button key={s.id} onClick={()=>setEmpId(s.id)} className={`chip ${empId===s.id?'on':''}`}>{s.name}</button>)}
       </div>
@@ -3269,11 +3283,11 @@ const MasterStaffModule = ({staff,schedData,onSaveDay}) => {
               <div className="text-lg flex-shrink-0">{st.emoji}</div>
               <div className="flex-1 min-w-0">
                 <p className="font-bold text-sm" style={{color:st.color}}>{stLabel(st)}</p>
-                {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs text-gray-500">{sc.s} – {sc.e}</p>:null; })()}
-                {needsTime&&entry.start&&<p className="text-xs text-gray-500">🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
+                {entry.status==='work'&&(()=>{ const sc=(emp.schedule||DEF_SCHEDULE)[dow(dk)]; return sc?<p className="text-xs" style={{color:'var(--text-dim)'}}>{sc.s} – {sc.e}</p>:null; })()}
+                {needsTime&&entry.start&&<p className="text-xs" style={{color:'var(--text-dim)'}}>🕐 {entry.start} – {entry.end} ({timeDiff(entry.start,entry.end).toFixed(1)}{t('hourAbbrev')})</p>}
                 {entry.note&&<p className="text-xs text-gray-500 truncate">📝 {entry.note}</p>}
                 {birthdaysOn(dk,staff).length>0&&<p className="text-xs font-bold" style={{color:'#db2777'}}>🎂 {t('birthdaysLabel')}: {birthdaysOn(dk,staff).map(b=>b.age!=null?`${b.name} (${b.age})`:b.name).join(', ')}!</p>}
-                {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'#d97706'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
+                {annivOn(dk,staff).map(a=><p key={a.name} className="text-xs font-bold" style={{color:'var(--warn)'}}>🎉 {LANG==='en'?`${a.years} years — ${a.name} at the shop`:`${a.years} χρόνια ${a.name} στο μαγαζί`}</p>)}
                 {namedaysOn(dk).length>0&&<p className="text-xs truncate" style={{color:'#7c3aed'}}>🎈 {namedaysOn(dk).join(', ')}</p>}
                 {worldDayOn(dk)&&<p className="text-xs truncate" style={{color:'#0ea5e9'}}>🌍 {worldDayOn(dk).join(' · ')}</p>}
               </div>
@@ -3310,11 +3324,11 @@ const LeaveRequests = ({leaveReqs,staff,onApprove,onDecline,onDelete}) => {
             <p className="text-xs mt-0.5" style={{color:'var(--text-dim)'}}>{fmtD(r.from)} – {fmtD(r.to)} · {n} {n===1?t('dayCountSingular'):t('dayCountPlural')} · {t('requestedOnLabel')} {fmtD(r.reqAt)}</p>
           </div>
           <div className="flex items-center gap-2 flex-shrink-0">
-            {!actions && <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='approved'?{background:'#d1fae5',color:'#059669'}:{background:'#fee2e2',color:'#dc2626'}}>{r.status==='approved'?t('reqApproved'):t('reqDeclined')}</span>}
+            {!actions && <span className="text-xs font-black px-2 py-0.5 rounded-full" style={r.status==='approved'?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{r.status==='approved'?t('reqApproved'):t('reqDeclined')}</span>}
             {onDelete && (
               <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDelete(r.id); }}
                 title={t('hardDeleteTitleAttr')} className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
-                <Ic n="trash" s={13} c="#dc2626"/>
+                <Ic n="trash" s={13} c="var(--danger)"/>
               </button>
             )}
           </div>
@@ -3373,7 +3387,7 @@ const KudosManager = ({kudos,staff,onDelete}) => {
                   </div>
                   <button onClick={()=>{ if(window.confirm(t('hardDeleteConfirm'))) onDelete(k.id); }}
                     title={t('hardDeleteTitleAttr')} className="w-7 h-7 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}>
-                    <Ic n="trash" s={13} c="#dc2626"/>
+                    <Ic n="trash" s={13} c="var(--danger)"/>
                   </button>
                 </div>
               );
@@ -3412,7 +3426,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
   const withH = stf.filter(x=>x.hours>0);
   const shopPerHour = withH.length>0 ? withH.reduce((a,x)=>a+x.rev,0) / withH.reduce((a,x)=>a+x.hours,0) : 0;
   const idxOf = st => (st.hours>0 && shopPerHour>0) ? st.perHour/shopPerHour : null;
-  const idxColor = i => i>=1.05 ? '#059669' : i<=0.95 ? '#dc2626' : 'var(--text-dim)';
+  const idxColor = i => i>=1.05 ? 'var(--ok)' : i<=0.95 ? 'var(--danger)' : 'var(--text-dim)';
 
   const mixOf = id => { const m={}; act.forEach(v=>v.lines.forEach(l=>{ if(l.staffId===id&&l.kind!=='product') m[l.name]=(m[l.name]||0)+1; })); return Object.entries(m).sort((a,b)=>b[1]-a[1]).slice(0,3); };
   const linesOf = id => { const out=[]; [...act].sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time)).forEach(v=>v.lines.forEach((l,i)=>{ if(l.staffId===id) out.push({v,l,key:v.id+'-'+i}); })); return out; };
@@ -3473,7 +3487,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                   </div>
                   <div className="text-right">
                     <p className="font-black amt" style={{color:'var(--accent-600)'}}>{fmt(st.rev)}</p>
-                    {st.hours>0 && <p className="text-xs font-bold amt" style={{color:'#d97706'}}>
+                    {st.hours>0 && <p className="text-xs font-bold amt" style={{color:'var(--warn)'}}>
                       {fmt(st.perHour)}{t('perHourSuffixLabel')}
                       {idxOf(st)!=null && <span className="ml-1.5 px-1.5 py-0.5 rounded-md font-black" style={{background:'var(--soft)',color:idxColor(idxOf(st))}}>×{idxOf(st).toFixed(2)}</span>}
                     </p>}
@@ -3483,7 +3497,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                   <div className="flex gap-1.5 flex-wrap mt-2">
                     {mix.map(([n,c])=><span key={n} className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--accent-50)',color:'var(--accent-600)'}}>{n} ×{c}</span>)}
                     {st.resale>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'#ede9fe',color:'#7c3aed'}}>🏷️ {t('resaleInlineLabel')} {fmt(st.resale)}</span>}
-                    {st.tips>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'#fef9c3',color:'#ca8a04'}}>💛 tips {fmt(st.tips)}</span>}
+                    {st.tips>0 && <span className="text-[10px] font-bold px-2 py-1 rounded-lg" style={{background:'var(--gold-bg)',color:'var(--gold)'}}>💛 tips {fmt(st.tips)}</span>}
                   </div>
                 )}
               </button>
@@ -3497,7 +3511,7 @@ const PerfReports = ({visits,staff,clients,schedData}) => {
                         {occ
                           ? <div className="flex items-center justify-between">
                               <span className="text-xs" style={{color:'var(--text-dim)'}}>{st.hours.toFixed(1)}{t('hourAbbrev')} {t('productiveLabel')} / {occ.scheduled.toFixed(1)}{t('hourAbbrev')} {t('ofShiftLabel')}</span>
-                              <span className="text-sm font-black" style={{color: occ.pct>=85?'#059669':occ.pct<=50?'#dc2626':'var(--text-dim)'}}>{occ.pct.toFixed(0)}%</span>
+                              <span className="text-sm font-black" style={{color: occ.pct>=85?'var(--ok)':occ.pct<=50?'var(--danger)':'var(--text-dim)'}}>{occ.pct.toFixed(0)}%</span>
                             </div>
                           : <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('noScheduleDataLabel')}</p>}
                       </div>
@@ -3595,8 +3609,8 @@ const FinReports = ({visits,expenses,staff,clients}) => {
       {/* ΦΠΑ — συντηρητική εκτίμηση «τι να έχεις στην άκρη».
           Η επίσημη εκκαθάριση γίνεται εκτός εφαρμογής από τον λογιστή. */}
       <div className="card overflow-hidden mb-3">
-        <div className="px-4 py-2.5" style={{background:'#fffbeb',borderBottom:'1px solid #fef3c7'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'#b45309'}}>{t('vatEstimateUpperBoundLabel')}</p></div>
-        {[[t('vatOutLabel'),sum.vatOut,'#dc2626'],[t('vatInDeductibleLabel'),sum.vatIn,'#059669'],[t('netVatSetAsideLabel'),sum.netVat,'#b45309']].map(([l,v,c],i)=>(
+        <div className="px-4 py-2.5" style={{background:'var(--warn-bg-2)',borderBottom:'1px solid var(--warn-bg)'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--warn-2)'}}>{t('vatEstimateUpperBoundLabel')}</p></div>
+        {[[t('vatOutLabel'),sum.vatOut,'var(--danger)'],[t('vatInDeductibleLabel'),sum.vatIn,'var(--ok)'],[t('netVatSetAsideLabel'),sum.netVat,'var(--warn-2)']].map(([l,v,c],i)=>(
           <div key={l} className="flex justify-between items-center px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
             <span className="text-sm" style={{color:'var(--text-dim)'}}>{l}</span>
             <span className="amt font-bold" style={{color:c}}>{fmt(v)}</span>
@@ -3631,7 +3645,7 @@ const FinReports = ({visits,expenses,staff,clients}) => {
 
       <div className="card px-4 py-3 flex items-center justify-between">
         <p className="text-xs font-bold" style={{color:'var(--text-dim)'}}>{t('netBalanceParenLabel')}</p>
-        <p className="text-lg font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'#dc2626'}}>{fmt(sum.netBalance)}</p>
+        <p className="text-lg font-black amt" style={{color:sum.netBalance>=0?'var(--accent-600)':'var(--danger)'}}>{fmt(sum.netBalance)}</p>
       </div>
     </div>
   );
@@ -3796,7 +3810,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
   const DiffBadge = ({val}) => {
     if(!hasMachine) return null;
     const ok = Math.abs(val)<0.01;
-    return <span className={`text-xs font-black px-2 py-0.5 rounded-full ${ok?'bg-emerald-100 text-emerald-700':'bg-red-100 text-red-600'}`}>{ok?t('okBadgeLabel'):(val>0?'+':'')+fmt(val)}</span>;
+    return <span className="text-xs font-black px-2 py-0.5 rounded-full" style={ok?{background:'var(--ok-bg)',color:'var(--ok)'}:{background:'var(--danger-bg)',color:'var(--danger)'}}>{ok?t('okBadgeLabel'):(val>0?'+':'')+fmt(val)}</span>;
   };
 
   return (
@@ -3814,7 +3828,7 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
           {[[t('cashServicesLabel'),sum.cash],[t('posServicesLabel'),sum.pos],[t('posTipsLabel'),sum.posTips],[t('posTerminalTotalLabel'),appPosTotal],[t('expLabel'),-sum.expTotal]].map(([l,v],i)=>(
             <div key={l} className="flex justify-between items-center px-4 py-2.5" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
               <span className={`text-sm ${String(l).startsWith('─')?'font-black':''}`} style={{color:String(l).startsWith('─')?'var(--text)':'var(--text-dim)'}}>{String(l).replace('─── ','')}</span>
-              <span className="font-bold amt text-sm" style={{color:l===t('expLabel')?'#ef4444':String(l).startsWith('─')?'#3b82f6':'var(--text)'}}>{v<0?'-':''}{fmt(Math.abs(v))}</span>
+              <span className="font-bold amt text-sm" style={{color:l===t('expLabel')?'var(--danger-2)':String(l).startsWith('─')?'var(--info)':'var(--text)'}}>{v<0?'-':''}{fmt(Math.abs(v))}</span>
             </div>
           ))}
         </div>
@@ -3843,11 +3857,11 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
 
         {hasMachine && (
           <div className="card overflow-hidden">
-            <div className="px-4 py-2.5" style={{background:Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'var(--accent-50)':'#fee2e2'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--text)'}}>{t('differencesHeaderLabel')}</p></div>
+            <div className="px-4 py-2.5" style={{background:Math.abs(cashDiff)<0.01&&Math.abs(posDiff)<0.01?'var(--accent-50)':'var(--danger-bg)'}}><p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--text)'}}>{t('differencesHeaderLabel')}</p></div>
             {[[t('cashRegisterShortLabel'),cashDiff],[t('posTerminalShortLabel'),posDiff]].map(([l,v],i)=>(
               <div key={l} className="flex justify-between items-center px-4 py-3" style={i>0?{borderTop:'1px solid var(--border)'}:{}}>
                 <span className="text-sm" style={{color:'var(--text-dim)'}}>{l}</span>
-                <span className="font-black text-sm amt" style={{color:Math.abs(v)<0.01?'#059669':v>0?'#3b82f6':'#dc2626'}}>{Math.abs(v)<0.01?t('zeroDiffLabel'):(v>0?'+':'')+fmt(v)}</span>
+                <span className="font-black text-sm amt" style={{color:Math.abs(v)<0.01?'var(--ok)':v>0?'var(--info)':'var(--danger)'}}>{Math.abs(v)<0.01?t('zeroDiffLabel'):(v>0?'+':'')+fmt(v)}</span>
               </div>
             ))}
           </div>
@@ -3855,8 +3869,8 @@ const ZScreen = ({visits,expenses,staff,zmap,onSaveZ,onBack}) => {
 
         {stf.length>0 && (
           <div className="card overflow-hidden">
-            <div className="px-4 py-2.5 flex items-center justify-between" style={{background:'#fefce8',borderBottom:'1px solid #fef9c3'}}>
-              <p className="text-xs font-black uppercase tracking-wider" style={{color:'#ca8a04'}}>{t('tipsDistributionHeaderLabel')}</p>
+            <div className="px-4 py-2.5 flex items-center justify-between" style={{background:'var(--gold-bg-2)',borderBottom:'1px solid var(--gold-bg)'}}>
+              <p className="text-xs font-black uppercase tracking-wider" style={{color:'var(--gold)'}}>{t('tipsDistributionHeaderLabel')}</p>
               <button onClick={()=>setTipsGiven(!tipsGiven)} className={`px-3 py-1 rounded-full text-xs font-bold border ${tipsGiven?'bg-emerald-500 text-white border-emerald-500':'border-gray-300'}`} style={!tipsGiven?{color:'var(--text-dim)',background:'var(--surface)'}:{}}>
                 {tipsGiven?t('tipsGivenLabel'):t('tipsPendingLabel')}
               </button>
@@ -3924,7 +3938,7 @@ const ExpenseCatManager = ({cats,onSave,onDelete,onClose}) => {
                 <p className="text-sm font-bold truncate" style={{color:'var(--text)'}}>{c.name}</p>
                 <p className="text-xs" style={{color:'var(--text-dim)'}}>{t('vatAbbrev')} {c.vat}%</p>
               </button>
-              <button onClick={()=>onDelete(c.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="#ef4444"/></button>
+              <button onClick={()=>onDelete(c.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="var(--danger-2)"/></button>
             </div>
           ))}
         </div>
@@ -3984,7 +3998,7 @@ const FixedExpensesManager = ({items,cats,onSave,onDelete,onClose}) => {
                 </div>
                 <p className="font-black amt flex-shrink-0" style={{color:'var(--accent-600)'}}>{fmt(it.amt)}</p>
               </button>
-              <button onClick={()=>onDelete(it.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="#ef4444"/></button>
+              <button onClick={()=>onDelete(it.id)} className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0" style={{background:'var(--soft)'}}><Ic n="x" s={14} c="var(--danger-2)"/></button>
             </div>
           ))}
           {items.length===0 && <p className="text-xs text-center py-8" style={{color:'var(--text-dim)'}}>{t('noFixedExpensesYetLabel')}</p>}
@@ -4063,7 +4077,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
                 <p className="text-sm font-bold" style={{color:'var(--text)'}}>✂️ {t('servesClientsLabel')}</p>
                 <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('servesClientsHint')}</p>
               </div>
-              <button onClick={()=>set('servesClients',!(edit.servesClients ?? edit.role===ROLE.STAFF))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.servesClients ?? edit.role===ROLE.STAFF)?'var(--accent-600)':'#d1d5db'}}>
+              <button onClick={()=>set('servesClients',!(edit.servesClients ?? edit.role===ROLE.STAFF))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.servesClients ?? edit.role===ROLE.STAFF)?'var(--accent-600)':'var(--toggle-off)'}}>
                 <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.servesClients ?? edit.role===ROLE.STAFF)?'translateX(24px)':'none'}}/>
               </button>
             </div>
@@ -4099,7 +4113,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
                   <p className="text-sm font-bold" style={{color:'var(--text)'}}>👤 {t('activeStaffLabel')}</p>
                   <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('activeStaffHint')}</p>
                 </div>
-                <button onClick={()=>set('active',!(edit.active ?? true))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.active ?? true)?'var(--accent-600)':'#d1d5db'}}>
+                <button onClick={()=>set('active',!(edit.active ?? true))} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:(edit.active ?? true)?'var(--accent-600)':'var(--toggle-off)'}}>
                   <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:(edit.active ?? true)?'translateX(24px)':'none'}}/>
                 </button>
               </div>
@@ -4109,7 +4123,7 @@ const StaffManager = ({staff,onSave,onSetPin,onClose}) => {
               <CInput label={t('hiredLabel')} value={edit.hired} onChange={v=>set('hired',v)} type="date"/>
             </div>
             <div className="mb-3" style={{maxWidth:'50%'}}><CInput label={t('leaveTotalLabel')} value={edit.leaveTotal} onChange={v=>set('leaveTotal',v)} type="number"/></div>
-            {!edit.id && <p className="text-xs mb-3 rounded-xl px-3 py-2" style={{background:'#fef3c7',color:'#92400e'}}>⚠️ {t('staffAddNoLoginHint')}</p>}
+            {!edit.id && <p className="text-xs mb-3 rounded-xl px-3 py-2" style={{background:'var(--warn-bg)',color:'var(--warn-deep)'}}>⚠️ {t('staffAddNoLoginHint')}</p>}
             <SaveCancel onCancel={()=>setEdit(null)} onSave={save} disabled={!canSave}/>
           </div>
         ) : (
@@ -4174,7 +4188,7 @@ const ChangePasswordCard = ({onChangePassword}) => {
         <input type="password" autoComplete="new-password" value={cf} onChange={e=>setCf(e.target.value)}
           placeholder={t('changePwConfirmPh')} className={inputCls} style={inputStyle}/>
       </div>
-      {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? '#dc2626' : 'var(--accent-600)'}}>{msg.text}</p>}
+      {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? 'var(--danger)' : 'var(--accent-600)'}}>{msg.text}</p>}
       <button onClick={submit} disabled={busy || !cur || !nw || !cf}
         className="w-full py-2.5 rounded-xl text-sm font-black" style={{background:'var(--accent-600)',color:'white',opacity:(busy||!cur||!nw||!cf)?.6:1}}>
         {busy ? t('changePwBusy') : t('changePwBtn')}
@@ -4219,7 +4233,7 @@ const PinChangeCard = ({onChangePin}) => {
         <input type="password" inputMode="numeric" autoComplete="off" value={cf} onChange={e=>setCf(onlyDigits(e.target.value))}
           placeholder={t('confirmPinPh')} className={inputCls} style={inputStyle}/>
       </div>
-      {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? '#dc2626' : 'var(--accent-600)'}}>{msg.text}</p>}
+      {msg && <p className="text-xs font-semibold mb-2" style={{color: msg.err ? 'var(--danger)' : 'var(--accent-600)'}}>{msg.text}</p>}
       <button onClick={submit} disabled={!cur || nw.length!==4 || cf.length!==4}
         className="w-full py-2.5 rounded-xl text-sm font-black" style={{background:'var(--accent-600)',color:'white',opacity:(!cur||nw.length!==4||cf.length!==4)?.6:1}}>
         {t('changePinBtn')}
@@ -4326,7 +4340,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
         <div className="card p-4 mb-5">
           <div className="flex items-center justify-between mb-3">
             <div><p className="text-sm font-bold" style={{color:'var(--text)'}}>🏝️ {t('aegeanIslandLabel')}</p><p className="text-xs" style={{color:'var(--text-dim)'}}>{t('aegeanIslandHint')}</p></div>
-            <button onClick={()=>set('aegeanIslands',!settings.aegeanIslands)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.aegeanIslands?'var(--accent-600)':'#d1d5db'}}>
+            <button onClick={()=>set('aegeanIslands',!settings.aegeanIslands)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.aegeanIslands?'var(--accent-600)':'var(--toggle-off)'}}>
               <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:settings.aegeanIslands?'translateX(24px)':'none'}}/>
             </button>
           </div>
@@ -4381,7 +4395,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
             <p className="text-sm font-bold" style={{color:'var(--text)'}}>🧪 {t('testModeToggleLabel')}</p>
             <p className="text-[11px]" style={{color:'var(--text-dim)'}}>{t('testModeToggleHint')}</p>
           </div>
-          <button onClick={()=>set('testMode',!settings.testMode)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.testMode?'#f59e0b':'#d1d5db'}}>
+          <button onClick={()=>set('testMode',!settings.testMode)} className="w-12 h-6 rounded-full flex items-center transition-all flex-shrink-0" style={{background:settings.testMode?'#f59e0b':'var(--toggle-off)'}}>
             <div className="w-5 h-5 bg-white rounded-full shadow mx-0.5 transition-all" style={{transform:settings.testMode?'translateX(24px)':'none'}}/>
           </button>
         </div>
@@ -4428,11 +4442,11 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
           {syncResult && (
             <div className="mt-3 text-[11px]" style={{color:'var(--text)'}}>
               {syncResult.ok===false ? (
-                <p style={{color:'#dc2626'}}>❌ {syncResult.error}</p>
+                <p style={{color:'var(--danger)'}}>❌ {syncResult.error}</p>
               ) : (
                 <React.Fragment>
                   {(syncResult.results||[]).map((r,i)=>(
-                    <p key={i} style={{color:r.ok?'#16a34a':'#dc2626'}}>
+                    <p key={i} style={{color:r.ok?'var(--ok)':'var(--danger)'}}>
                       {r.ok?'✅':'⚠️'} {r.name||r.email}{!r.ok && r.error ? ' — '+r.error : ''}
                     </p>
                   ))}
@@ -4464,7 +4478,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
             {pushBusy ? t('pushBusyBtn') : t('pushBtn')}
           </button>
           {pushResult && (
-            <p className="mt-3 text-[11px]" style={{color: pushResult.ok ? '#16a34a' : '#dc2626'}}>
+            <p className="mt-3 text-[11px]" style={{color: pushResult.ok ? 'var(--ok)' : 'var(--danger)'}}>
               {pushResult.ok ? '✅ ' + t('pushOkMsg') : '❌ ' + pushResult.error}
             </p>
           )}
@@ -4472,15 +4486,15 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
       </React.Fragment>)}
 
       {isMaster && onResetPreLaunch && (<React.Fragment>
-        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'#dc2626'}}>{t('resetPreLaunchTitle')}</p>
-        <div className="rounded-2xl p-4 mb-5 border-2" style={{borderColor:'#fecaca',background:'#fef2f2'}}>
-          <p className="text-xs mb-3" style={{color:'#7f1d1d'}}>{t('resetPreLaunchHint')}</p>
+        <p className="text-xs font-black uppercase tracking-wide mb-2" style={{color:'var(--danger)'}}>{t('resetPreLaunchTitle')}</p>
+        <div className="rounded-2xl p-4 mb-5 border-2" style={{borderColor:'var(--danger-border)',background:'var(--danger-bg-2)'}}>
+          <p className="text-xs mb-3" style={{color:'var(--danger-deep)'}}>{t('resetPreLaunchHint')}</p>
           {resetDone ? (
-            <p className="text-xs font-bold" style={{color:'#16a34a'}}>✅ {t('resetPreLaunchDoneMsg')}</p>
+            <p className="text-xs font-bold" style={{color:'var(--ok)'}}>✅ {t('resetPreLaunchDoneMsg')}</p>
           ) : (<React.Fragment>
-            <p className="text-[11px] font-bold mb-1.5" style={{color:'#7f1d1d'}}>{t('resetPreLaunchTypePrompt')} <span className="font-black">{t('resetConfirmWord')}</span></p>
+            <p className="text-[11px] font-bold mb-1.5" style={{color:'var(--danger-deep)'}}>{t('resetPreLaunchTypePrompt')} <span className="font-black">{t('resetConfirmWord')}</span></p>
             <input value={resetConfirmText} onChange={e=>setResetConfirmText(e.target.value)}
-              className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none border mb-2" style={{background:'white',borderColor:'#fecaca',color:'#7f1d1d'}}/>
+              className="w-full rounded-xl px-3 py-2 text-sm font-bold outline-none border mb-2" style={{background:'var(--surface)',borderColor:'var(--danger-border)',color:'var(--danger-deep)'}}/>
             <button onClick={async ()=>{
                 if(resetting) return;
                 if(resetConfirmText.trim().toUpperCase()!==t('resetConfirmWord')) return;
@@ -4491,7 +4505,7 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
                 setResetDone(true);
               }}
               disabled={resetting || resetConfirmText.trim().toUpperCase()!==t('resetConfirmWord')}
-              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'#dc2626'}}>
+              className="w-full py-2.5 rounded-xl text-xs font-black text-white disabled:opacity-40" style={{background:'var(--danger-solid)'}}>
               {resetting ? t('wipeDemoBusyBtn') : t('resetPreLaunchBtn')}
             </button>
           </React.Fragment>)}
@@ -4512,14 +4526,14 @@ const SettingsSheet = ({onClose, theme, setTheme, accent, setAccent, settings, u
             window.alert(t('wipeDemoSuccessPrefix')+' '+res.totalFound);
           }}
           disabled={wiped||wiping}
-          className="w-full py-2.5 rounded-xl text-xs font-bold mb-1 disabled:opacity-40" style={{background:'var(--soft)',color:'#dc2626'}}>
+          className="w-full py-2.5 rounded-xl text-xs font-bold mb-1 disabled:opacity-40" style={{background:'var(--soft)',color:'var(--danger)'}}>
           {wiped ? t('wipeDemoDoneBtn') : wiping ? t('wipeDemoBusyBtn') : t('wipeDemoBtn')}
         </button>
         <p className="text-xs mb-5" style={{color:'var(--text-dim)'}}>{t('wipeDemoHint')}</p>
       </React.Fragment>)}
 
       <button onClick={()=>{ if(window.confirm(t('fullSignOutConfirm'))) onFullSignOut(); }}
-        className="w-full py-2.5 rounded-xl text-xs font-bold mb-1" style={{background:'var(--soft)',color:'#dc2626'}}>
+        className="w-full py-2.5 rounded-xl text-xs font-bold mb-1" style={{background:'var(--soft)',color:'var(--danger)'}}>
         {t('fullSignOutBtn')}
       </button>
       <p className="text-xs mb-2" style={{color:'var(--text-dim)'}}>{t('fullSignOutHint')}</p>
