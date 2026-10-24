@@ -19,8 +19,8 @@ const esbuild = require('esbuild');
 const SRC = path.join(__dirname, '..', 'public', 'index.src.html');
 const OUT = path.join(__dirname, '..', 'public', 'index.html');
 
-const BABEL_CDN_LINE_RE = /^[ \t]*<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/babel-standalone\/[^"]+"><\/script>\n/m;
-const APP_SCRIPT_RE = /<script type="text\/babel">\n([\s\S]*?)\n<\/script>/;
+const BABEL_CDN_LINE_RE = /^[ \t]*<script src="https:\/\/cdnjs\.cloudflare\.com\/ajax\/libs\/babel-standalone\/[^"]+"><\/script>\r?\n/m;
+const APP_SCRIPT_RE = /<script type="text\/babel">\r?\n([\s\S]*?)\r?\n<\/script>/;
 
 function build() {
   const html = fs.readFileSync(SRC, 'utf8');

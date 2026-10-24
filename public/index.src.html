@@ -73,15 +73,12 @@
        κάτω χρειάζεται σταθερό padding-top ίσο με το ύψος του header (pt-11 44px + περιεχόμενο
        ~38px + pb-4 16px ≈ 98px), με λίγο περιθώριο ασφαλείας. */
     .hdr-spacer{padding-top:108px;}
-    /* TEST MODE (25/08, αναθεωρήθηκε 25/08 β' μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο»
-       στην safe-area/notch περιοχή iOS standalone PWA μετά το off, ΑΚΟΜΑ ΚΑΙ μετά από καθαρή
-       επανεγκατάσταση, άρα πραγματικό rendering bug όχι cache). Η ΠΑΛΙΑ προσέγγιση είχε ΔΥΟ fixed
-       στοιχεία — ένα ξεχωριστό πάντα-πάνω banner (.test-banner, τώρα ΑΧΡΗΣΤΟ, μένει εδώ μόνο ως
-       ιστορικό/αναφορά) ΚΑΙ το ίδιο το Header να μετακινείται (top:0↔27px) — αυτός ο συνδυασμός
-       πιθανότατα μπέρδευε το WebKit compositor στη safe-area. ΝΕΑ προσέγγιση: το banner ζει ΜΕΣΑ
-       στο ΙΔΙΟ fixed κουτί του Header (.test-banner-inline, βλ. Header component) — το `.hdr`
-       ΠΟΤΕ δεν μετακινείται/εξαφανίζεται πια, μόνο μεγαλώνει/μικραίνει εσωτερικά. */
-    .test-banner{position:fixed;top:0;left:50%;transform:translateX(-50%);width:100%;max-width:640px;z-index:70;background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
+    /* TEST MODE (25/08 β', μετά από bug report Ανδρέα — πορτοκαλί «κολλημένο» στην safe-area/notch
+       iOS standalone PWA μετά το off). Η παλιά προσέγγιση είχε ΔΥΟ fixed στοιχεία (ξεχωριστό banner
+       + Header που μετακινούνταν top:0↔27px) και μπέρδευε τον WebKit compositor. Τώρα το banner ζει
+       ΜΕΣΑ στο ίδιο fixed κουτί του Header (.test-banner-inline, βλ. Header component) — το `.hdr`
+       ΠΟΤΕ δεν μετακινείται/εξαφανίζεται, μόνο μεγαλώνει/μικραίνει εσωτερικά. (Ο παλιός κανόνας
+       .test-banner αφαιρέθηκε 24/10 ως νεκρός — βλ. git history αν χρειαστεί.) */
     .test-banner-inline{background:repeating-linear-gradient(135deg,#f59e0b,#f59e0b 10px,#b45309 10px,#b45309 20px);color:#fff;text-align:center;font-weight:900;font-size:11px;letter-spacing:.04em;padding:5px 10px;text-shadow:0 1px 2px rgba(0,0,0,.35);}
     html.test-mode .hdr-spacer{padding-top:135px;}
     html.test-mode .hero{padding-top:27px;box-sizing:border-box;}
@@ -305,9 +302,6 @@ let LANG = 'el';
 const applyLang = code => { LANG = (code==='en') ? 'en' : 'el'; };
 const STRINGS = {
   whoAreYou:     { el:'Ποιος είσαι;',                                   en:'Who are you?' },
-  masterLoginBtn:{ el:'Είσοδος ως Master',                              en:'Log in as Master' },
-  masterPinTitle:{ el:'Master PIN',                                     en:'Master PIN' },
-  masterPinSub:  { el:'ΦΠΑ, στατιστικά, Ζ, πρόγραμμα, ρυθμίσεις',       en:'VAT, stats, Z-report, schedule, settings' },
   wrongCode:     { el:'Λάθος κωδικός',                                  en:'Wrong code' },
   backBtn:       { el:'← Πίσω',                                         en:'← Back' },
   forgotPinLink: { el:'Ξέχασα το PIN',                                  en:'Forgot PIN' },
@@ -510,9 +504,7 @@ const STRINGS = {
   phoneLabel:          { el:'Τηλέφωνο',                                  en:'Phone' },
   sessionNotePlaceholder: { el:'Σημείωση συνεδρίας (π.χ. βαφή 6.3 + 7.1)...', en:'Session note (e.g. color 6.3 + 7.1)...' },
   photoToggleLabel:    { el:'📷 Φωτό',                                   en:'📷 Photo' },
-  photoToggleHint:     { el:'Βγήκε φωτογραφία σε αυτή την επίσκεψη',     en:'A photo was taken during this visit' },
   pendingPhotosTabLabel: { el:'📷',                                      en:'📷' },
-  pendingPhotosTitle:  { el:'Εκκρεμείς φωτογραφίες',                     en:'Pending photos' },
   pendingPhotosHint:   { el:'Επισκέψεις με 📷 που δεν έχουν ανέβει ακόμα — παλιότερες πρώτα.', en:'Visits with 📷 not yet posted — oldest first.' },
   pendingPhotosEmpty:  { el:'Καμία εκκρεμής φωτογραφία 🎉',               en:'No pending photos 🎉' },
   markPostedBtn:       { el:'✅ Ανέβηκε',                                en:'✅ Posted' },
@@ -642,7 +634,6 @@ const STRINGS = {
   staffPinLabel:       { el:'PIN (4 ψηφία)',                              en:'PIN (4 digits)' },
   staffPinNewHint:     { el:'Χρειάζεται για να μπορεί να επιλέξει το όνομά του καθημερινά — χωρίς PIN δεν μπορεί να μπει.', en:"Needed so they can pick their name daily — without a PIN they can't get in." },
   staffPinExistingHint:{ el:'Άσε το κενό για να μείνει το ίδιο. Γράψε νέο μόνο αν θες να το αλλάξεις (π.χ. το ξέχασε).', en:"Leave blank to keep it the same. Enter a new one only to change it (e.g. they forgot it)." },
-  staffPinRequired:    { el:'Χρειάζεται PIN 4 ψηφίων για να μπορεί να συνδεθεί.', en:'A 4-digit PIN is needed so they can sign in.' },
   businessLabel:     { el:'Επιχείρηση',                                  en:'Business' },
   shopNameLabel:     { el:'Όνομα μαγαζιού',                              en:'Shop name' },
   currencyLabel:     { el:'Νόμισμα',                                     en:'Currency' },
@@ -1809,7 +1800,6 @@ const parseCSV = text => {
 
 /* ΦΠΑ ανά γραμμή/συντελεστή (spec §6) — vat = ακέραιο % (24/17/13/6/0) */
 const vatOf  = (gross,pct) => gross * (pct/100) / (1 + pct/100);
-const netOf  = (gross,pct) => gross / (1 + pct/100);
 
 /* Καλάθι */
 const lineTotal  = l => { const p=Number(l.price)||0, d=Number(l.disc)||0; return Math.max(0, l.discType==='pct' ? p*(1-d/100) : p-d); };
@@ -1976,16 +1966,13 @@ const paths = {
   user:   'M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2 M12 11a4 4 0 100-8 4 4 0 000 8z',
   zap:    'M13 2L3 14h9l-1 8 10-12h-9l1-8z',
   x:      'M18 6L6 18 M6 6l12 12',
-  warn:   'M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z M12 9v4 M12 17h.01',
   cash:   'M12 2a10 10 0 100 20A10 10 0 0012 2z M12 8v4 M12 16h.01',
   card:   'M1 4h22v16H1z M1 10h22',
   tag:    'M20.59 13.41l-7.17 7.17a2 2 0 01-2.83 0L2 12V2h10l8.59 8.59a2 2 0 010 2.82z M7 7h.01',
   note:   'M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z M14 2v6h6 M16 13H8 M16 17H8 M10 9H8',
   search: 'M11 19a8 8 0 100-16 8 8 0 000 16z M21 21l-4.35-4.35',
-  calendar:'M3 4h18v18H3z M16 2v4 M8 2v4 M3 10h18',
   trash:  'M3 6h18 M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6 M10 11v6 M14 11v6 M9 6V4a1 1 0 011-1h4a1 1 0 011 1v2',
   download:'M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4 M7 10l5 5 5-5 M12 15V3',
-  clock:  'M12 22a10 10 0 100-20 10 10 0 000 20z M12 6v6l4 2',
   split:  'M12 3v5 M12 8l-6 7v6 M12 8l6 7v6',
 };
 const Ic = ({n,s=20,c='currentColor',cls=''}) => (
