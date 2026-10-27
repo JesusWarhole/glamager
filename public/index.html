@@ -2547,6 +2547,7 @@ const Nav = ({ active, go, operator, pendingCount }) => {
     { id: "clients", icon: "users", label: t("navClientsTab") },
     ...isMaster ? [{ id: "rep", icon: "bar", label: t("navReports"), badge: pendingCount }] : []
   ];
+  const wide = (id) => !isMaster && id === "clients";
   return /* @__PURE__ */ React.createElement("div", { className: "nav-bar fixed bottom-0 flex z-50", style: { left: "50%", transform: "translateX(-50%)", width: "100%", maxWidth: 640, background: "var(--surface)", borderTop: "1px solid var(--border)" } }, tabs.map((t2) => /* @__PURE__ */ React.createElement(
     "button",
     {
@@ -2554,7 +2555,7 @@ const Nav = ({ active, go, operator, pendingCount }) => {
       onClick: () => go(t2.id),
       "aria-label": t2.id === "add" ? T("navAddAria") : void 0,
       "aria-current": active === t2.id ? "page" : void 0,
-      className: "flex-1 flex flex-col items-center pt-3 pb-1 gap-0.5",
+      className: `${wide(t2.id) ? "flex-[2]" : "flex-1"} flex flex-col items-center pt-3 pb-1 gap-0.5`,
       style: { color: active === t2.id ? "var(--accent-600)" : "var(--text-dim)" }
     },
     t2.id === "add" ? /* @__PURE__ */ React.createElement("div", { className: "w-12 h-12 rounded-full flex items-center justify-center -mt-5 shadow-lg mb-0.5", style: { background: "var(--accent-600)" } }, /* @__PURE__ */ React.createElement(Ic, { n: "plus", s: 22, c: "white" })) : /* @__PURE__ */ React.createElement("div", { className: "relative" }, /* @__PURE__ */ React.createElement(Ic, { n: t2.icon, s: 20, c: active === t2.id ? "var(--accent-600)" : "var(--text-dim)" }), t2.badge > 0 && /* @__PURE__ */ React.createElement("span", { className: "red-dot" }, t2.badge)),
