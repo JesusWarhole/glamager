@@ -8,6 +8,7 @@ Multi-tenant πάνω σε Firebase. Σε καθημερινή χρήση από
 |---|---|
 | `PROJECT_STATUS.md` | Τρέχουσα κατάσταση, εκκρεμότητες, ιστορικό αποφάσεων — **διάβασέ το πρώτο** |
 | `CLAUDE.md` | Κανόνες δουλειάς, αρχιτεκτονική, design system, παγίδες (το διαβάζει αυτόματα το Claude Code) |
+| `AGENTS.md` | Δείκτης για Codex/ChatGPT: παραπέμπει στα `PROJECT_STATUS.md` και `CLAUDE.md` |
 | `src/README.md` | Τα κομμάτια του app έξω από το `index.src.html` (κείμενα, εορτολόγιο, demo seeds) |
 | `scripts/admin/README.md` | Χειροκίνητα admin scripts (demo-shop) |
 | `reference/` | Spec, roadmap, ιστορικό αποφάσεων |
